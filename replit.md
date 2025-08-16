@@ -1,8 +1,8 @@
-# PersonalizeAI Newsletter Platform
+# SharpSend.io Newsletter Platform
 
 ## Overview
 
-PersonalizeAI is an AI-powered newsletter personalization platform designed specifically for financial publishers. The application provides comprehensive dashboard functionality for managing subscribers, creating personalized content with AI, running A/B tests, analyzing campaign performance, and calculating revenue impact. The platform integrates with various email marketing services and offers advanced analytics to help financial newsletter publishers optimize their content and maximize subscriber engagement.
+SharpSend.io is an AI-powered newsletter personalization platform designed specifically for financial publishers. The application provides comprehensive dashboard functionality for managing subscribers, creating personalized content with AI, running A/B tests, analyzing campaign performance, and calculating revenue impact. The platform integrates with various email marketing services and offers advanced analytics to help financial newsletter publishers optimize their content and maximize subscriber engagement.
 
 ## User Preferences
 
@@ -11,7 +11,8 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 **August 16, 2025 - Migration to Replit Environment Completed**
-- Successfully migrated PersonalizeAI platform from Replit Agent to standard Replit environment
+- Successfully migrated SharpSend.io platform from Replit Agent to standard Replit environment
+- Updated all branding from "PersonalizeAI" to "SharpSend.io" and removed "Porter & Co" references throughout the application
 - Configured PostgreSQL database with multi-tenant schema structure
 - Set up OpenAI API integration for AI personalization features
 - Implemented demo authentication system with credentials: demo@sharpsend.com / demo123

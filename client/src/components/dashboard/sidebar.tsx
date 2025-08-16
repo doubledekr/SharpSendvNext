@@ -37,7 +37,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             <Brain className="text-white text-lg" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">PersonalizeAI</h1>
+            <h1 className="text-xl font-bold text-white">SharpSend.io</h1>
             <p className="text-xs text-slate-400">Financial Publishers</p>
           </div>
         </div>
@@ -75,7 +75,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             <span className="text-white font-semibold">PW</span>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-white">Porter & Co</p>
+            <p className="text-sm font-medium text-white">SharpSend Demo</p>
             <p className="text-xs text-slate-400">Enterprise Plan</p>
           </div>
           <User className="h-4 w-4 text-slate-400" />

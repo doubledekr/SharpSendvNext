@@ -48,14 +48,14 @@ export default function RevenueTab() {
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-white flex items-center space-x-3">
             <Calculator className="h-6 w-6" />
-            <span>PersonalizeAI Revenue Impact Calculator</span>
+            <span>SharpSend.io Revenue Impact Calculator</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Before PersonalizeAI */}
+            {/* Before SharpSend.io */}
             <div className="p-6 bg-dark-bg rounded-lg">
-              <h3 className="text-lg font-semibold text-white mb-4">Before PersonalizeAI</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">Before SharpSend.io</h3>
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-slate-300">Subscribers</span>
@@ -80,9 +80,9 @@ export default function RevenueTab() {
               </div>
             </div>
 
-            {/* After PersonalizeAI */}
+            {/* After SharpSend.io */}
             <div className="p-6 bg-gradient-to-br from-brand-green/20 to-blue-500/20 rounded-lg border border-brand-green/30">
-              <h3 className="text-lg font-semibold text-white mb-4">With PersonalizeAI</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">With SharpSend.io</h3>
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-slate-300">Subscribers</span>
@@ -192,10 +192,10 @@ export default function RevenueTab() {
         </Card>
       </div>
 
-      {/* Porter & Co Case Study */}
+      {/* SharpSend Demo Case Study */}
       <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-white">Success Story: Porter & Co</CardTitle>
+          <CardTitle className="text-xl font-semibold text-white">Success Story: Financial Publisher</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -220,11 +220,11 @@ export default function RevenueTab() {
           </div>
           <div className="mt-6 text-center">
             <p className="text-slate-300">
-              "PersonalizeAI transformed our newsletter business. The revenue impact exceeded our most optimistic projections, 
+              "SharpSend.io transformed our newsletter business. The revenue impact exceeded our most optimistic projections, 
               and our subscribers are more engaged than ever with truly personalized financial insights."
             </p>
             <p className="text-slate-400 text-sm mt-2">
-              — Sarah Chen, Chief Marketing Officer, Porter & Co
+              — Sarah Chen, Chief Marketing Officer, Financial Publisher
             </p>
           </div>
         </CardContent>

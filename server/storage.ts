@@ -67,7 +67,7 @@ export class MemStorage implements IStorage {
   }
 
   private initializeData() {
-    // Initialize with sample data for the Porter & Co scenario
+    // Initialize with sample data for the SharpSend.io demo scenario
     const currentDate = new Date();
     
     // Sample analytics data

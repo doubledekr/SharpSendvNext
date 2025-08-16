@@ -83,7 +83,7 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ currentPage }) => {
               <Zap className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">PersonalizeAI</h1>
+              <h1 className="text-xl font-bold text-white">SharpSend.io</h1>
               <p className="text-xs text-slate-400">Financial Publishers</p>
             </div>
           </div>
@@ -149,7 +149,7 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ currentPage }) => {
         <div className="flex items-center gap-2 text-sm">
           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
           <span className="text-slate-400">Publisher:</span>
-          <span className="text-white font-medium">Porter & Co</span>
+          <span className="text-white font-medium">SharpSend Demo</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>

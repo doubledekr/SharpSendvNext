@@ -50,7 +50,7 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* PersonalizeAI Dark Theme Colors */
+  /* SharpSend.io Dark Theme Colors */
   --dark-bg: hsl(216 57% 5%);
   --dark-surface: hsl(217 45% 12%);
   --dark-border: hsl(217 32% 20%);
@@ -101,7 +101,7 @@
   }
 }
 
-/* PersonalizeAI Specific Styles */
+/* SharpSend.io Specific Styles */
 .bg-dark-bg {
   background-color: var(--dark-bg);
 }

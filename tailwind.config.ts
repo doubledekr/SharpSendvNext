@@ -61,7 +61,7 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
-        // PersonalizeAI Dark Theme Colors
+        // SharpSend.io Dark Theme Colors
         "dark-bg": "var(--dark-bg)",
         "dark-surface": "var(--dark-surface)",
         "dark-border": "var(--dark-border)",
