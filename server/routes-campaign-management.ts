@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { CampaignManagementService } from './services/campaign-management';
+import { AIAssignmentGeneratorService } from './services/ai-assignment-generator';
 import { z } from 'zod';
 
 const router = Router();
 const campaignService = new CampaignManagementService();
+const aiAssignmentService = new AIAssignmentGeneratorService();
 
 // Validation schemas
 const createProjectSchema = z.object({
@@ -50,6 +52,14 @@ const reviewAssignmentSchema = z.object({
   approved: z.boolean(),
   revisionRequests: z.array(z.string()).default([]),
   reviewedBy: z.string().min(1, 'Reviewer name is required'),
+});
+
+const oneOffAssignmentSchema = z.object({
+  targetCohort: z.string().optional(),
+  assignmentType: z.enum(['email_content', 'subject_line', 'email_design', 'content_review', 'fact_check']),
+  urgency: z.enum(['standard', 'priority', 'rush']).default('standard'),
+  customInstructions: z.string().optional(),
+  marketEvent: z.string().optional(),
 });
 
 /**
@@ -264,6 +274,65 @@ router.post('/assignments/:id/review', async (req, res) => {
       success: false,
       error: error instanceof z.ZodError ? error.errors : 'Failed to review assignment'
     });
+  }
+});
+
+// Generate daily AI-suggested assignments
+router.get('/ai-suggestions/daily', async (req, res) => {
+  try {
+    console.log('Generating daily AI assignment suggestions...');
+    const suggestions = await aiAssignmentService.generateDailyAssignments();
+    res.json({ success: true, data: suggestions });
+  } catch (error) {
+    console.error('Error generating daily assignments:', error);
+    res.status(500).json({ success: false, error: 'Failed to generate daily assignments' });
+  }
+});
+
+// Generate one-off assignment with unique link
+router.post('/ai-suggestions/one-off', async (req, res) => {
+  try {
+    const validatedRequest = oneOffAssignmentSchema.parse(req.body);
+    console.log('Generating one-off assignment:', validatedRequest);
+    
+    const suggestion = await aiAssignmentService.generateOneOffAssignment(validatedRequest);
+    
+    res.json({ 
+      success: true, 
+      data: { 
+        suggestion,
+        message: 'One-off assignment generated! Ready to assign to collaborators.' 
+      } 
+    });
+  } catch (error) {
+    console.error('Error generating one-off assignment:', error);
+    res.status(500).json({ success: false, error: 'Failed to generate one-off assignment' });
+  }
+});
+
+// Generate sentiment-based assignment (explains sentiment analysis toggle)
+router.post('/ai-suggestions/sentiment-based', async (req, res) => {
+  try {
+    const { sentimentEnabled, currentSentiment } = req.body;
+    console.log('Generating sentiment-based assignment:', { sentimentEnabled, currentSentiment });
+    
+    const suggestion = await aiAssignmentService.generateSentimentBasedAssignment(
+      sentimentEnabled, 
+      currentSentiment || 'neutral'
+    );
+    
+    if (suggestion) {
+      res.json({ success: true, data: suggestion });
+    } else {
+      res.json({ 
+        success: true, 
+        data: null, 
+        message: 'Sentiment analysis is disabled - no sentiment-based assignments generated' 
+      });
+    }
+  } catch (error) {
+    console.error('Error generating sentiment-based assignment:', error);
+    res.status(500).json({ success: false, error: 'Failed to generate sentiment-based assignment' });
   }
 });
 
