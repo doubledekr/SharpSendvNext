@@ -60,21 +60,21 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-dark-bg text-slate-100">
+    <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
       
       <div className="flex-1 ml-64 overflow-auto">
         {/* Header */}
-        <header className="bg-dark-surface border-b border-dark-border px-8 py-6">
+        <header className="bg-card border-b border-border px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white">{tabTitles[activeTab as keyof typeof tabTitles]}</h2>
-              <p className="text-slate-400 mt-1">{tabDescriptions[activeTab as keyof typeof tabDescriptions]}</p>
+              <h2 className="text-2xl font-bold text-foreground">{tabTitles[activeTab as keyof typeof tabTitles]}</h2>
+              <p className="text-muted-foreground mt-1">{tabDescriptions[activeTab as keyof typeof tabDescriptions]}</p>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 bg-dark-bg px-4 py-2 rounded-lg">
-                <div className="w-2 h-2 bg-brand-green rounded-full"></div>
-                <span className="text-sm text-slate-300">AI Engine: Active</span>
+              <div className="flex items-center space-x-2 bg-muted px-4 py-2 rounded-lg">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm text-muted-foreground">AI Engine: Active</span>
               </div>
               <Button 
                 className="bg-brand-blue hover:bg-blue-700 text-white font-medium"
