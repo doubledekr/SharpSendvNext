@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import NavigationHeader from "@/components/dashboard/navigation-header";
 import Sidebar from "@/components/dashboard/sidebar";
 import OverviewTab from "@/components/dashboard/overview-tab";
 import SubscribersTab from "@/components/dashboard/subscribers-tab";
@@ -6,10 +7,11 @@ import PersonalizationTab from "@/components/dashboard/personalization-tab";
 import AnalyticsTab from "@/components/dashboard/analytics-tab";
 import ABTestingTab from "@/components/dashboard/abtesting-tab";
 import RevenueTab from "@/components/dashboard/revenue-tab";
-import EmailTab from "@/components/dashboard/email-tab";
+import EmailIntegrationsTab from "@/components/dashboard/email-integrations-tab";
 import AdvancedTab from "@/components/dashboard/advanced-tab";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import '../styles/design-system.css';
 
 const tabTitles = {
   overview: 'Dashboard Overview',
@@ -51,7 +53,7 @@ export default function Dashboard() {
       case 'revenue':
         return <RevenueTab />;
       case 'email':
-        return <EmailTab />;
+        return <EmailIntegrationsTab />;
       case 'advanced':
         return <AdvancedTab />;
       default:
@@ -60,37 +62,41 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+    <div className="min-h-screen bg-slate-900">
+      <NavigationHeader currentPage="dashboard" />
       
-      <div className="flex-1 ml-64 overflow-auto">
-        {/* Header */}
-        <header className="bg-card border-b border-border px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">{tabTitles[activeTab as keyof typeof tabTitles]}</h2>
-              <p className="text-muted-foreground mt-1">{tabDescriptions[activeTab as keyof typeof tabDescriptions]}</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 bg-muted px-4 py-2 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-muted-foreground">AI Engine: Active</span>
+      <div className="flex">
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        
+        <div className="flex-1 ml-64 overflow-auto">
+          {/* Header */}
+          <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">{tabTitles[activeTab as keyof typeof tabTitles]}</h2>
+                <p className="text-slate-400 mt-1">{tabDescriptions[activeTab as keyof typeof tabDescriptions]}</p>
               </div>
-              <Button 
-                className="bg-brand-blue hover:bg-blue-700 text-white font-medium"
-                data-testid="button-export-report"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export Report
-              </Button>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 bg-slate-700 px-4 py-2 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-slate-300">AI Engine: Active</span>
+                </div>
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  data-testid="button-export-report"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Report
+                </Button>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Tab Content */}
-        <main className="p-8">
-          {renderTabContent()}
-        </main>
+          {/* Tab Content */}
+          <main className="p-8 bg-slate-900">
+            {renderTabContent()}
+          </main>
+        </div>
       </div>
     </div>
   );

@@ -1,163 +1,79 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertSubscriberSchema, insertCampaignSchema, insertABTestSchema, insertEmailIntegrationSchema } from "@shared/schema";
+import { registerMultiTenantRoutes } from "./routes-multitenant";
+import { registerIntegrationRoutes } from "./routes-integrations";
+import { registerEmailRoutes } from "./routes-email";
+import { aiProcessingRoutes } from "./routes-ai-processing";
+import { cohortPersonalizationRoutes } from "./routes-cohort-personalization";
+import { emailOptimizationRoutes } from "./routes-email-optimization";
+import { brevoIntegrationRoutes } from "./routes-brevo-integration";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Analytics endpoints
+  // Enable CORS for all routes
+  app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    
+    if (req.method === "OPTIONS") {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "healthy", 
+      timestamp: new Date().toISOString(),
+      version: "2.0.0",
+      features: {
+        multiTenant: true,
+        aiPersonalization: true,
+        integrations: true,
+        emailSending: true,
+        marketIntelligence: true,
+        cohortPersonalization: true,
+        emailOptimization: true,
+        brevoIntegration: true
+      }
+    });
+  });
+
+  // Register all route modules
+  registerMultiTenantRoutes(app);
+  registerIntegrationRoutes(app);
+  registerEmailRoutes(app);
+  app.use("/api/ai", aiProcessingRoutes);
+  app.use("/api/cohorts", cohortPersonalizationRoutes);
+  app.use("/api/email-optimization", emailOptimizationRoutes);
+  app.use("/api/brevo", brevoIntegrationRoutes);
+
+  // Legacy routes for backward compatibility (these will be deprecated)
+  
+  // Simple analytics endpoint for demo purposes
   app.get("/api/analytics", async (req, res) => {
     try {
-      const analytics = await storage.getLatestAnalytics();
+      // Return sample analytics data for demo
+      const analytics = {
+        totalSubscribers: 8,
+        engagementRate: "71.2",
+        churnRate: "2.1",
+        monthlyRevenue: "465.00",
+        revenueGrowth: "15.3",
+        openRate: "68.5",
+        clickRate: "12.3",
+        unsubscribeRate: "0.8",
+        date: new Date().toISOString(),
+      };
       res.json(analytics);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch analytics" });
     }
   });
 
-  // Subscribers endpoints
-  app.get("/api/subscribers", async (req, res) => {
-    try {
-      const subscribers = await storage.getSubscribers();
-      res.json(subscribers);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch subscribers" });
-    }
-  });
-
-  app.get("/api/subscribers/:id", async (req, res) => {
-    try {
-      const subscriber = await storage.getSubscriber(req.params.id);
-      if (!subscriber) {
-        return res.status(404).json({ error: "Subscriber not found" });
-      }
-      res.json(subscriber);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch subscriber" });
-    }
-  });
-
-  app.post("/api/subscribers", async (req, res) => {
-    try {
-      const validatedData = insertSubscriberSchema.parse(req.body);
-      const subscriber = await storage.createSubscriber(validatedData);
-      res.status(201).json(subscriber);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid subscriber data" });
-    }
-  });
-
-  app.put("/api/subscribers/:id", async (req, res) => {
-    try {
-      const updates = req.body;
-      const subscriber = await storage.updateSubscriber(req.params.id, updates);
-      if (!subscriber) {
-        return res.status(404).json({ error: "Subscriber not found" });
-      }
-      res.json(subscriber);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update subscriber" });
-    }
-  });
-
-  app.delete("/api/subscribers/:id", async (req, res) => {
-    try {
-      const deleted = await storage.deleteSubscriber(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ error: "Subscriber not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete subscriber" });
-    }
-  });
-
-  // Campaigns endpoints
-  app.get("/api/campaigns", async (req, res) => {
-    try {
-      const campaigns = await storage.getCampaigns();
-      res.json(campaigns);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch campaigns" });
-    }
-  });
-
-  app.post("/api/campaigns", async (req, res) => {
-    try {
-      const validatedData = insertCampaignSchema.parse(req.body);
-      const campaign = await storage.createCampaign(validatedData);
-      res.status(201).json(campaign);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid campaign data" });
-    }
-  });
-
-  // A/B Testing endpoints
-  app.get("/api/ab-tests", async (req, res) => {
-    try {
-      const abTests = await storage.getABTests();
-      res.json(abTests);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch A/B tests" });
-    }
-  });
-
-  app.post("/api/ab-tests", async (req, res) => {
-    try {
-      const validatedData = insertABTestSchema.parse(req.body);
-      const abTest = await storage.createABTest(validatedData);
-      res.status(201).json(abTest);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid A/B test data" });
-    }
-  });
-
-  app.put("/api/ab-tests/:id", async (req, res) => {
-    try {
-      const updates = req.body;
-      const abTest = await storage.updateABTest(req.params.id, updates);
-      if (!abTest) {
-        return res.status(404).json({ error: "A/B test not found" });
-      }
-      res.json(abTest);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update A/B test" });
-    }
-  });
-
-  // Email Integration endpoints
-  app.get("/api/email-integrations", async (req, res) => {
-    try {
-      const integrations = await storage.getEmailIntegrations();
-      res.json(integrations);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch email integrations" });
-    }
-  });
-
-  app.post("/api/email-integrations", async (req, res) => {
-    try {
-      const validatedData = insertEmailIntegrationSchema.parse(req.body);
-      const integration = await storage.createEmailIntegration(validatedData);
-      res.status(201).json(integration);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid email integration data" });
-    }
-  });
-
-  app.put("/api/email-integrations/:id", async (req, res) => {
-    try {
-      const updates = req.body;
-      const integration = await storage.updateEmailIntegration(req.params.id, updates);
-      if (!integration) {
-        return res.status(404).json({ error: "Email integration not found" });
-      }
-      res.json(integration);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update email integration" });
-    }
-  });
-
-  // Personalization endpoints
+  // Legacy personalization endpoints for demo
   app.post("/api/personalize/subject-line", async (req, res) => {
     try {
       const { baseSubjectLine, segment } = req.body;
@@ -166,21 +82,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Base subject line and segment are required" });
       }
 
-      // In a real implementation, this would call OpenAI API
       const personalizedVariants = [
         {
           segment: "High-Value Investor",
-          subjectLine: `Exclusive Market Intelligence: ${baseSubjectLine}`,
+          subjectLine: `🚀 Exclusive: ${baseSubjectLine}`,
           predictedImprovement: 42
         },
         {
           segment: "Day Trader",
-          subjectLine: `🚨 URGENT: ${baseSubjectLine} + Quick Profit Opportunities`,
+          subjectLine: `⚡ URGENT: ${baseSubjectLine}`,
           predictedImprovement: 38
         },
         {
           segment: "Long-term Investor",
-          subjectLine: `Strategic Insight: ${baseSubjectLine} - Portfolio Impact`,
+          subjectLine: `📈 Strategic: ${baseSubjectLine}`,
           predictedImprovement: 35
         }
       ];
@@ -200,7 +115,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Content and segment are required" });
       }
 
-      // In a real implementation, this would call OpenAI API
       const personalizedContent = {
         originalContent: content,
         personalizedContent: `[Personalized for ${segment}] ${content}\n\nThis analysis is specifically tailored for ${segment.toLowerCase()}s based on your investment profile and preferences.`,
@@ -217,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Revenue Impact endpoints
+  // Revenue calculation endpoint
   app.post("/api/revenue/calculate", async (req, res) => {
     try {
       const { subscriberCount, arpu, currentEngagement } = req.body;
@@ -225,7 +139,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentMonthlyRevenue = subscriberCount * arpu;
       const currentAnnualRevenue = currentMonthlyRevenue * 12;
       
-      // Porter & Co scenario calculations
       const engagementImprovement = 0.44; // 44% improvement
       const churnReduction = 0.185; // 18.5% reduction
       const premiumPricing = 0.15; // 15% pricing uplift
@@ -250,6 +163,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to calculate revenue impact" });
     }
+  });
+
+  // Error handling middleware
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error("API Error:", err);
+    
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    
+    res.status(status).json({ 
+      error: message,
+      timestamp: new Date().toISOString(),
+      path: req.path,
+    });
   });
 
   const httpServer = createServer(app);
