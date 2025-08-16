@@ -46,6 +46,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password, subdomain } = req.body;
       
+      console.log("Demo login attempt:", { email, password, subdomain });
+      
       // For demo purposes, accept any subdomain and check for demo user
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required" });
@@ -55,6 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isDemo = email === "demo@example.com" || email === "demo";
       
       if (isDemo && password === "demo") {
+        console.log("Demo login successful");
         // Return success for demo login
         res.json({
           publisher: {
@@ -72,6 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           token: "demo-token-123"
         });
       } else {
+        console.log("Demo login failed - invalid credentials");
         res.status(401).json({ error: "Invalid credentials" });
       }
     } catch (error) {
@@ -80,8 +84,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register all route modules AFTER demo login
-  registerMultiTenantRoutes(app);
+  // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
+  // registerMultiTenantRoutes(app);
   registerIntegrationRoutes(app);
   registerEmailRoutes(app);
   app.use("/api/ai", aiProcessingRoutes);
