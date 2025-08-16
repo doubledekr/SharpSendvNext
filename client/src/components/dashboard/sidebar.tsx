@@ -13,7 +13,11 @@ import {
   HelpCircle,
   Code,
   FileText,
-  Database
+  Database,
+  LogOut,
+  CreditCard,
+  UserCircle,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -29,11 +33,17 @@ const navigationItems = [
   { id: 'personalization', label: 'Personalization', icon: Wand2 },
   { id: 'campaigns', label: 'Campaign Projects', icon: Settings, isExternal: true, path: '/campaigns' },
   { id: 'internal', label: 'Internal System', icon: Database, isExternal: true, path: '/internal' },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'analytics', label: 'Analytics & Insights', icon: BarChart3 },
   { id: 'abtesting', label: 'A/B Testing', icon: FlaskConical },
   { id: 'revenue', label: 'Revenue Impact', icon: DollarSign },
   { id: 'email', label: 'Email Integration', icon: Mail },
   { id: 'advanced', label: 'Advanced Features', icon: Settings },
+];
+
+const analyticsSubmenu = [
+  { id: 'cohort-analytics', label: 'Cohort Analytics', icon: TrendingUp, path: '/analytics' },
+  { id: 'comparative', label: 'Comparative Analysis', icon: BarChart3, path: '/comparative-analytics' },
+  { id: 'intelligence', label: 'SharpSend Intelligence', icon: Brain, path: '/intelligence' },
 ];
 
 const emailIntegrationItems = [
@@ -80,6 +90,45 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                   <span>{item.label}</span>
                 </Button>
               </Link>
+            );
+          }
+
+          if (item.id === 'analytics') {
+            return (
+              <div key={item.id}>
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive 
+                      ? 'bg-brand-blue text-white hover:bg-brand-blue' 
+                      : 'text-slate-300 hover:bg-slate-700'
+                  }`}
+                  onClick={() => onTabChange(item.id)}
+                  data-testid={`button-tab-${item.id}`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Button>
+                {/* Analytics Submenu */}
+                {isActive && (
+                  <div className="ml-4 mt-2 space-y-1">
+                    {analyticsSubmenu.map((subItem) => {
+                      const SubIcon = subItem.icon;
+                      return (
+                        <Link key={subItem.id} href={subItem.path}>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start space-x-2 px-3 py-2 text-sm rounded-lg transition-colors text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+                          >
+                            <SubIcon className="h-4 w-4" />
+                            <span className="flex-1">{subItem.label}</span>
+                          </Button>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           }
 
@@ -176,17 +225,45 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         </div>
       </div>
 
-      {/* User Profile */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-dark-border bg-dark-surface">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-brand-blue rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold">PW</span>
+      {/* User Profile Section */}
+      <div className="absolute bottom-0 left-0 right-0 border-t border-dark-border bg-dark-surface">
+        <Link href="/profile">
+          <div className="p-4 hover:bg-slate-800 transition-colors cursor-pointer">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold">JD</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-white">John Doe</p>
+                <p className="text-xs text-slate-400">Enterprise Plan</p>
+              </div>
+              <UserCircle className="h-4 w-4 text-slate-400" />
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-white">SharpSend Demo</p>
-            <p className="text-xs text-slate-400">Enterprise Plan</p>
-          </div>
-          <User className="h-4 w-4 text-slate-400" />
+        </Link>
+        
+        <div className="px-4 pb-3 space-y-1">
+          <Link href="/profile?tab=subscription">
+            <Button
+              variant="ghost"
+              className="w-full justify-start space-x-2 px-3 py-2 text-sm rounded-lg transition-colors text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+            >
+              <CreditCard className="h-4 w-4" />
+              <span>Subscription & Billing</span>
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            className="w-full justify-start space-x-2 px-3 py-2 text-sm rounded-lg transition-colors text-slate-400 hover:bg-red-900/20 hover:text-red-400"
+            onClick={() => {
+              // Handle logout
+              localStorage.clear();
+              window.location.href = '/login';
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
+          </Button>
         </div>
       </div>
     </div>

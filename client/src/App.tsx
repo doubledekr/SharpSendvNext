@@ -18,6 +18,8 @@ import { AssignmentPortal } from "@/pages/AssignmentPortal";
 import EmailPlatformDashboard from "@/pages/email-platform-dashboard";
 import InternalDashboard from "@/pages/internal-dashboard";
 import Documentation from "@/pages/documentation";
+import Profile from "@/pages/profile";
+import ComparativeAnalytics from "@/pages/comparative-analytics";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -67,6 +69,8 @@ function Router() {
       <Route path="/email-platforms" component={() => <ProtectedRoute component={EmailPlatformDashboard} />} />
       <Route path="/internal" component={() => <ProtectedRoute component={InternalDashboard} />} />
       <Route path="/documentation" component={() => <ProtectedRoute component={Documentation} />} />
+      <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
+      <Route path="/comparative-analytics" component={() => <ProtectedRoute component={ComparativeAnalytics} />} />
       <Route path="/campaigns" component={CampaignManagement} />
       <Route path="/assignment/:token" component={AssignmentPortal} />
       <Route component={NotFound} />
