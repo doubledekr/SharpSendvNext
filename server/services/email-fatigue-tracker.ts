@@ -201,7 +201,7 @@ export class EmailFatigueTracker {
           timeframe: 'daily',
           severity: avgDaily >= this.defaultThresholds.dailyLimit ? 'critical' : 'warning',
           affectedSubscribers: stats.subscribers.size,
-          recommendation: `${segmentName} segment averaging ${avgDaily.toFixed(1)} emails/day. Consider spreading sends.`
+          recommendation: `${segmentName} segment averaging ${this.formatFrequencyRange(avgDaily)} emails/day. Consider spreading sends.`
         });
       }
     });
@@ -220,7 +220,7 @@ export class EmailFatigueTracker {
           timeframe: 'weekly',
           severity: avgWeekly >= this.defaultThresholds.weeklyLimit ? 'critical' : 'warning',
           affectedSubscribers: stats.subscribers.size,
-          recommendation: `${cohortName} cohort at ${avgWeekly.toFixed(1)} emails/week. Reduce frequency.`
+          recommendation: `${cohortName} cohort at ${this.formatFrequencyRange(avgWeekly)} emails/week. Reduce frequency.`
         });
       }
     });
@@ -328,6 +328,25 @@ export class EmailFatigueTracker {
         cohStats.weekly++;
       }
     }
+  }
+  
+  /**
+   * Format frequency as a range
+   */
+  private formatFrequencyRange(avg: number): string {
+    if (avg === 0) return "0";
+    if (avg < 1) return "<1";
+    
+    const floor = Math.floor(avg);
+    const ceil = Math.ceil(avg);
+    
+    // If it's a whole number, just show that
+    if (floor === ceil) {
+      return floor.toString();
+    }
+    
+    // Otherwise show as a range
+    return `${floor}-${ceil}`;
   }
   
   /**

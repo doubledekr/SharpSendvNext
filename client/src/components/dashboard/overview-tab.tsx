@@ -85,6 +85,23 @@ interface FatigueStats {
   recommendations: string[];
 }
 
+// Helper function to format email frequency as a range
+function formatEmailFrequency(avg: number): string {
+  if (avg === 0) return "0";
+  if (avg < 1) return "<1";
+  
+  const floor = Math.floor(avg);
+  const ceil = Math.ceil(avg);
+  
+  // If it's a whole number, just show that
+  if (floor === ceil) {
+    return floor.toString();
+  }
+  
+  // Otherwise show as a range
+  return `${floor}-${ceil}`;
+}
+
 export default function OverviewTab() {
   // Use demo data that matches the header values
   const analytics = {
@@ -572,10 +589,10 @@ export default function OverviewTab() {
                         </div>
                         <div className="flex gap-3 text-xs">
                           <Badge className={segment.avgDaily >= 2.5 ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}>
-                            {segment.avgDaily.toFixed(1)}/day
+                            {formatEmailFrequency(segment.avgDaily)}/day
                           </Badge>
                           <Badge className={segment.avgWeekly >= 8 ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"}>
-                            {segment.avgWeekly.toFixed(1)}/week
+                            {formatEmailFrequency(segment.avgWeekly)}/week
                           </Badge>
                         </div>
                       </div>
