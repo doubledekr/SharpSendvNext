@@ -7,6 +7,7 @@ import { aiProcessingRoutes } from "./routes-ai-processing";
 import { cohortPersonalizationRoutes } from "./routes-cohort-personalization";
 import { emailOptimizationRoutes } from "./routes-email-optimization";
 import { brevoIntegrationRoutes } from "./routes-brevo-integration";
+import { contentManagementRoutes } from "./routes-content-management";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -93,6 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/cohorts", cohortPersonalizationRoutes);
   app.use("/api/email-optimization", emailOptimizationRoutes);
   app.use("/api/brevo", brevoIntegrationRoutes);
+  app.use("/api/content", contentManagementRoutes);
 
   // Legacy routes for backward compatibility (these will be deprecated)
   

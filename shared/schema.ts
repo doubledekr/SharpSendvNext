@@ -75,6 +75,85 @@ export const analytics = pgTable("analytics", {
   revenueGrowth: decimal("revenue_growth", { precision: 5, scale: 2 }).default("0"),
 });
 
+// Content Request System for Editorial Dashboard
+export const contentRequests = pgTable("content_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("draft"), // draft, review, approved, in_progress, completed, cancelled
+  priority: text("priority").notNull().default("medium"), // low, medium, high, urgent
+  contentType: text("content_type").notNull(), // newsletter, email, article, campaign
+  dueDate: timestamp("due_date"),
+  assigneeId: varchar("assignee_id"),
+  requestorId: varchar("requestor_id").notNull(),
+  publisherId: varchar("publisher_id").notNull(),
+  targetCohorts: text("target_cohorts").array(),
+  marketTriggers: text("market_triggers").array(),
+  estimatedReach: integer("estimated_reach").default(0),
+  content: text("content"), // Draft content
+  aiProcessed: boolean("ai_processed").default(false),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Content Drafts for Copywriter Portal
+export const contentDrafts = pgTable("content_drafts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contentRequestId: varchar("content_request_id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  version: integer("version").default(1),
+  status: text("status").notNull().default("draft"), // draft, submitted, approved, rejected
+  authorId: varchar("author_id").notNull(),
+  publisherId: varchar("publisher_id").notNull(),
+  wordCount: integer("word_count"),
+  aiAssistanceUsed: boolean("ai_assistance_used").default(false),
+  feedback: text("feedback"),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email Campaigns for Preview & Processing
+export const emailCampaigns = pgTable("email_campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contentRequestId: varchar("content_request_id"),
+  title: text("title").notNull(),
+  baseSubject: text("base_subject").notNull(),
+  baseContent: text("base_content").notNull(),
+  status: text("status").notNull().default("draft"), // draft, pending_approval, approved, scheduled, sent
+  targetCohorts: text("target_cohorts").array(),
+  marketTriggers: text("market_triggers").array(),
+  publisherId: varchar("publisher_id").notNull(),
+  createdBy: varchar("created_by").notNull(),
+  scheduledAt: timestamp("scheduled_at"),
+  sentAt: timestamp("sent_at"),
+  variations: jsonb("variations").$type<{
+    cohortId: string;
+    cohortName: string;
+    subscriberCount: number;
+    personalizedSubject: string;
+    personalizedContent: string;
+    personalizedCTA: string;
+    predictedOpenRate: number;
+    predictedClickRate: number;
+    optimalSendTime: string;
+    reasoning: string;
+    approved: boolean;
+  }[]>(),
+  performanceMetrics: jsonb("performance_metrics").$type<{
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    bounced: number;
+    unsubscribed: number;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -116,6 +195,54 @@ export const insertEmailIntegrationSchema = createInsertSchema(emailIntegrations
   status: true,
 });
 
+export const insertContentRequestSchema = createInsertSchema(contentRequests).pick({
+  title: true,
+  description: true,
+  status: true,
+  priority: true,
+  contentType: true,
+  dueDate: true,
+  assigneeId: true,
+  requestorId: true,
+  publisherId: true,
+  targetCohorts: true,
+  marketTriggers: true,
+  estimatedReach: true,
+  content: true,
+  aiProcessed: true,
+  metadata: true,
+});
+
+export const insertContentDraftSchema = createInsertSchema(contentDrafts).pick({
+  contentRequestId: true,
+  title: true,
+  content: true,
+  version: true,
+  status: true,
+  authorId: true,
+  publisherId: true,
+  wordCount: true,
+  aiAssistanceUsed: true,
+  feedback: true,
+  metadata: true,
+});
+
+export const insertEmailCampaignSchema = createInsertSchema(emailCampaigns).pick({
+  contentRequestId: true,
+  title: true,
+  baseSubject: true,
+  baseContent: true,
+  status: true,
+  targetCohorts: true,
+  marketTriggers: true,
+  publisherId: true,
+  createdBy: true,
+  scheduledAt: true,
+  sentAt: true,
+  variations: true,
+  performanceMetrics: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -133,3 +260,12 @@ export type InsertEmailIntegration = z.infer<typeof insertEmailIntegrationSchema
 export type EmailIntegration = typeof emailIntegrations.$inferSelect;
 
 export type Analytics = typeof analytics.$inferSelect;
+
+export type InsertContentRequest = z.infer<typeof insertContentRequestSchema>;
+export type ContentRequest = typeof contentRequests.$inferSelect;
+
+export type InsertContentDraft = z.infer<typeof insertContentDraftSchema>;
+export type ContentDraft = typeof contentDrafts.$inferSelect;
+
+export type InsertEmailCampaign = z.infer<typeof insertEmailCampaignSchema>;
+export type EmailCampaign = typeof emailCampaigns.$inferSelect;

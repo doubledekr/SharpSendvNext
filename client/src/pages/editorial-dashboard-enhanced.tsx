@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import NewContentRequestForm from "@/components/new-content-request-form";
 import { 
   FileText, 
   Clock, 
@@ -19,29 +21,53 @@ import "../styles/dashboard-improvements.css";
 
 export default function EditorialDashboard() {
   const [activeTab, setActiveTab] = useState("requests");
+  const [showNewRequestForm, setShowNewRequestForm] = useState(false);
+
+  // Fetch content requests from API
+  const { data: contentRequestsData } = useQuery({
+    queryKey: ['/api/content/content-requests'],
+    queryFn: async () => {
+      const response = await fetch('/api/content/content-requests');
+      if (!response.ok) throw new Error('Failed to fetch content requests');
+      return response.json();
+    },
+  });
+
+  // Fetch dashboard stats
+  const { data: dashboardStats } = useQuery({
+    queryKey: ['/api/content/dashboard/stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/content/dashboard/stats');
+      if (!response.ok) throw new Error('Failed to fetch dashboard stats');
+      return response.json();
+    },
+  });
+
+  const apiContentRequests = contentRequestsData?.data || [];
+  const stats = dashboardStats?.data || {};
 
   const metrics = [
     {
       title: "Active Requests",
-      value: "12",
+      value: stats.totalRequests?.toString() || "0",
       icon: FileText,
       color: "#3b82f6"
     },
     {
       title: "Pending Review",
-      value: "3",
+      value: stats.pendingReview?.toString() || "0", 
       icon: Clock,
       color: "#f59e0b"
     },
     {
       title: "Total Reach",
-      value: "57.3K",
+      value: stats.totalReach ? `${(stats.totalReach / 1000).toFixed(1)}K` : "0",
       icon: Users,
       color: "#10b981"
     },
     {
-      title: "Avg Engagement",
-      value: "84%",
+      title: "In Progress",
+      value: stats.inProgress?.toString() || "0",
       icon: TrendingUp,
       color: "#8b5cf6"
     }
@@ -181,7 +207,11 @@ export default function EditorialDashboard() {
           {/* New Request Button */}
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold text-white">Content Requests</h2>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            <button 
+              onClick={() => setShowNewRequestForm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              data-testid="button-new-request"
+            >
               <Plus className="w-4 h-4" />
               New Request
             </button>
@@ -189,7 +219,7 @@ export default function EditorialDashboard() {
 
           {/* Content Request Cards */}
           <div className="space-y-4">
-            {contentRequests.map((request) => (
+            {(apiContentRequests.length > 0 ? apiContentRequests : contentRequests).map((request) => (
               <div key={request.id} className="chart-card-enhanced">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -207,11 +237,11 @@ export default function EditorialDashboard() {
                     <div className="flex items-center gap-6 text-sm text-slate-500">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        <span>Due: {request.dueDate}</span>
+                        <span>Due: {request.dueDate || 'No deadline'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
-                        <span>Reach: {request.reach.toLocaleString()}</span>
+                        <span>Reach: {(request.reach || request.estimatedReach || 0).toLocaleString()}</span>
                       </div>
                       {request.assignee && (
                         <div className="flex items-center gap-1">
@@ -221,11 +251,11 @@ export default function EditorialDashboard() {
                       )}
                     </div>
 
-                    {request.marketTriggers.length > 0 && (
+                    {(request.marketTriggers || []).length > 0 && (
                       <div className="mt-4">
                         <p className="text-sm text-slate-400 mb-2">Market Triggers:</p>
                         <div className="flex flex-wrap gap-2">
-                          {request.marketTriggers.map((trigger, index) => (
+                          {(request.marketTriggers || []).map((trigger, index) => (
                             <span key={index} className="px-2 py-1 bg-slate-700/50 text-slate-300 rounded text-xs">
                               {trigger}
                             </span>
@@ -265,6 +295,14 @@ export default function EditorialDashboard() {
             <p className="text-slate-400">Content for this section is coming soon.</p>
           </div>
         </div>
+      )}
+
+      {/* New Content Request Form Modal */}
+      {showNewRequestForm && (
+        <NewContentRequestForm
+          onClose={() => setShowNewRequestForm(false)}
+          onSuccess={() => setShowNewRequestForm(false)}
+        />
       )}
     </div>
   );
