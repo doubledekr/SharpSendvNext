@@ -53,10 +53,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email and password are required" });
       }
       
-      // Check if this is the demo user (we'll check by username "demo" or email "demo@example.com")
-      const isDemo = email === "demo@example.com" || email === "demo";
+      // Check if this is the demo user - accept multiple demo email formats and passwords
+      const isDemoEmail = email === "demo@example.com" || email === "demo" || email === "demo@sharpsend.com";
+      const isDemoPassword = password === "demo" || password === "demo123";
       
-      if (isDemo && password === "demo") {
+      if (isDemoEmail && isDemoPassword) {
         console.log("Demo login successful");
         // Return success for demo login
         res.json({
