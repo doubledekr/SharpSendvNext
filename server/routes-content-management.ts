@@ -5,11 +5,15 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { CohortDetectionService } from './services/cohort-detection';
 import { EmailSharpeningService } from './services/email-sharpening';
 import { MarketIntelligenceService } from './services/market-intelligence';
+import { PublisherIntelligenceService } from './services/publisher-intelligence';
+import { MarketAlertService } from './services/market-alerts';
 
 const router = Router();
 const cohortDetectionService = new CohortDetectionService();
 const emailSharpeningService = new EmailSharpeningService();
 const marketIntelligenceService = new MarketIntelligenceService();
+const publisherIntelligenceService = new PublisherIntelligenceService();
+const marketAlertService = new MarketAlertService();
 
 /**
  * Create a new content request
@@ -617,4 +621,152 @@ router.get('/market/content-recommendations', async (req, res) => {
   }
 });
 
-export { router as contentManagementRoutes };
+/**
+ * Get publisher intelligence dashboard
+ */
+router.get('/publisher/dashboard', async (req, res) => {
+  try {
+    const publisherId = 'demo-publisher';
+    const dashboardData = await publisherIntelligenceService.getPublisherDashboardData(publisherId);
+    
+    res.json({
+      success: true,
+      data: dashboardData,
+      message: 'Publisher dashboard data retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching publisher dashboard:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch dashboard data'
+    });
+  }
+});
+
+/**
+ * Get market insights and content opportunities
+ */
+router.get('/publisher/insights', async (req, res) => {
+  try {
+    const publisherId = 'demo-publisher';
+    const insights = await publisherIntelligenceService.generatePublisherInsights(publisherId);
+    
+    res.json({
+      success: true,
+      data: insights,
+      message: 'Publisher insights generated successfully'
+    });
+  } catch (error) {
+    console.error('Error generating publisher insights:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate insights'
+    });
+  }
+});
+
+/**
+ * Enhance email content with real market data
+ */
+router.post('/email/enhance', async (req, res) => {
+  try {
+    const { content, symbols = [], autoDetectSymbols = true } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({
+        success: false,
+        error: 'Content is required'
+      });
+    }
+
+    const enhancement = await publisherIntelligenceService.enhanceEmailContent(
+      content,
+      symbols,
+      autoDetectSymbols
+    );
+    
+    res.json({
+      success: true,
+      data: enhancement,
+      message: 'Email content enhanced with real market data'
+    });
+  } catch (error) {
+    console.error('Error enhancing email content:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to enhance email content'
+    });
+  }
+});
+
+/**
+ * Get real-time market events
+ */
+router.get('/market/events', async (req, res) => {
+  try {
+    const { categories } = req.query;
+    const categoriesArray = categories ? (categories as string).split(',') : undefined;
+    
+    const events = await marketAlertService.getMarketEvents(categoriesArray);
+    
+    res.json({
+      success: true,
+      data: events,
+      message: 'Market events retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching market events:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch market events'
+    });
+  }
+});
+
+/**
+ * Get sector performance data
+ */
+router.get('/market/sectors', async (req, res) => {
+  try {
+    const sectorPerformance = await marketAlertService.getSectorPerformance();
+    
+    res.json({
+      success: true,
+      data: sectorPerformance,
+      message: 'Sector performance data retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching sector performance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch sector performance'
+    });
+  }
+});
+
+/**
+ * Check market alerts for publisher
+ */
+router.get('/market/alerts', async (req, res) => {
+  try {
+    const publisherId = 'demo-publisher';
+    const alerts = await marketAlertService.checkMarketAlerts(publisherId);
+    
+    res.json({
+      success: true,
+      data: alerts,
+      message: 'Market alerts checked successfully'
+    });
+  } catch (error) {
+    console.error('Error checking market alerts:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check market alerts'
+    });
+  }
+});
+
+export { router as contentRouter };
+export function contentManagementRoutes(app: any) {
+  app.use('/api/content', router);
+}
