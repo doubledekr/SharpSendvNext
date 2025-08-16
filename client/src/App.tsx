@@ -13,6 +13,8 @@ import CopywriterPortal from "@/pages/copywriter-portal-enhanced";
 import EmailPreviewApproval from "@/pages/email-preview-approval-enhanced";
 import CohortAnalytics from "@/pages/cohort-analytics-enhanced";
 import NotFound from "@/pages/not-found";
+import { CampaignManagement } from "@/pages/CampaignManagement";
+import { AssignmentPortal } from "@/pages/AssignmentPortal";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -59,6 +61,8 @@ function Router() {
       <Route path="/email-preview" component={() => <ProtectedRoute component={EmailPreviewApproval} />} />
       <Route path="/analytics" component={() => <ProtectedRoute component={CohortAnalytics} />} />
       <Route path="/intelligence" component={() => <ProtectedRoute component={SharpSendIntelligence} />} />
+      <Route path="/campaigns" component={CampaignManagement} />
+      <Route path="/assignment/:token" component={AssignmentPortal} />
       <Route component={NotFound} />
     </Switch>
   );

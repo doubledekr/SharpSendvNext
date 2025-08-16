@@ -269,3 +269,145 @@ export type ContentDraft = typeof contentDrafts.$inferSelect;
 
 export type InsertEmailCampaign = z.infer<typeof insertEmailCampaignSchema>;
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
+
+// Campaign Projects Table
+export const campaignProjects = pgTable("campaign_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("draft"), // draft, in_progress, review, approved, scheduled, sent, cancelled
+  targetAudience: jsonb("target_audience").$type<{
+    cohorts: string[];
+    estimatedReach: number;
+    segmentCriteria: Record<string, any>;
+  }>(),
+  timeline: jsonb("timeline").$type<{
+    dueDate: string;
+    publishDate: string;
+    milestones: Array<{ name: string; date: string; completed: boolean }>;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdBy: varchar("created_by").notNull(),
+});
+
+// Email Assignments Table
+export const emailAssignments = pgTable("email_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  campaignProjectId: varchar("campaign_project_id").notNull(),
+  uniqueToken: varchar("unique_token").notNull().unique(),
+  assigneeEmail: text("assignee_email").notNull(),
+  assigneeName: text("assignee_name"),
+  assignmentType: text("assignment_type").notNull(), // email_content, subject_line, email_design, content_review, fact_check
+  status: text("status").notNull().default("pending"), // pending, in_progress, submitted, approved, revision_requested, completed
+  briefing: jsonb("briefing").$type<{
+    instructions: string;
+    targetCohort: string;
+    keyPoints: string[];
+    tone: string;
+    requirements: Record<string, any>;
+  }>(),
+  submittedContent: jsonb("submitted_content").$type<{
+    subject: string;
+    content: string;
+    metadata: Record<string, any>;
+    submittedAt: string;
+  }>(),
+  feedback: jsonb("feedback").$type<{
+    comments: string;
+    approved: boolean;
+    revisionRequests: string[];
+    reviewedBy: string;
+    reviewedAt: string;
+  }>(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Assignment Links Table (for tracking unique URLs)
+export const assignmentLinks = pgTable("assignment_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  assignmentId: varchar("assignment_id").notNull(),
+  token: varchar("token").notNull().unique(),
+  accessCount: integer("access_count").default(0),
+  lastAccessedAt: timestamp("last_accessed_at"),
+  ipAddresses: jsonb("ip_addresses").$type<string[]>().default([]),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Campaign Collaborators Table
+export const campaignCollaborators = pgTable("campaign_collaborators", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  campaignProjectId: varchar("campaign_project_id").notNull(),
+  collaboratorEmail: text("collaborator_email").notNull(),
+  collaboratorName: text("collaborator_name"),
+  role: text("role").notNull(), // copywriter, editor, designer, reviewer, project_manager
+  permissions: jsonb("permissions").$type<{
+    canEdit: boolean;
+    canReview: boolean;
+    canApprove: boolean;
+    canAssign: boolean;
+  }>(),
+  invitedAt: timestamp("invited_at").defaultNow(),
+  joinedAt: timestamp("joined_at"),
+  status: text("status").default("invited"), // invited, active, inactive
+});
+
+// Schema validators for the new tables
+export const insertCampaignProjectSchema = createInsertSchema(campaignProjects).pick({
+  publisherId: true,
+  name: true,
+  description: true,
+  status: true,
+  targetAudience: true,
+  timeline: true,
+  createdBy: true,
+});
+
+export const insertEmailAssignmentSchema = createInsertSchema(emailAssignments).pick({
+  campaignProjectId: true,
+  uniqueToken: true,
+  assigneeEmail: true,
+  assigneeName: true,
+  assignmentType: true,
+  status: true,
+  briefing: true,
+  submittedContent: true,
+  feedback: true,
+  expiresAt: true,
+});
+
+export const insertAssignmentLinkSchema = createInsertSchema(assignmentLinks).pick({
+  assignmentId: true,
+  token: true,
+  accessCount: true,
+  lastAccessedAt: true,
+  ipAddresses: true,
+  isActive: true,
+});
+
+export const insertCampaignCollaboratorSchema = createInsertSchema(campaignCollaborators).pick({
+  campaignProjectId: true,
+  collaboratorEmail: true,
+  collaboratorName: true,
+  role: true,
+  permissions: true,
+  joinedAt: true,
+  status: true,
+});
+
+// Types for the new tables
+export type InsertCampaignProject = z.infer<typeof insertCampaignProjectSchema>;
+export type CampaignProject = typeof campaignProjects.$inferSelect;
+
+export type InsertEmailAssignment = z.infer<typeof insertEmailAssignmentSchema>;
+export type EmailAssignment = typeof emailAssignments.$inferSelect;
+
+export type InsertAssignmentLink = z.infer<typeof insertAssignmentLinkSchema>;
+export type AssignmentLink = typeof assignmentLinks.$inferSelect;
+
+export type InsertCampaignCollaborator = z.infer<typeof insertCampaignCollaboratorSchema>;
+export type CampaignCollaborator = typeof campaignCollaborators.$inferSelect;

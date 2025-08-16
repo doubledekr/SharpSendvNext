@@ -10,6 +10,7 @@ import {
   Settings 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 interface SidebarProps {
   activeTab: string;
@@ -20,6 +21,7 @@ const navigationItems = [
   { id: 'overview', label: 'Overview', icon: ChartLine },
   { id: 'subscribers', label: 'Subscribers', icon: Users },
   { id: 'personalization', label: 'Personalization', icon: Wand2 },
+  { id: 'campaigns', label: 'Campaign Projects', icon: Settings, isExternal: true },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'abtesting', label: 'A/B Testing', icon: FlaskConical },
   { id: 'revenue', label: 'Revenue Impact', icon: DollarSign },
@@ -49,6 +51,21 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           
+          if ((item as any).isExternal) {
+            return (
+              <Link key={item.id} href="/campaigns">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start space-x-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-700"
+                  data-testid={`button-tab-${item.id}`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Button>
+              </Link>
+            );
+          }
+
           return (
             <Button
               key={item.id}
