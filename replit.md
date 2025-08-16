@@ -17,6 +17,26 @@ B2B SaaS pricing with high-margin credit system:
 
 ## Recent Changes
 
+**August 16, 2025 - Market Sentiment Integration & Events Feed**
+- **Market Sentiment Always On by Default: COMPLETED**
+  - ✅ Market sentiment analysis now automatically included in all email generation
+  - ✅ VIX-based sentiment (Low VIX = Bullish, High VIX = Bearish) prominently displayed
+  - ✅ Real-time market conditions feed into email tone and content
+  - ✅ AI automatically adjusts messaging based on current market mood
+  
+- **Market Events News Feed Dashboard: COMPLETED**
+  - ✅ Live market events feed showing email opportunities
+  - ✅ Automatic assignment generation suggestions based on market triggers
+  - ✅ Priority levels for urgent market responses
+  - ✅ Direct connections between events and email campaigns
+  - ✅ One-click email generation and assignment creation
+  
+- **Enhanced Email Personalization: COMPLETED**
+  - ✅ All email generation now considers current VIX levels
+  - ✅ Market context automatically fetched if not provided
+  - ✅ Sector performance integrated into content suggestions
+  - ✅ Dynamic tone adjustment based on market volatility
+
 **August 16, 2025 - Complete Platform Enhancement with Internal Dashboard**
 - **Navigation & Organization Updates: COMPLETED**
   - ✅ Added Internal System dashboard to sidebar navigation  

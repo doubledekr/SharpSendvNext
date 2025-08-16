@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Users, 
   TrendingUp, 
@@ -8,9 +8,63 @@ import {
   Target, 
   PieChart,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Activity,
+  TrendingDown,
+  AlertCircle,
+  Newspaper,
+  Clock,
+  Send,
+  FileEdit,
+  Zap,
+  AlertTriangle
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import "../../styles/dashboard-improvements.css";
+
+interface MarketSentimentData {
+  sentiment: 'bullish' | 'bearish' | 'neutral';
+  vixLevel: number;
+  sentimentDescription: string;
+  sentimentColor: string;
+  sentimentAdvice: string;
+  marketCondition: string;
+  topSectors: Array<{ sector: string; performance: number }>;
+  timestamp: string;
+}
+
+interface MarketEvent {
+  id: string;
+  type: 'alert' | 'opportunity' | 'bullish' | 'bearish' | 'news';
+  priority: 'high' | 'medium' | 'low';
+  timestamp: string;
+  title: string;
+  description: string;
+  emailOpportunity: {
+    suggested: boolean;
+    template: string;
+    segments: string[];
+    urgency: string;
+    content: string;
+  };
+  assignment: {
+    needed: boolean;
+    type: string;
+    deadline: string;
+    focus: string;
+  };
+}
+
+interface MarketEventsFeed {
+  events: MarketEvent[];
+  marketSentiment: string;
+  totalOpportunities: number;
+  urgentAssignments: number;
+  lastUpdated: string;
+}
 
 export default function OverviewTab() {
   // Use demo data that matches the header values
@@ -19,6 +73,50 @@ export default function OverviewTab() {
     engagementRate: 74.2,
     monthlyRevenue: 89450,
     churnRate: 2.8
+  };
+
+  // Market sentiment state
+  const [marketSentiment, setMarketSentiment] = useState<MarketSentimentData | null>(null);
+  const [loadingMarket, setLoadingMarket] = useState(true);
+  const [marketEvents, setMarketEvents] = useState<MarketEventsFeed | null>(null);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  // Fetch market data on component mount
+  useEffect(() => {
+    fetchMarketData();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchMarketData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchMarketData = async () => {
+    // Fetch both sentiment and events in parallel
+    const [sentimentResponse, eventsResponse] = await Promise.all([
+      fetch('/api/market-sentiment').catch(() => null),
+      fetch('/api/market-events-feed').catch(() => null)
+    ]);
+    
+    if (sentimentResponse) {
+      try {
+        const data = await sentimentResponse.json();
+        setMarketSentiment(data);
+        setLoadingMarket(false);
+      } catch (error) {
+        console.error('Error parsing market sentiment:', error);
+        setLoadingMarket(false);
+      }
+    }
+    
+    if (eventsResponse) {
+      try {
+        const data = await eventsResponse.json();
+        setMarketEvents(data);
+        setLoadingEvents(false);
+      } catch (error) {
+        console.error('Error parsing market events:', error);
+        setLoadingEvents(false);
+      }
+    }
   };
 
   const metrics = [
@@ -56,12 +154,307 @@ export default function OverviewTab() {
     }
   ];
 
+  const getSentimentIcon = () => {
+    if (!marketSentiment) return Activity;
+    switch (marketSentiment.sentiment) {
+      case 'bullish': return TrendingUp;
+      case 'bearish': return TrendingDown;
+      default: return Activity;
+    }
+  };
+
+  const getSentimentColor = () => {
+    if (!marketSentiment) return "gray";
+    switch (marketSentiment.sentimentColor) {
+      case 'green': return "text-green-500 bg-green-500/10 border-green-500/30";
+      case 'red': return "text-red-500 bg-red-500/10 border-red-500/30";
+      case 'yellow': return "text-yellow-500 bg-yellow-500/10 border-yellow-500/30";
+      default: return "text-gray-500 bg-gray-500/10 border-gray-500/30";
+    }
+  };
+
   return (
     <div className="dashboard-container p-6">
       {/* Header */}
       <div className="mb-8">
         <h1 className="dashboard-title">Dashboard Overview</h1>
         <p className="dashboard-subtitle">AI-powered newsletter personalization insights</p>
+      </div>
+
+      {/* Market Intelligence Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Market Sentiment Card */}
+        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Market Sentiment Analysis
+              </CardTitle>
+              <Badge className={getSentimentColor()}>
+                {loadingMarket ? "Loading..." : marketSentiment?.sentiment?.toUpperCase() || "NEUTRAL"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingMarket ? (
+              <div className="animate-pulse">
+                <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+              </div>
+            ) : marketSentiment ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="text-2xl font-bold text-white">
+                        VIX: {marketSentiment.vixLevel?.toFixed(1) || "N/A"}
+                      </div>
+                      <div className={`flex items-center gap-1 ${
+                        marketSentiment.sentiment === 'bullish' ? 'text-green-400' :
+                        marketSentiment.sentiment === 'bearish' ? 'text-red-400' :
+                        'text-yellow-400'
+                      }`}>
+                        {getSentimentIcon() && React.createElement(getSentimentIcon(), { className: "w-5 h-5" })}
+                        <span className="font-semibold">{marketSentiment.sentimentDescription}</span>
+                      </div>
+                    </div>
+                    <p className="text-slate-300 text-sm">{marketSentiment.marketCondition}</p>
+                  </div>
+                </div>
+                
+                <div className="border-t border-slate-700 pt-3">
+                  <p className="text-sm font-semibold text-slate-400 mb-1">AI Email Guidance:</p>
+                  <p className="text-white">{marketSentiment.sentimentAdvice}</p>
+                </div>
+
+                {marketSentiment.topSectors && marketSentiment.topSectors.length > 0 && (
+                  <div className="border-t border-slate-700 pt-3">
+                    <p className="text-sm font-semibold text-slate-400 mb-2">Top Performing Sectors:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {marketSentiment.topSectors.map((sector, idx) => (
+                        <Badge key={idx} variant="secondary" className="bg-slate-700 text-slate-200">
+                          {sector.sector}: {sector.performance > 0 ? '+' : ''}{sector.performance}%
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons for Market Sentiment */}
+                <div className="border-t border-slate-700 pt-3 flex gap-2">
+                  <Button 
+                    size="sm" 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={async () => {
+                      // Generate email based on current market sentiment
+                      const template = marketSentiment.vixLevel > 25 ? 
+                        'Market Volatility Alert' : 
+                        marketSentiment.vixLevel < 16 ? 
+                        'Growth Opportunities Update' : 
+                        'Market Conditions Update';
+                      
+                      try {
+                        const response = await fetch('/api/generate-email', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                          },
+                          body: JSON.stringify({
+                            template,
+                            marketContext: {
+                              sentiment: marketSentiment.sentiment,
+                              vixLevel: marketSentiment.vixLevel,
+                              description: marketSentiment.sentimentDescription,
+                              advice: marketSentiment.sentimentAdvice
+                            },
+                            urgency: marketSentiment.vixLevel > 25 ? 'immediate' : 'standard'
+                          })
+                        });
+                        
+                        if (response.ok) {
+                          const result = await response.json();
+                          console.log('Email generated:', result);
+                          // Could navigate to email preview or show success message
+                        }
+                      } catch (error) {
+                        console.error('Error generating email:', error);
+                      }
+                    }}
+                  >
+                    <Zap className="w-3 h-3 mr-1" />
+                    Generate Email
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={async () => {
+                      // Create assignment based on market sentiment
+                      const urgency = marketSentiment.vixLevel > 25 ? 'urgent' : 'standard';
+                      const focus = marketSentiment.vixLevel > 25 ? 
+                        'Risk management and capital preservation' : 
+                        marketSentiment.vixLevel < 16 ? 
+                        'Growth opportunities and new positions' : 
+                        'Balanced market analysis';
+                      
+                      try {
+                        const response = await fetch('/api/assignments/create', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                          },
+                          body: JSON.stringify({
+                            title: `Market ${marketSentiment.sentiment} - ${new Date().toLocaleDateString()}`,
+                            urgency,
+                            focus,
+                            deadline: urgency === 'urgent' ? '2 hours' : '24 hours',
+                            marketContext: {
+                              sentiment: marketSentiment.sentiment,
+                              vixLevel: marketSentiment.vixLevel,
+                              topSectors: marketSentiment.topSectors
+                            }
+                          })
+                        });
+                        
+                        if (response.ok) {
+                          const result = await response.json();
+                          console.log('Assignment created:', result);
+                          // Could show success message or navigate to assignment
+                        }
+                      } catch (error) {
+                        console.error('Error creating assignment:', error);
+                      }
+                    }}
+                  >
+                    <FileEdit className="w-3 h-3 mr-1" />
+                    Create Assignment
+                  </Button>
+                </div>
+
+                <div className="text-xs text-slate-500 mt-2">
+                  Updated: {marketSentiment.timestamp ? new Date(marketSentiment.timestamp).toLocaleTimeString() : 'Recently'}
+                </div>
+              </div>
+            ) : (
+              <div className="text-slate-400">Unable to fetch market data</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Market Events News Feed */}
+        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white flex items-center gap-2">
+                <Newspaper className="w-5 h-5" />
+                Market Events & Email Opportunities
+              </CardTitle>
+              {marketEvents && (
+                <div className="flex gap-2">
+                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-400">
+                    {marketEvents.totalOpportunities} Opportunities
+                  </Badge>
+                  {marketEvents.urgentAssignments > 0 && (
+                    <Badge variant="destructive" className="bg-red-500/20 text-red-400">
+                      {marketEvents.urgentAssignments} Urgent
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingEvents ? (
+              <div className="animate-pulse space-y-3">
+                <div className="h-16 bg-slate-700 rounded"></div>
+                <div className="h-16 bg-slate-700 rounded"></div>
+                <div className="h-16 bg-slate-700 rounded"></div>
+              </div>
+            ) : marketEvents && marketEvents.events.length > 0 ? (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-3">
+                  {marketEvents.events.map((event) => (
+                    <div key={event.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {event.type === 'alert' && <AlertTriangle className="w-4 h-4 text-red-400" />}
+                          {event.type === 'opportunity' && <TrendingUp className="w-4 h-4 text-green-400" />}
+                          {event.type === 'bullish' && <TrendingUp className="w-4 h-4 text-green-400" />}
+                          {event.type === 'bearish' && <TrendingDown className="w-4 h-4 text-red-400" />}
+                          {event.type === 'news' && <Newspaper className="w-4 h-4 text-blue-400" />}
+                          <h4 className="font-semibold text-white text-sm">{event.title}</h4>
+                        </div>
+                        <Badge className={
+                          event.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                          event.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }>
+                          {event.priority}
+                        </Badge>
+                      </div>
+                      
+                      <p className="text-slate-300 text-xs mb-3">{event.description}</p>
+                      
+                      {event.emailOpportunity.suggested && (
+                        <div className="bg-slate-900/50 rounded p-2 mb-2">
+                          <div className="flex items-center gap-2 text-xs mb-1">
+                            <Send className="w-3 h-3 text-blue-400" />
+                            <span className="text-blue-400 font-semibold">Email Opportunity</span>
+                            <Badge className="bg-blue-500/10 text-blue-300 text-xs">
+                              {event.emailOpportunity.urgency}
+                            </Badge>
+                          </div>
+                          <p className="text-slate-400 text-xs">
+                            Template: {event.emailOpportunity.template}
+                          </p>
+                          <p className="text-slate-500 text-xs">
+                            Segments: {event.emailOpportunity.segments.join(', ')}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {event.assignment.needed && (
+                        <div className="bg-orange-900/20 rounded p-2">
+                          <div className="flex items-center gap-2 text-xs mb-1">
+                            <FileEdit className="w-3 h-3 text-orange-400" />
+                            <span className="text-orange-400 font-semibold">Assignment Needed</span>
+                            <Badge className="bg-orange-500/10 text-orange-300 text-xs">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {event.assignment.deadline}
+                            </Badge>
+                          </div>
+                          <p className="text-slate-400 text-xs">
+                            {event.assignment.focus}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button size="sm" variant="outline" className="h-7 text-xs">
+                          <Zap className="w-3 h-3 mr-1" />
+                          Generate Email
+                        </Button>
+                        {event.assignment.needed && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs">
+                            <FileEdit className="w-3 h-3 mr-1" />
+                            Create Assignment
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            ) : (
+              <div className="text-slate-400 text-center py-8">
+                <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No market events available</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Key Metrics Grid */}

@@ -193,6 +193,11 @@ Focus on financial newsletter best practices and proven engagement patterns.
     cohorts: any[]
   ): Promise<ContentPersonalization[]> {
     try {
+      // Always fetch current market context for personalization
+      const { MarketIntelligenceService } = await import('./market-intelligence');
+      const marketService = new MarketIntelligenceService();
+      const marketContext = await marketService.getMarketContext();
+      
       const personalizations: ContentPersonalization[] = [];
 
       for (const cohort of cohorts) {
@@ -201,6 +206,20 @@ Personalize this financial newsletter content for a specific subscriber cohort:
 
 Original Subject: ${subject}
 Original Content: ${content}
+
+CURRENT MARKET CONDITIONS (ALWAYS CONSIDER):
+- Market Sentiment: ${marketContext.marketSentiment.toUpperCase()}
+- VIX Level: ${marketContext.economicIndicators.vixLevel} (${
+          marketContext.economicIndicators.vixLevel < 16 ? 'Low volatility - calm markets' :
+          marketContext.economicIndicators.vixLevel > 25 ? 'High volatility - fearful markets' :
+          'Moderate volatility'
+        })
+- Market Status: ${marketContext.currentMarketCondition}
+- Top Sectors: ${Object.entries(marketContext.sectorPerformance)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
+    .slice(0, 3)
+    .map(([sector, perf]) => `${sector} (${perf > 0 ? '+' : ''}${perf}%)`)
+    .join(', ')}
 
 Cohort Profile:
 - Name: ${cohort.name}
@@ -264,13 +283,32 @@ Focus on making the content feel specifically crafted for this cohort while main
     marketContext?: MarketContext
   ): Promise<string[]> {
     try {
-      const contextInfo = marketContext ? `
+      // Always include market context
+      let contextInfo = '';
+      if (!marketContext) {
+        const { MarketIntelligenceService } = await import('./market-intelligence');
+        const marketService = new MarketIntelligenceService();
+        const context = await marketService.getMarketContext();
+        contextInfo = `
+Current Market Context:
+- Market Sentiment: ${context.marketSentiment.toUpperCase()}
+- VIX Level: ${context.economicIndicators.vixLevel} (${
+          context.economicIndicators.vixLevel < 16 ? 'Low volatility' :
+          context.economicIndicators.vixLevel > 25 ? 'High volatility' :
+          'Moderate volatility'
+        })
+- Market Status: ${context.currentMarketCondition}
+- Recent Events: ${context.majorMarketEvents.slice(0, 2).join('; ')}
+`;
+      } else {
+        contextInfo = `
 Current Market Context:
 - Relevant News: ${marketContext.relevantNews.join(', ')}
 - Market Trends: ${marketContext.marketTrends.join(', ')}
 - Volatility Index: ${marketContext.volatilityIndex}
 - Market Sentiment: ${marketContext.sentimentIndicators.join(', ')}
-` : '';
+`;
+      }
 
       const prompt = `
 Analyze this financial newsletter content and provide specific improvement suggestions:

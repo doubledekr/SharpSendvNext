@@ -44,6 +44,242 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Market sentiment endpoint for dashboard
+  app.get("/api/market-sentiment", async (req, res) => {
+    try {
+      const { MarketIntelligenceService } = await import("./services/market-intelligence");
+      const marketService = new MarketIntelligenceService();
+      const marketContext = await marketService.getMarketContext();
+      
+      // Calculate additional metrics
+      const vixLevel = marketContext.economicIndicators.vixLevel;
+      let sentimentDescription = "";
+      let sentimentColor = "";
+      let sentimentAdvice = "";
+      
+      if (vixLevel < 16) {
+        sentimentDescription = "Market is calm and optimistic";
+        sentimentColor = "green";
+        sentimentAdvice = "Ideal time for growth-focused messaging and new opportunities";
+      } else if (vixLevel > 25) {
+        sentimentDescription = "Market is fearful and uncertain";
+        sentimentColor = "red";
+        sentimentAdvice = "Focus on safety, defensive strategies, and reassurance";
+      } else {
+        sentimentDescription = "Market sentiment is neutral";
+        sentimentColor = "yellow";
+        sentimentAdvice = "Balanced messaging with educational content";
+      }
+      
+      res.json({
+        sentiment: marketContext.marketSentiment,
+        vixLevel: vixLevel,
+        sentimentDescription,
+        sentimentColor,
+        sentimentAdvice,
+        marketCondition: marketContext.currentMarketCondition,
+        topSectors: Object.entries(marketContext.sectorPerformance)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 3)
+          .map(([sector, performance]) => ({ sector, performance })),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching market sentiment:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch market sentiment",
+        sentiment: "neutral",
+        vixLevel: 18.5,
+        sentimentDescription: "Market data temporarily unavailable",
+        sentimentColor: "gray",
+        sentimentAdvice: "Using standard messaging patterns"
+      });
+    }
+  });
+
+  // Market events news feed with email opportunities
+  app.get("/api/market-events-feed", async (req, res) => {
+    try {
+      const { MarketIntelligenceService } = await import("./services/market-intelligence");
+      const marketService = new MarketIntelligenceService();
+      const marketContext = await marketService.getMarketContext();
+      
+      // Generate email opportunities based on market events
+      const events = [];
+      const vixLevel = marketContext.economicIndicators.vixLevel;
+      
+      // VIX-based event
+      if (vixLevel > 25) {
+        events.push({
+          id: 'vix-high',
+          type: 'alert',
+          priority: 'high',
+          timestamp: new Date().toISOString(),
+          title: 'Market Volatility Spike',
+          description: `VIX at ${vixLevel.toFixed(1)} - Markets showing significant fear`,
+          emailOpportunity: {
+            suggested: true,
+            template: 'Market Alert: Protecting Your Portfolio',
+            segments: ['Conservative Investors', 'Risk-Averse'],
+            urgency: 'immediate',
+            content: 'Address market fears with defensive strategies and reassurance'
+          },
+          assignment: {
+            needed: true,
+            type: 'urgent',
+            deadline: '2 hours',
+            focus: 'Risk management and capital preservation strategies'
+          }
+        });
+      } else if (vixLevel < 16) {
+        events.push({
+          id: 'vix-low',
+          type: 'opportunity',
+          priority: 'medium',
+          timestamp: new Date().toISOString(),
+          title: 'Market Calm - Growth Opportunities',
+          description: `VIX at ${vixLevel.toFixed(1)} - Optimal conditions for growth strategies`,
+          emailOpportunity: {
+            suggested: true,
+            template: 'Growth Opportunities in Calm Markets',
+            segments: ['Aggressive Growth', 'Active Traders'],
+            urgency: 'standard',
+            content: 'Highlight growth opportunities and new positions'
+          },
+          assignment: {
+            needed: false,
+            type: 'standard',
+            deadline: '24 hours',
+            focus: 'Growth stock analysis and sector opportunities'
+          }
+        });
+      }
+      
+      // Sector performance events
+      const topPerformers = Object.entries(marketContext.sectorPerformance)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 2);
+      
+      topPerformers.forEach(([sector, performance]) => {
+        if (Math.abs(performance) > 2) {
+          events.push({
+            id: `sector-${sector.toLowerCase().replace(/\s+/g, '-')}`,
+            type: performance > 0 ? 'bullish' : 'bearish',
+            priority: Math.abs(performance) > 3 ? 'high' : 'medium',
+            timestamp: new Date().toISOString(),
+            title: `${sector} ${performance > 0 ? 'Surging' : 'Declining'}`,
+            description: `${sector} sector ${performance > 0 ? 'up' : 'down'} ${Math.abs(performance).toFixed(1)}% today`,
+            emailOpportunity: {
+              suggested: true,
+              template: `${sector} Sector Analysis`,
+              segments: [`${sector} Investors`, 'Sector Rotation Traders'],
+              urgency: Math.abs(performance) > 3 ? 'high' : 'standard',
+              content: `Analysis of ${sector} sector movement and investment implications`
+            },
+            assignment: {
+              needed: Math.abs(performance) > 3,
+              type: 'sector-analysis',
+              deadline: '4 hours',
+              focus: `${sector} sector deep dive with stock picks`
+            }
+          });
+        }
+      });
+      
+      // Market news events
+      marketContext.majorMarketEvents.slice(0, 3).forEach((event, idx) => {
+        events.push({
+          id: `news-${idx}`,
+          type: 'news',
+          priority: idx === 0 ? 'high' : 'medium',
+          timestamp: new Date(Date.now() - idx * 3600000).toISOString(),
+          title: event.split(' ').slice(0, 6).join(' '),
+          description: event,
+          emailOpportunity: {
+            suggested: idx === 0,
+            template: 'Market Update',
+            segments: ['All Subscribers'],
+            urgency: 'standard',
+            content: 'Analyze impact and provide investment guidance'
+          },
+          assignment: {
+            needed: idx === 0,
+            type: 'news-analysis',
+            deadline: '6 hours',
+            focus: 'Breaking down implications for different investor types'
+          }
+        });
+      });
+      
+      // Economic indicators event
+      if (marketContext.economicIndicators.tenYearYield > 4.5) {
+        events.push({
+          id: 'yield-alert',
+          type: 'alert',
+          priority: 'medium',
+          timestamp: new Date().toISOString(),
+          title: 'Rising Bond Yields',
+          description: `10-Year Treasury at ${marketContext.economicIndicators.tenYearYield.toFixed(2)}% - Impact on equities`,
+          emailOpportunity: {
+            suggested: true,
+            template: 'Bond Market Alert',
+            segments: ['Income Investors', 'Conservative'],
+            urgency: 'standard',
+            content: 'Explain yield impact on portfolios and rotation strategies'
+          },
+          assignment: {
+            needed: true,
+            type: 'yield-analysis',
+            deadline: '8 hours',
+            focus: 'Bond vs equity allocation in rising rate environment'
+          }
+        });
+      }
+      
+      res.json({
+        events: events.sort((a, b) => {
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }),
+        marketSentiment: marketContext.marketSentiment,
+        totalOpportunities: events.filter(e => e.emailOpportunity.suggested).length,
+        urgentAssignments: events.filter(e => e.assignment.needed && e.priority === 'high').length,
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching market events feed:", error);
+      res.json({
+        events: [
+          {
+            id: 'default-1',
+            type: 'news',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            title: 'Market Update Available',
+            description: 'Check market conditions for newsletter opportunities',
+            emailOpportunity: {
+              suggested: true,
+              template: 'Daily Market Update',
+              segments: ['All Subscribers'],
+              urgency: 'standard',
+              content: 'Regular market analysis and insights'
+            },
+            assignment: {
+              needed: false,
+              type: 'standard',
+              deadline: '24 hours',
+              focus: 'General market commentary'
+            }
+          }
+        ],
+        marketSentiment: 'neutral',
+        totalOpportunities: 1,
+        urgentAssignments: 0,
+        lastUpdated: new Date().toISOString()
+      });
+    }
+  });
+
   // Demo login endpoint for backward compatibility (must be before multi-tenant routes) 
   app.post("/api/auth/login", async (req, res) => {
     try {
