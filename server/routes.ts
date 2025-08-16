@@ -50,6 +50,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/email-optimization", emailOptimizationRoutes);
   app.use("/api/brevo", brevoIntegrationRoutes);
 
+  // Demo login endpoint for backward compatibility 
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password, subdomain } = req.body;
+      
+      // For demo purposes, accept any subdomain and check for demo user
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      // Check if this is the demo user (we'll check by username "demo" or email "demo@example.com")
+      const isDemo = email === "demo@example.com" || email === "demo";
+      
+      if (isDemo && password === "demo") {
+        // Return success for demo login
+        res.json({
+          publisher: {
+            id: "demo-publisher",
+            name: "Demo Publisher",
+            subdomain: subdomain || "demo",
+            plan: "premium"
+          },
+          user: {
+            id: "demo-user",
+            username: "demo",
+            email: "demo@example.com",
+            role: "admin"
+          },
+          token: "demo-token-123"
+        });
+      } else {
+        res.status(401).json({ error: "Invalid credentials" });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
   // Legacy routes for backward compatibility (these will be deprecated)
   
   // Simple analytics endpoint for demo purposes
