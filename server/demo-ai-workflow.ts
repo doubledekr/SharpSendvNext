@@ -1,5 +1,5 @@
 import { createAIContentProcessor } from './services/ai-content-processor';
-import { createMarketIntelligenceService } from './services/market-intelligence';
+import { MarketIntelligenceService } from './services/market-intelligence';
 
 // Demo script to test AI content processing workflow
 async function demoAIWorkflow() {
@@ -7,7 +7,7 @@ async function demoAIWorkflow() {
 
   const publisherId = 'demo';
   const aiProcessor = createAIContentProcessor(publisherId);
-  const marketService = createMarketIntelligenceService(publisherId);
+  const marketService = MarketIntelligenceService(publisherId);
 
   // Sample content for testing
   const sampleContent = `

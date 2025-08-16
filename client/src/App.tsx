@@ -8,6 +8,7 @@ import Register from "@/pages/register";
 import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
 import EditorialDashboard from "@/pages/editorial-dashboard-enhanced";
+import SharpSendIntelligence from "@/pages/sharpsend-intelligence";
 import CopywriterPortal from "@/pages/copywriter-portal-enhanced";
 import EmailPreviewApproval from "@/pages/email-preview-approval-enhanced";
 import CohortAnalytics from "@/pages/cohort-analytics-enhanced";
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/copywriter" component={() => <ProtectedRoute component={CopywriterPortal} />} />
       <Route path="/email-preview" component={() => <ProtectedRoute component={EmailPreviewApproval} />} />
       <Route path="/analytics" component={() => <ProtectedRoute component={CohortAnalytics} />} />
+      <Route path="/intelligence" component={() => <ProtectedRoute component={SharpSendIntelligence} />} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,10 +1,15 @@
 import { Router } from 'express';
-// Remove unused z import
 import { db } from './database';
 import { contentRequests, contentDrafts, emailCampaigns, insertContentRequestSchema, insertContentDraftSchema, insertEmailCampaignSchema } from '../shared/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
+import { CohortDetectionService } from './services/cohort-detection';
+import { EmailSharpeningService } from './services/email-sharpening';
+import { MarketIntelligenceService } from './services/market-intelligence';
 
 const router = Router();
+const cohortDetectionService = new CohortDetectionService();
+const emailSharpeningService = new EmailSharpeningService();
+const marketIntelligenceService = new MarketIntelligenceService();
 
 /**
  * Create a new content request
@@ -410,6 +415,204 @@ router.get('/dashboard/stats', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to fetch dashboard statistics' 
+    });
+  }
+});
+
+/**
+ * Get advanced cohort analysis
+ */
+router.get('/cohorts/analysis', async (req, res) => {
+  try {
+    const publisherId = 'demo-publisher'; // TODO: Extract from authentication
+
+    const cohortAnalysis = await cohortDetectionService.detectSubscriberCohorts(publisherId);
+    
+    res.json({
+      success: true,
+      data: cohortAnalysis,
+      message: 'Cohort analysis completed successfully'
+    });
+  } catch (error) {
+    console.error('Error in cohort analysis:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to analyze subscriber cohorts' 
+    });
+  }
+});
+
+/**
+ * Get churn risk prediction
+ */
+router.get('/churn-prediction', async (req, res) => {
+  try {
+    const publisherId = 'demo-publisher'; // TODO: Extract from authentication
+
+    const churnPrediction = await cohortDetectionService.predictChurnRisk(publisherId);
+    
+    res.json({
+      success: true,
+      data: churnPrediction,
+      message: 'Churn prediction completed successfully'
+    });
+  } catch (error) {
+    console.error('Error in churn prediction:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to predict churn risk' 
+    });
+  }
+});
+
+/**
+ * Sharpen email content for cohorts
+ */
+router.post('/email/sharpen', async (req, res) => {
+  try {
+    const { baseSubject, baseContent, targetCohorts, marketContext } = req.body;
+    
+    if (!baseSubject || !baseContent) {
+      return res.status(400).json({
+        success: false,
+        error: 'Base subject and content are required'
+      });
+    }
+
+    // Use provided cohorts or get from analysis
+    let cohorts = targetCohorts;
+    if (!cohorts || cohorts.length === 0) {
+      const publisherId = 'demo-publisher'; // TODO: Extract from authentication
+      const cohortAnalysis = await cohortDetectionService.detectSubscriberCohorts(publisherId);
+      cohorts = cohortAnalysis.cohorts.map(c => ({
+        id: c.id,
+        name: c.name,
+        characteristics: c.characteristics,
+        investmentSophistication: 'intermediate', // Default
+        riskTolerance: 'moderate', // Default
+        investmentStyle: 'growth', // Default
+        preferredContentTypes: c.engagementProfile.preferredContentTypes,
+        avgEngagementScore: c.engagementProfile.avgEngagementScore
+      }));
+    }
+
+    const sharpenedEmails = await emailSharpeningService.sharpenEmailForCohorts(
+      baseSubject,
+      baseContent,
+      cohorts,
+      marketContext
+    );
+
+    res.json({
+      success: true,
+      data: {
+        sharpenedEmails,
+        totalCohorts: cohorts.length
+      },
+      message: 'Email sharpening completed successfully'
+    });
+  } catch (error) {
+    console.error('Error in email sharpening:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to sharpen email content' 
+    });
+  }
+});
+
+/**
+ * Analyze email campaign performance
+ */
+router.post('/campaigns/:id/analyze', async (req, res) => {
+  try {
+    const { id: campaignId } = req.params;
+    const { cohortPerformance } = req.body;
+
+    if (!cohortPerformance || !Array.isArray(cohortPerformance)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cohort performance data is required'
+      });
+    }
+
+    const analysis = await emailSharpeningService.analyzeEmailPerformance(
+      campaignId,
+      cohortPerformance
+    );
+
+    res.json({
+      success: true,
+      data: analysis,
+      message: 'Campaign performance analysis completed'
+    });
+  } catch (error) {
+    console.error('Error in campaign analysis:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to analyze campaign performance' 
+    });
+  }
+});
+
+/**
+ * Get market intelligence and context
+ */
+router.get('/market/context', async (req, res) => {
+  try {
+    const marketContext = await marketIntelligenceService.getMarketContext();
+    
+    res.json({
+      success: true,
+      data: marketContext,
+      message: 'Market context retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching market context:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch market context' 
+    });
+  }
+});
+
+/**
+ * Get optimal send timing based on market conditions
+ */
+router.get('/market/send-timing', async (req, res) => {
+  try {
+    const sendTiming = await marketIntelligenceService.getOptimalSendTiming();
+    
+    res.json({
+      success: true,
+      data: sendTiming,
+      message: 'Send timing analysis completed'
+    });
+  } catch (error) {
+    console.error('Error analyzing send timing:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to analyze send timing' 
+    });
+  }
+});
+
+/**
+ * Get content emphasis recommendations
+ */
+router.get('/market/content-recommendations', async (req, res) => {
+  try {
+    const recommendations = await marketIntelligenceService.getContentEmphasisRecommendations();
+    
+    res.json({
+      success: true,
+      data: recommendations,
+      message: 'Content recommendations generated'
+    });
+  } catch (error) {
+    console.error('Error generating content recommendations:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to generate content recommendations' 
     });
   }
 });

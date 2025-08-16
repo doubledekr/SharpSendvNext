@@ -1,7 +1,7 @@
 import express from 'express';
 import { createCohortEngine } from './services/cohort-engine';
 import { createAIContentProcessor } from './services/ai-content-processor';
-import { createMarketIntelligenceService } from './services/market-intelligence';
+import { MarketIntelligenceService } from './services/market-intelligence';
 import { authenticateAndSetTenant, requireTenant } from './middleware/tenant';
 
 const router = express.Router();
@@ -163,7 +163,7 @@ router.post('/create-campaign', async (req, res) => {
 router.get('/market-triggers', async (req, res) => {
   try {
     const publisherId = getTenantId(req);
-    const marketService = createMarketIntelligenceService(publisherId);
+    const marketService = MarketIntelligenceService(publisherId);
     
     // Get market context and generate triggers
     const marketContext = await marketService.getMarketContext();

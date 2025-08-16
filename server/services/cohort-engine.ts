@@ -1,5 +1,5 @@
 import { tenantStorage } from '../storage-multitenant';
-import { createMarketIntelligenceService } from './market-intelligence';
+import { MarketIntelligenceService } from './market-intelligence';
 
 export interface SubscriberProfile {
   id: string;
@@ -105,7 +105,7 @@ export class CohortEngine {
 
   constructor(publisherId: string) {
     this.publisherId = publisherId;
-    this.marketService = createMarketIntelligenceService(publisherId);
+    this.marketService = MarketIntelligenceService(publisherId);
   }
 
   /**

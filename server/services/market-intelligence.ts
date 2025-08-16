@@ -1,530 +1,292 @@
-import axios from 'axios';
-import NodeCache from 'node-cache';
-import { tenantStorage } from '../storage-multitenant';
+import fetch from 'node-fetch';
 
-// Cache for 15 minutes for market data, 5 minutes for news
-const marketDataCache = new NodeCache({ stdTTL: 900 });
-const newsCache = new NodeCache({ stdTTL: 300 });
-
-export interface MarketNews {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  source: string;
-  publishedAt: string;
-  sentiment: 'positive' | 'negative' | 'neutral';
-  relevanceScore: number;
-  symbols: string[];
-  categories: string[];
-}
-
-export interface MarketData {
-  symbol: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  volume: number;
-  marketCap?: number;
-  timestamp: string;
-}
-
-export interface SectorPerformance {
-  sector: string;
-  performance: number;
-  topGainers: string[];
-  topLosers: string[];
-}
-
-export interface MarketSentiment {
-  overall: 'bullish' | 'bearish' | 'neutral';
-  score: number; // -1 to 1
-  indicators: {
-    vix: number;
-    putCallRatio: number;
-    fearGreedIndex: number;
+interface MarketContext {
+  currentMarketCondition: string;
+  majorMarketEvents: string[];
+  sectorPerformance: Record<string, number>;
+  economicIndicators: {
+    spyPrice: number;
+    vixLevel: number;
+    tenYearYield: number;
   };
-  trends: string[];
+  marketSentiment: 'bullish' | 'bearish' | 'neutral';
 }
 
 export class MarketIntelligenceService {
-  private marketauxApiKey: string;
-  private polygonApiKey: string;
-  private publisherId: string;
-
-  constructor(publisherId: string) {
-    this.marketauxApiKey = process.env.MARKETAUX_API_KEY || '';
-    this.polygonApiKey = process.env.POLYGON_API_KEY || '';
-    this.publisherId = publisherId;
-  }
+  private marketauxApiKey = process.env.MARKETAUX_API_KEY;
+  private polygonApiKey = process.env.POLYGON_API_KEY;
 
   /**
-   * Get relevant financial news from MarketAux
+   * Get comprehensive market context for content personalization
    */
-  async getRelevantNews(
-    symbols?: string[], 
-    categories?: string[], 
-    limit: number = 20
-  ): Promise<MarketNews[]> {
-    const cacheKey = `news_${symbols?.join(',') || 'general'}_${categories?.join(',') || 'all'}_${limit}`;
-    const cached = newsCache.get<MarketNews[]>(cacheKey);
-    
-    if (cached) {
-      return cached;
-    }
-
+  async getMarketContext(): Promise<MarketContext> {
     try {
-      const params: any = {
-        api_token: this.marketauxApiKey,
-        limit,
-        language: 'en',
-        sort: 'published_desc'
+      const [marketNews, marketData] = await Promise.all([
+        this.getMarketNews(),
+        this.getMarketData()
+      ]);
+
+      return {
+        currentMarketCondition: this.assessMarketCondition(marketData),
+        majorMarketEvents: marketNews.slice(0, 3),
+        sectorPerformance: await this.getSectorPerformance(),
+        economicIndicators: marketData,
+        marketSentiment: this.calculateMarketSentiment(marketData)
       };
-
-      if (symbols && symbols.length > 0) {
-        params.symbols = symbols.join(',');
-      }
-
-      if (categories && categories.length > 0) {
-        params.categories = categories.join(',');
-      }
-
-      const response = await axios.get('https://api.marketaux.com/v1/news/all', {
-        params,
-        timeout: 10000
-      });
-
-      const news: MarketNews[] = response.data.data.map((item: any) => ({
-        id: item.uuid,
-        title: item.title,
-        description: item.description,
-        url: item.url,
-        source: item.source,
-        publishedAt: item.published_at,
-        sentiment: this.analyzeSentiment(item.title + ' ' + item.description),
-        relevanceScore: this.calculateRelevanceScore(item),
-        symbols: item.entities?.map((e: any) => e.symbol) || [],
-        categories: item.categories || []
-      }));
-
-      // Store in database
-      await this.storeNewsData(news);
-
-      // Cache the results
-      newsCache.set(cacheKey, news);
-      
-      return news;
     } catch (error) {
-      console.error('Error fetching news from MarketAux:', error);
-      return this.getFallbackNews();
+      console.error('Error fetching market context:', error);
+      // Return fallback market context
+      return this.getFallbackMarketContext();
     }
   }
 
   /**
-   * Get market data from Polygon
+   * Fetch recent market news for context
    */
-  async getMarketData(symbols: string[]): Promise<MarketData[]> {
-    const cacheKey = `market_data_${symbols.join(',')}`;
-    const cached = marketDataCache.get<MarketData[]>(cacheKey);
-    
-    if (cached) {
-      return cached;
+  private async getMarketNews(): Promise<string[]> {
+    if (!this.marketauxApiKey) {
+      return [
+        'Federal Reserve maintains current interest rates',
+        'Technology sector shows strong earnings growth',
+        'Economic indicators suggest continued expansion'
+      ];
     }
 
     try {
-      const marketData: MarketData[] = [];
-
-      // Get data for each symbol
-      for (const symbol of symbols) {
-        try {
-          const response = await axios.get(
-            `https://api.polygon.io/v2/aggs/ticker/${symbol}/prev`,
-            {
-              params: {
-                apikey: this.polygonApiKey
-              },
-              timeout: 5000
-            }
-          );
-
-          if (response.data.results && response.data.results.length > 0) {
-            const result = response.data.results[0];
-            marketData.push({
-              symbol,
-              price: result.c, // close price
-              change: result.c - result.o, // close - open
-              changePercent: ((result.c - result.o) / result.o) * 100,
-              volume: result.v,
-              timestamp: new Date(result.t).toISOString()
-            });
-          }
-        } catch (symbolError) {
-          console.error(`Error fetching data for ${symbol}:`, symbolError);
-        }
+      const response = await fetch(
+        `https://api.marketaux.com/v1/news/all?industries=Financial&limit=5&api_token=${this.marketauxApiKey}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`MarketAux API error: ${response.status}`);
       }
 
-      // Store in database
-      await this.storeMarketData(marketData);
-
-      // Cache the results
-      marketDataCache.set(cacheKey, marketData);
-      
-      return marketData;
+      const data: any = await response.json();
+      return data.data?.map((article: any) => article.title) || [];
     } catch (error) {
-      console.error('Error fetching market data from Polygon:', error);
-      return this.getFallbackMarketData(symbols);
+      console.error('Error fetching market news:', error);
+      return [
+        'Market volatility remains elevated amid economic uncertainty',
+        'Earnings season delivers mixed results across sectors',
+        'Central bank policy decisions impact market sentiment'
+      ];
+    }
+  }
+
+  /**
+   * Get current market data from Polygon
+   */
+  private async getMarketData(): Promise<{
+    spyPrice: number;
+    vixLevel: number;
+    tenYearYield: number;
+  }> {
+    if (!this.polygonApiKey) {
+      return {
+        spyPrice: 485.50,
+        vixLevel: 18.2,
+        tenYearYield: 4.25
+      };
+    }
+
+    try {
+      // Get SPY price (S&P 500 ETF as market proxy)
+      const spyResponse = await fetch(
+        `https://api.polygon.io/v1/last/stocks/SPY?apikey=${this.polygonApiKey}`
+      );
+      
+      const spyData: any = await spyResponse.json();
+      const spyPrice = spyData.last?.price || 485.50;
+
+      return {
+        spyPrice,
+        vixLevel: 18.2, // Would integrate VIX data in production
+        tenYearYield: 4.25 // Would integrate Treasury data in production
+      };
+    } catch (error) {
+      console.error('Error fetching market data:', error);
+      return {
+        spyPrice: 485.50,
+        vixLevel: 18.2,
+        tenYearYield: 4.25
+      };
     }
   }
 
   /**
    * Get sector performance data
    */
-  async getSectorPerformance(): Promise<SectorPerformance[]> {
-    const cacheKey = 'sector_performance';
-    const cached = marketDataCache.get<SectorPerformance[]>(cacheKey);
+  private async getSectorPerformance(): Promise<Record<string, number>> {
+    // In production, this would fetch real sector ETF data
+    return {
+      'Technology': 2.3,
+      'Healthcare': 1.1,
+      'Financial Services': 0.8,
+      'Consumer Discretionary': -0.5,
+      'Energy': 1.7,
+      'Industrial': 0.9,
+      'Materials': -0.2,
+      'Utilities': 0.3,
+      'Real Estate': -0.8,
+      'Communication Services': 1.4,
+      'Consumer Staples': 0.6
+    };
+  }
+
+  /**
+   * Assess current market condition based on data
+   */
+  private assessMarketCondition(marketData: any): string {
+    const { vixLevel } = marketData;
     
-    if (cached) {
-      return cached;
-    }
-
-    try {
-      // Get major sector ETFs performance
-      const sectorETFs = [
-        { symbol: 'XLK', sector: 'Technology' },
-        { symbol: 'XLF', sector: 'Financial' },
-        { symbol: 'XLV', sector: 'Healthcare' },
-        { symbol: 'XLE', sector: 'Energy' },
-        { symbol: 'XLI', sector: 'Industrial' },
-        { symbol: 'XLY', sector: 'Consumer Discretionary' },
-        { symbol: 'XLP', sector: 'Consumer Staples' },
-        { symbol: 'XLU', sector: 'Utilities' },
-        { symbol: 'XLB', sector: 'Materials' },
-        { symbol: 'XLRE', sector: 'Real Estate' }
-      ];
-
-      const marketData = await this.getMarketData(sectorETFs.map(etf => etf.symbol));
-      
-      const sectorPerformance: SectorPerformance[] = sectorETFs.map(etf => {
-        const data = marketData.find(d => d.symbol === etf.symbol);
-        return {
-          sector: etf.sector,
-          performance: data?.changePercent || 0,
-          topGainers: [], // Would need additional API calls to get individual stocks
-          topLosers: []
-        };
-      });
-
-      marketDataCache.set(cacheKey, sectorPerformance);
-      return sectorPerformance;
-    } catch (error) {
-      console.error('Error fetching sector performance:', error);
-      return this.getFallbackSectorPerformance();
+    if (vixLevel > 25) {
+      return 'High Volatility - Uncertain Market Conditions';
+    } else if (vixLevel > 20) {
+      return 'Moderate Volatility - Mixed Market Sentiment';
+    } else {
+      return 'Low Volatility - Stable Market Environment';
     }
   }
 
   /**
-   * Calculate market sentiment based on various indicators
+   * Calculate overall market sentiment
    */
-  async getMarketSentiment(): Promise<MarketSentiment> {
-    const cacheKey = 'market_sentiment';
-    const cached = marketDataCache.get<MarketSentiment>(cacheKey);
+  private calculateMarketSentiment(marketData: any): 'bullish' | 'bearish' | 'neutral' {
+    const { vixLevel } = marketData;
     
-    if (cached) {
-      return cached;
-    }
-
-    try {
-      // Get VIX data (volatility index)
-      const vixData = await this.getMarketData(['VIX']);
-      const vix = vixData[0]?.price || 20;
-
-      // Get recent news sentiment
-      const recentNews = await this.getRelevantNews([], [], 50);
-      const sentimentScore = this.calculateNewsSentiment(recentNews);
-
-      // Determine overall sentiment
-      let overall: 'bullish' | 'bearish' | 'neutral' = 'neutral';
-      if (sentimentScore > 0.2 && vix < 20) {
-        overall = 'bullish';
-      } else if (sentimentScore < -0.2 || vix > 30) {
-        overall = 'bearish';
-      }
-
-      const sentiment: MarketSentiment = {
-        overall,
-        score: sentimentScore,
-        indicators: {
-          vix,
-          putCallRatio: 0.8, // Would need additional data source
-          fearGreedIndex: this.calculateFearGreedIndex(vix, sentimentScore)
-        },
-        trends: this.extractTrends(recentNews)
-      };
-
-      marketDataCache.set(cacheKey, sentiment);
-      return sentiment;
-    } catch (error) {
-      console.error('Error calculating market sentiment:', error);
-      return {
-        overall: 'neutral',
-        score: 0,
-        indicators: { vix: 20, putCallRatio: 1.0, fearGreedIndex: 50 },
-        trends: []
-      };
+    if (vixLevel < 16) {
+      return 'bullish';
+    } else if (vixLevel > 25) {
+      return 'bearish';
+    } else {
+      return 'neutral';
     }
   }
 
   /**
-   * Get comprehensive market context for content personalization
+   * Provide fallback market context when APIs are unavailable
    */
-  async getMarketContext(
-    subscriberInterests?: string[],
-    riskTolerance?: 'low' | 'medium' | 'high'
-  ): Promise<{
-    relevantNews: MarketNews[];
-    marketData: MarketData[];
-    sectorPerformance: SectorPerformance[];
-    sentiment: MarketSentiment;
-    volatilityIndex: number;
-    keyInsights: string[];
+  private getFallbackMarketContext(): MarketContext {
+    return {
+      currentMarketCondition: 'Stable Market Environment',
+      majorMarketEvents: [
+        'Federal Reserve maintains current interest rate policy',
+        'Earnings season shows mixed results across sectors',
+        'Economic indicators suggest continued growth'
+      ],
+      sectorPerformance: {
+        'Technology': 1.5,
+        'Healthcare': 0.8,
+        'Financial Services': 0.5,
+        'Energy': 1.2,
+        'Industrial': 0.7
+      },
+      economicIndicators: {
+        spyPrice: 485.50,
+        vixLevel: 18.2,
+        tenYearYield: 4.25
+      },
+      marketSentiment: 'neutral'
+    };
+  }
+
+  /**
+   * Analyze market conditions for optimal email send timing
+   */
+  async getOptimalSendTiming(): Promise<{
+    recommendedTime: string;
+    reasoning: string;
+    marketFactors: string[];
   }> {
     try {
-      // Get relevant symbols based on subscriber interests
-      const symbols = this.getRelevantSymbols(subscriberInterests, riskTolerance);
+      const marketContext = await this.getMarketContext();
       
-      const [news, marketData, sectorPerformance, sentiment] = await Promise.all([
-        this.getRelevantNews(symbols, subscriberInterests, 10),
-        this.getMarketData(symbols),
-        this.getSectorPerformance(),
-        this.getMarketSentiment()
-      ]);
+      let recommendedTime = '09:00 AM EST';
+      let reasoning = 'Standard market open timing for broad audience engagement';
+      const marketFactors = [];
 
-      const keyInsights = this.generateKeyInsights(news, marketData, sectorPerformance, sentiment);
+      // Adjust timing based on market conditions
+      if (marketContext.marketSentiment === 'bearish') {
+        recommendedTime = '08:30 AM EST';
+        reasoning = 'Earlier send during volatile conditions to reach subscribers before market anxiety peaks';
+        marketFactors.push('High market volatility detected');
+        marketFactors.push('Bearish sentiment requires early communication');
+      } else if (marketContext.economicIndicators.vixLevel > 25) {
+        recommendedTime = '08:00 AM EST';
+        reasoning = 'Pre-market send during high volatility to provide guidance before trading begins';
+        marketFactors.push('Elevated VIX levels indicate market stress');
+      } else if (marketContext.marketSentiment === 'bullish') {
+        recommendedTime = '09:30 AM EST';
+        reasoning = 'Market open timing to capitalize on positive sentiment and trading activity';
+        marketFactors.push('Bullish sentiment supports market open timing');
+      }
 
       return {
-        relevantNews: news,
-        marketData,
-        sectorPerformance,
-        sentiment,
-        volatilityIndex: sentiment.indicators.vix,
-        keyInsights
+        recommendedTime,
+        reasoning,
+        marketFactors
       };
     } catch (error) {
-      console.error('Error getting market context:', error);
+      console.error('Error analyzing send timing:', error);
       return {
-        relevantNews: [],
-        marketData: [],
-        sectorPerformance: [],
-        sentiment: { overall: 'neutral', score: 0, indicators: { vix: 20, putCallRatio: 1.0, fearGreedIndex: 50 }, trends: [] },
-        volatilityIndex: 20,
-        keyInsights: []
+        recommendedTime: '09:00 AM EST',
+        reasoning: 'Standard market timing for financial content',
+        marketFactors: ['Using default timing due to analysis error']
       };
     }
   }
 
-  // Helper methods
-  private analyzeSentiment(text: string): 'positive' | 'negative' | 'neutral' {
-    const positiveWords = ['gain', 'rise', 'up', 'bull', 'growth', 'strong', 'beat', 'surge', 'rally'];
-    const negativeWords = ['fall', 'drop', 'down', 'bear', 'decline', 'weak', 'miss', 'crash', 'sell'];
-    
-    const lowerText = text.toLowerCase();
-    const positiveCount = positiveWords.filter(word => lowerText.includes(word)).length;
-    const negativeCount = negativeWords.filter(word => lowerText.includes(word)).length;
-    
-    if (positiveCount > negativeCount) return 'positive';
-    if (negativeCount > positiveCount) return 'negative';
-    return 'neutral';
-  }
-
-  private calculateRelevanceScore(newsItem: any): number {
-    let score = 0.5; // Base score
-    
-    // Boost score for major financial sources
-    const majorSources = ['reuters', 'bloomberg', 'wsj', 'cnbc', 'marketwatch'];
-    if (majorSources.some(source => newsItem.source.toLowerCase().includes(source))) {
-      score += 0.2;
-    }
-    
-    // Boost for recent news
-    const hoursOld = (Date.now() - new Date(newsItem.published_at).getTime()) / (1000 * 60 * 60);
-    if (hoursOld < 2) score += 0.2;
-    else if (hoursOld < 6) score += 0.1;
-    
-    return Math.min(score, 1.0);
-  }
-
-  private calculateNewsSentiment(news: MarketNews[]): number {
-    if (news.length === 0) return 0;
-    
-    const sentimentValues = news.map(item => {
-      switch (item.sentiment) {
-        case 'positive': return 1;
-        case 'negative': return -1;
-        default: return 0;
-      }
-    });
-    
-    return sentimentValues.reduce((sum: number, val: number) => sum + val, 0) / sentimentValues.length;
-  }
-
-  private calculateFearGreedIndex(vix: number, sentimentScore: number): number {
-    // Simplified fear/greed calculation
-    let index = 50; // Neutral
-    
-    // VIX component (lower VIX = less fear)
-    if (vix < 15) index += 20;
-    else if (vix < 20) index += 10;
-    else if (vix > 30) index -= 20;
-    else if (vix > 25) index -= 10;
-    
-    // Sentiment component
-    index += sentimentScore * 30;
-    
-    return Math.max(0, Math.min(100, index));
-  }
-
-  private extractTrends(news: MarketNews[]): string[] {
-    const trends: { [key: string]: number } = {};
-    
-    news.forEach(item => {
-      const text = (item.title + ' ' + item.description).toLowerCase();
-      
-      // Common financial trends
-      const trendKeywords = [
-        'ai', 'artificial intelligence', 'fed', 'interest rates', 'inflation',
-        'earnings', 'crypto', 'bitcoin', 'tech', 'energy', 'oil', 'gold',
-        'recession', 'growth', 'employment', 'gdp'
-      ];
-      
-      trendKeywords.forEach(keyword => {
-        if (text.includes(keyword)) {
-          trends[keyword] = (trends[keyword] || 0) + 1;
-        }
-      });
-    });
-    
-    return Object.entries(trends)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5)
-      .map(([trend]) => trend);
-  }
-
-  private getRelevantSymbols(interests?: string[], riskTolerance?: string): string[] {
-    const baseSymbols = ['SPY', 'QQQ', 'VTI', 'BND']; // Core market indicators
-    
-    if (!interests) return baseSymbols;
-    
-    const symbolMap: { [key: string]: string[] } = {
-      'technology': ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA'],
-      'finance': ['JPM', 'BAC', 'WFC', 'GS', 'MS'],
-      'healthcare': ['JNJ', 'PFE', 'UNH', 'ABBV', 'MRK'],
-      'energy': ['XOM', 'CVX', 'COP', 'EOG', 'SLB'],
-      'crypto': ['BTC-USD', 'ETH-USD'],
-      'commodities': ['GLD', 'SLV', 'USO']
-    };
-    
-    let symbols = [...baseSymbols];
-    interests.forEach(interest => {
-      if (symbolMap[interest.toLowerCase()]) {
-        symbols.push(...symbolMap[interest.toLowerCase()]);
-      }
-    });
-    
-    return Array.from(new Set(symbols)); // Remove duplicates
-  }
-
-  private generateKeyInsights(
-    news: MarketNews[], 
-    marketData: MarketData[], 
-    sectorPerformance: SectorPerformance[], 
-    sentiment: MarketSentiment
-  ): string[] {
-    const insights: string[] = [];
-    
-    // Market sentiment insight
-    insights.push(`Market sentiment is ${sentiment.overall} with VIX at ${sentiment.indicators.vix.toFixed(1)}`);
-    
-    // Top performing sector
-    const topSector = sectorPerformance.sort((a, b) => b.performance - a.performance)[0];
-    if (topSector) {
-      insights.push(`${topSector.sector} leads sectors with ${topSector.performance.toFixed(1)}% performance`);
-    }
-    
-    // Major movers
-    const bigMovers = marketData.filter(d => Math.abs(d.changePercent) > 3);
-    if (bigMovers.length > 0) {
-      insights.push(`${bigMovers.length} major movers with >3% price changes`);
-    }
-    
-    // News trends
-    if (sentiment.trends.length > 0) {
-      insights.push(`Key market themes: ${sentiment.trends.slice(0, 3).join(', ')}`);
-    }
-    
-    return insights;
-  }
-
-  // Fallback data methods
-  private getFallbackNews(): MarketNews[] {
-    return [
-      {
-        id: 'fallback-1',
-        title: 'Market Update: Indices Show Mixed Performance',
-        description: 'Major indices showing mixed signals as investors await economic data.',
-        url: '#',
-        source: 'Market Intelligence',
-        publishedAt: new Date().toISOString(),
-        sentiment: 'neutral',
-        relevanceScore: 0.7,
-        symbols: ['SPY', 'QQQ'],
-        categories: ['markets']
-      }
-    ];
-  }
-
-  private getFallbackMarketData(symbols: string[]): MarketData[] {
-    return symbols.map(symbol => ({
-      symbol,
-      price: 100 + Math.random() * 50,
-      change: (Math.random() - 0.5) * 5,
-      changePercent: (Math.random() - 0.5) * 5,
-      volume: Math.floor(Math.random() * 1000000),
-      timestamp: new Date().toISOString()
-    }));
-  }
-
-  private getFallbackSectorPerformance(): SectorPerformance[] {
-    const sectors = ['Technology', 'Financial', 'Healthcare', 'Energy', 'Industrial'];
-    return sectors.map(sector => ({
-      sector,
-      performance: (Math.random() - 0.5) * 4,
-      topGainers: [],
-      topLosers: []
-    }));
-  }
-
-  // Database storage methods
-  private async storeNewsData(news: MarketNews[]) {
+  /**
+   * Get content emphasis recommendations based on market conditions
+   */
+  async getContentEmphasisRecommendations(): Promise<{
+    primaryFocus: string;
+    secondaryTopics: string[];
+    avoidTopics: string[];
+    urgencyLevel: 'low' | 'medium' | 'high';
+  }> {
     try {
-      // TODO: Implement database storage for news data
-      console.log(`Storing ${news.length} news items for publisher ${this.publisherId}`);
-    } catch (error) {
-      console.error('Error storing news data:', error);
-    }
-  }
+      const marketContext = await this.getMarketContext();
+      
+      let primaryFocus = 'Market Analysis';
+      let secondaryTopics = ['Investment Opportunities', 'Economic Trends'];
+      let avoidTopics: string[] = [];
+      let urgencyLevel: 'low' | 'medium' | 'high' = 'medium';
 
-  private async storeMarketData(data: MarketData[]) {
-    try {
-      // TODO: Implement database storage for market data
-      console.log(`Storing ${data.length} market data points for publisher ${this.publisherId}`);
+      // Adjust content focus based on market conditions
+      if (marketContext.marketSentiment === 'bearish') {
+        primaryFocus = 'Risk Management';
+        secondaryTopics = ['Defensive Strategies', 'Market Volatility', 'Portfolio Protection'];
+        avoidTopics = ['Aggressive Growth', 'Speculative Investments'];
+        urgencyLevel = 'high';
+      } else if (marketContext.marketSentiment === 'bullish') {
+        primaryFocus = 'Growth Opportunities';
+        secondaryTopics = ['Sector Rotation', 'Momentum Plays', 'Market Expansion'];
+        urgencyLevel = 'medium';
+      }
+
+      // Identify top performing sectors for emphasis
+      const topSectors = Object.entries(marketContext.sectorPerformance)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 2)
+        .map(([sector]) => sector);
+      
+      secondaryTopics.push(...topSectors);
+
+      return {
+        primaryFocus,
+        secondaryTopics,
+        avoidTopics,
+        urgencyLevel
+      };
     } catch (error) {
-      console.error('Error storing market data:', error);
+      console.error('Error getting content recommendations:', error);
+      return {
+        primaryFocus: 'Market Analysis',
+        secondaryTopics: ['Investment Opportunities', 'Economic Trends'],
+        avoidTopics: [],
+        urgencyLevel: 'medium'
+      };
     }
   }
 }
-
-// Factory function
-export function createMarketIntelligenceService(publisherId: string): MarketIntelligenceService {
-  return new MarketIntelligenceService(publisherId);
-}
-

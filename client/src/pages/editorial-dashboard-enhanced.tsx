@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import NewContentRequestForm from "@/components/new-content-request-form";
+import CohortAnalysisDashboard from "@/components/cohort-analysis-dashboard";
 import { 
   FileText, 
   Clock, 
@@ -141,10 +142,10 @@ export default function EditorialDashboard() {
   };
 
   const tabs = [
-    { id: "requests", label: "Content Requests", count: 4 },
-    { id: "review", label: "Review & Approve", count: 2 },
-    { id: "cohorts", label: "Cohort Previews", count: 0 },
-    { id: "performance", label: "Performance", count: 4 }
+    { id: "requests", label: "Content Requests", count: apiContentRequests.length },
+    { id: "review", label: "Review & Approve", count: stats.pendingReview || 0 },
+    { id: "cohorts", label: "Cohort Intelligence", count: 0 },
+    { id: "sharpening", label: "Email Sharpening", count: 0 }
   ];
 
   return (
@@ -284,15 +285,27 @@ export default function EditorialDashboard() {
         </div>
       )}
 
+      {/* Cohort Intelligence Tab */}
+      {activeTab === "cohorts" && (
+        <div className="space-y-6">
+          <CohortAnalysisDashboard />
+        </div>
+      )}
+
+      {/* Email Sharpening Tab */}
+      {activeTab === "sharpening" && (
+        <div className="space-y-6">
+          <CohortAnalysisDashboard />
+        </div>
+      )}
+
       {/* Other tab content placeholders */}
-      {activeTab !== "requests" && (
+      {activeTab === "review" && (
         <div className="chart-card-enhanced">
           <div className="text-center py-12">
             <BarChart3 className="w-16 h-16 mx-auto mb-4 text-slate-500" />
-            <h3 className="text-xl font-semibold text-white mb-2">
-              {tabs.find(tab => tab.id === activeTab)?.label}
-            </h3>
-            <p className="text-slate-400">Content for this section is coming soon.</p>
+            <h3 className="text-xl font-semibold text-white mb-2">Review & Approve</h3>
+            <p className="text-slate-400">Content approval workflow coming soon.</p>
           </div>
         </div>
       )}

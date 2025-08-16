@@ -1,6 +1,6 @@
 import express from 'express';
 import { createAIContentProcessor } from './services/ai-content-processor';
-import { createMarketIntelligenceService } from './services/market-intelligence';
+import { MarketIntelligenceService } from './services/market-intelligence';
 import { authenticateAndSetTenant, requireTenant } from './middleware/tenant';
 
 const router = express.Router();
@@ -88,7 +88,7 @@ router.post('/generate-suggestions', async (req, res) => {
     let marketContext;
 
     if (includeMarketContext) {
-      const marketService = createMarketIntelligenceService(publisherId);
+      const marketService = MarketIntelligenceService(publisherId);
       const context = await marketService.getMarketContext();
       marketContext = {
         relevantNews: context.relevantNews.map(n => n.title),
@@ -192,7 +192,7 @@ router.post('/enhance-market-context', async (req, res) => {
       return res.status(400).json({ error: 'Content is required' });
     }
 
-    const marketService = createMarketIntelligenceService(publisherId);
+    const marketService = MarketIntelligenceService(publisherId);
     const aiProcessor = createAIContentProcessor(publisherId);
 
     // Get market context
@@ -228,7 +228,7 @@ router.get('/market-intelligence', async (req, res) => {
     const publisherId = getTenantId(req);
     const { symbols, categories, limit } = req.query;
 
-    const marketService = createMarketIntelligenceService(publisherId);
+    const marketService = MarketIntelligenceService(publisherId);
     
     const symbolsArray = symbols ? (symbols as string).split(',') : undefined;
     const categoriesArray = categories ? (categories as string).split(',') : undefined;
@@ -265,7 +265,7 @@ router.get('/market-context', async (req, res) => {
     const publisherId = getTenantId(req);
     const { interests, riskTolerance } = req.query;
 
-    const marketService = createMarketIntelligenceService(publisherId);
+    const marketService = MarketIntelligenceService(publisherId);
     
     const interestsArray = interests ? (interests as string).split(',') : undefined;
     const riskLevel = riskTolerance as 'low' | 'medium' | 'high' | undefined;
@@ -304,7 +304,7 @@ router.post('/process-workflow', async (req, res) => {
     }
 
     const aiProcessor = createAIContentProcessor(publisherId);
-    const marketService = createMarketIntelligenceService(publisherId);
+    const marketService = MarketIntelligenceService(publisherId);
 
     // Run all processing steps in parallel where possible
     const [analysis, variations, suggestions] = await Promise.all([
