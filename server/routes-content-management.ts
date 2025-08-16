@@ -627,7 +627,17 @@ router.get('/market/content-recommendations', async (req, res) => {
 router.get('/publisher/dashboard', async (req, res) => {
   try {
     const publisherId = 'demo-publisher';
-    const dashboardData = await publisherIntelligenceService.getPublisherDashboardData(publisherId);
+    
+    // Check if user has email platform integration
+    const emailIntegration = req.query.email_integration ? {
+      platform: req.query.platform as 'mailchimp' | 'convertkit' | 'brevo',
+      credentials: JSON.parse(req.query.credentials as string)
+    } : undefined;
+
+    const dashboardData = await publisherIntelligenceService.getPublisherDashboardData(
+      publisherId, 
+      emailIntegration
+    );
     
     res.json({
       success: true,

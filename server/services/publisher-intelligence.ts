@@ -1,4 +1,5 @@
 import { MarketAlertService, MarketEvent } from './market-alerts';
+import { EmailPlatformService, EmailPlatformMetrics } from './email-platform-integration';
 import axios from 'axios';
 
 export interface PublisherInsight {
@@ -27,9 +28,11 @@ export interface ContentEnhancement {
 
 export class PublisherIntelligenceService {
   private marketAlerts: MarketAlertService;
+  private emailPlatformService: EmailPlatformService;
 
   constructor() {
     this.marketAlerts = new MarketAlertService();
+    this.emailPlatformService = new EmailPlatformService();
   }
 
   /**
@@ -156,7 +159,8 @@ export class PublisherIntelligenceService {
     // Auto-detect stock symbols in content
     if (autoDetectSymbols) {
       const detectedSymbols = this.extractStockSymbols(originalContent);
-      symbols = [...new Set([...symbols, ...detectedSymbols])];
+      symbols = [...symbols, ...detectedSymbols];
+      symbols = symbols.filter((symbol, index, array) => array.indexOf(symbol) === index);
     }
 
     const topics = this.extractTopics(originalContent);
@@ -219,9 +223,12 @@ export class PublisherIntelligenceService {
   }
 
   /**
-   * Get real-time market alerts dashboard for publishers
+   * Get publisher dashboard with only legitimate data from authorized sources
    */
-  async getPublisherDashboardData(publisherId: string): Promise<{
+  async getPublisherDashboardData(publisherId: string, emailIntegration?: {
+    platform: 'mailchimp' | 'convertkit' | 'brevo';
+    credentials: any;
+  }): Promise<{
     marketOverview: {
       majorIndices: Record<string, { value: number; change: number }>;
       sectorLeaders: Array<{ sector: string; performance: number }>;
@@ -229,15 +236,20 @@ export class PublisherIntelligenceService {
     };
     activeAlerts: any[];
     contentSuggestions: string[];
-    subscriberInsights: {
-      cohortPerformance: Record<string, number>;
-      engagementTrends: Array<{ date: string; rate: number }>;
+    emailMetrics: {
+      totalSubscribers: number;
+      recentCampaigns: number;
+      avgOpenRate: number;
+      avgClickRate: number;
     };
   }> {
-    const [sectorPerf, alerts, insights] = await Promise.all([
+    const [sectorPerf, alerts, insights, emailMetrics] = await Promise.all([
       this.marketAlerts.getSectorPerformance(),
       this.marketAlerts.checkMarketAlerts(publisherId),
-      this.generatePublisherInsights(publisherId)
+      this.generatePublisherInsights(publisherId),
+      emailIntegration 
+        ? this.emailPlatformService.getEmailPlatformMetrics(emailIntegration)
+        : Promise.resolve(this.getDefaultEmailMetrics())
     ]);
 
     // Mock major indices data (in production, fetch from Polygon)
@@ -248,13 +260,14 @@ export class PublisherIntelligenceService {
     };
 
     const sectorLeaders = Object.entries(sectorPerf)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 5)
-      .map(([sector, performance]) => ({ sector, performance }));
+      .map(([sector, performance]) => ({ sector, performance: performance as number }));
 
     // Calculate volatility index (simplified)
-    const volatilityIndex = Math.abs(sectorLeaders[0]?.performance || 0) + 
-                          Math.abs(sectorLeaders[sectorLeaders.length - 1]?.performance || 0);
+    const topPerf = sectorLeaders[0]?.performance || 0;
+    const bottomPerf = sectorLeaders[sectorLeaders.length - 1]?.performance || 0;
+    const volatilityIndex = Math.abs(topPerf) + Math.abs(bottomPerf);
 
     return {
       marketOverview: {
@@ -264,20 +277,11 @@ export class PublisherIntelligenceService {
       },
       activeAlerts: alerts.triggeredAlerts,
       contentSuggestions: insights.contentOpportunities,
-      subscriberInsights: {
-        cohortPerformance: {
-          'Professional Investors': 87,
-          'Learning Investors': 64,
-          'Growth Investors': 79,
-          'Income Investors': 71
-        },
-        engagementTrends: [
-          { date: '2024-01-08', rate: 68 },
-          { date: '2024-01-09', rate: 72 },
-          { date: '2024-01-10', rate: 75 },
-          { date: '2024-01-11', rate: 71 },
-          { date: '2024-01-12', rate: 78 }
-        ]
+      emailMetrics: {
+        totalSubscribers: emailMetrics.totalSubscribers,
+        recentCampaigns: emailMetrics.recentCampaigns,
+        avgOpenRate: emailMetrics.avgOpenRate,
+        avgClickRate: emailMetrics.avgClickRate
       }
     };
   }
@@ -345,5 +349,17 @@ export class PublisherIntelligenceService {
 
   private generateFedContent(event: MarketEvent): string {
     return `Fed Decision Breakdown: Multi-Level Analysis (Beginner to Professional)`;
+  }
+
+  private getDefaultEmailMetrics(): EmailPlatformMetrics {
+    return {
+      totalSubscribers: 0,
+      activeSubscribers: 0,
+      recentCampaigns: 0,
+      avgOpenRate: 0,
+      avgClickRate: 0,
+      unsubscribeRate: 0,
+      lastSyncTime: new Date()
+    };
   }
 }
