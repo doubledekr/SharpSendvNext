@@ -29,6 +29,7 @@ import {
   Zap,
   AlertTriangle
 } from 'lucide-react';
+import Sidebar from '@/components/dashboard/sidebar';
 
 interface CohortMetrics {
   cohortId: string;
@@ -53,6 +54,7 @@ interface EmailPerformance {
 }
 
 const CohortAnalytics: React.FC = () => {
+  const [sidebarTab, setSidebarTab] = useState("analytics");
   const [cohortMetrics, setCohortMetrics] = useState<CohortMetrics[]>([]);
   const [emailPerformance, setEmailPerformance] = useState<EmailPerformance[]>([]);
   const [selectedCohort, setSelectedCohort] = useState<string>('all');
@@ -172,8 +174,12 @@ const CohortAnalytics: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex">
+        <Sidebar activeTab={sidebarTab} onTabChange={setSidebarTab} />
+        
+        <div className="flex-1 ml-64 p-6">
+          <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Cohort Analytics</h1>
@@ -413,6 +419,8 @@ const CohortAnalytics: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </div>
           </div>
         </div>
       </div>

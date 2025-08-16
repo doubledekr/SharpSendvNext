@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import NavigationHeader from "@/components/dashboard/navigation-header";
+import Sidebar from "@/components/dashboard/sidebar";
 import {
   BookOpen,
   Code,
@@ -22,6 +23,7 @@ import {
 
 export default function Documentation() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [sidebarTab, setSidebarTab] = useState("overview");
 
   const copyToClipboard = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -134,7 +136,10 @@ export default function Documentation() {
     <div className="min-h-screen bg-slate-900">
       <NavigationHeader currentPage="documentation" />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex">
+        <Sidebar activeTab={sidebarTab} onTabChange={setSidebarTab} />
+        
+        <div className="flex-1 ml-64 px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Documentation & Resources</h1>
@@ -391,6 +396,7 @@ export default function Documentation() {
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );

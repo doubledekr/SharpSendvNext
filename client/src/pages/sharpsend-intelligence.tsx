@@ -20,9 +20,11 @@ import {
   Lightbulb
 } from "lucide-react";
 import CohortAnalysisDashboard from "@/components/cohort-analysis-dashboard";
+import Sidebar from "@/components/dashboard/sidebar";
 
 export default function SharpSendIntelligence() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarTab, setSidebarTab] = useState("intelligence");
 
   const intelligenceMetrics = [
     {
@@ -85,28 +87,32 @@ export default function SharpSendIntelligence() {
 
   return (
     <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <div className="border-b border-slate-700/50 bg-slate-800/50 backdrop-blur-sm">
-        <div className="px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">SharpSend Intelligence</h1>
-              <p className="text-slate-400">AI-powered email intelligence for financial publishers</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                <Brain className="w-3 h-3 mr-1" />
-                AI Powered
-              </Badge>
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                Live Analysis
-              </Badge>
+      <div className="flex">
+        <Sidebar activeTab={sidebarTab} onTabChange={setSidebarTab} />
+        
+        <div className="flex-1 ml-64">
+          {/* Header */}
+          <div className="border-b border-slate-700/50 bg-slate-800/50 backdrop-blur-sm">
+            <div className="px-6 py-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-2">SharpSend Intelligence</h1>
+                  <p className="text-slate-400">AI-powered email intelligence for financial publishers</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                    <Brain className="w-3 h-3 mr-1" />
+                    AI Powered
+                  </Badge>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                    Live Analysis
+                  </Badge>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="px-6 py-6">
+          <div className="px-6 py-6">
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {intelligenceMetrics.map((metric, index) => {
@@ -324,6 +330,8 @@ export default function SharpSendIntelligence() {
             </div>
           </TabsContent>
         </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
+import Sidebar from '@/components/dashboard/sidebar';
 import { 
   PlusCircle, 
   FileText, 
@@ -50,6 +51,7 @@ interface CohortPreview {
 }
 
 export default function EditorialDashboard() {
+  const [sidebarTab, setSidebarTab] = useState("editorial");
   const [contentRequests, setContentRequests] = useState<ContentRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<ContentRequest | null>(null);
   const [cohortPreviews, setCohortPreviews] = useState<CohortPreview[]>([]);
@@ -227,8 +229,12 @@ export default function EditorialDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex">
+        <Sidebar activeTab={sidebarTab} onTabChange={setSidebarTab} />
+        
+        <div className="flex-1 ml-64 p-6">
+          <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Editorial Dashboard</h1>
@@ -649,6 +655,8 @@ export default function EditorialDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );

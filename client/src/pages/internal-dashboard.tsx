@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import NavigationHeader from "@/components/dashboard/navigation-header";
+import Sidebar from "@/components/dashboard/sidebar";
 import { 
   Users, 
   Mail, 
@@ -77,6 +78,7 @@ interface EventTrigger {
 }
 
 export default function InternalDashboard() {
+  const [sidebarTab, setSidebarTab] = useState("overview");
   const [activeTab, setActiveTab] = useState("segments");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSegment, setSelectedSegment] = useState("all");
@@ -290,7 +292,10 @@ export default function InternalDashboard() {
     <div className="min-h-screen bg-slate-900">
       <NavigationHeader currentPage="internal" />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex">
+        <Sidebar activeTab={sidebarTab} onTabChange={setSidebarTab} />
+        
+        <div className="flex-1 ml-64 px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Internal System Dashboard</h1>
@@ -670,6 +675,7 @@ export default function InternalDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );
