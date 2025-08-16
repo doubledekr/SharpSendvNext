@@ -114,6 +114,10 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+  
+  html {
+    @apply dark;
+  }
 }
 
 /* PersonalizeAI Specific Styles */
@@ -129,28 +133,28 @@
   border-color: var(--dark-border);
 }
 
-.bg-brand-blue {
-  background-color: var(--brand-blue);
-}
-
 .text-brand-blue {
-  color: var(--brand-blue);
-}
-
-.bg-brand-green {
-  background-color: var(--brand-green);
+  color: hsl(213 94% 65%);
 }
 
 .text-brand-green {
-  color: var(--brand-green);
-}
-
-.bg-brand-red {
-  background-color: var(--brand-red);
+  color: hsl(158 82% 55%);
 }
 
 .text-brand-red {
-  color: var(--brand-red);
+  color: hsl(358 76% 65%);
+}
+
+.bg-brand-blue {
+  background-color: hsl(213 94% 45%);
+}
+
+.bg-brand-green {
+  background-color: hsl(158 82% 35%);
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: hsl(213 94% 35%);
 }
 
 /* Utility classes for brand colors with opacity */
