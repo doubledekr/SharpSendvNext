@@ -364,7 +364,7 @@ export class MarketIntelligenceService {
       }
     });
     
-    return sentimentValues.reduce((sum, val) => sum + val, 0) / sentimentValues.length;
+    return sentimentValues.reduce((sum: number, val: number) => sum + val, 0) / sentimentValues.length;
   }
 
   private calculateFearGreedIndex(vix: number, sentimentScore: number): number {
@@ -430,7 +430,7 @@ export class MarketIntelligenceService {
       }
     });
     
-    return [...new Set(symbols)]; // Remove duplicates
+    return Array.from(new Set(symbols)); // Remove duplicates
   }
 
   private generateKeyInsights(
@@ -506,9 +506,8 @@ export class MarketIntelligenceService {
   // Database storage methods
   private async storeNewsData(news: MarketNews[]) {
     try {
-      const db = tenantStorage.getDatabase(this.publisherId);
-      // Store in market_news table
-      // Implementation depends on your database schema
+      // TODO: Implement database storage for news data
+      console.log(`Storing ${news.length} news items for publisher ${this.publisherId}`);
     } catch (error) {
       console.error('Error storing news data:', error);
     }
@@ -516,9 +515,8 @@ export class MarketIntelligenceService {
 
   private async storeMarketData(data: MarketData[]) {
     try {
-      const db = tenantStorage.getDatabase(this.publisherId);
-      // Store in market_data table
-      // Implementation depends on your database schema
+      // TODO: Implement database storage for market data
+      console.log(`Storing ${data.length} market data points for publisher ${this.publisherId}`);
     } catch (error) {
       console.error('Error storing market data:', error);
     }
