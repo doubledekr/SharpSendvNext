@@ -41,16 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Register all route modules
-  registerMultiTenantRoutes(app);
-  registerIntegrationRoutes(app);
-  registerEmailRoutes(app);
-  app.use("/api/ai", aiProcessingRoutes);
-  app.use("/api/cohorts", cohortPersonalizationRoutes);
-  app.use("/api/email-optimization", emailOptimizationRoutes);
-  app.use("/api/brevo", brevoIntegrationRoutes);
-
-  // Demo login endpoint for backward compatibility 
+  // Demo login endpoint for backward compatibility (must be before multi-tenant routes) 
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password, subdomain } = req.body;
@@ -88,6 +79,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Login failed" });
     }
   });
+
+  // Register all route modules AFTER demo login
+  registerMultiTenantRoutes(app);
+  registerIntegrationRoutes(app);
+  registerEmailRoutes(app);
+  app.use("/api/ai", aiProcessingRoutes);
+  app.use("/api/cohorts", cohortPersonalizationRoutes);
+  app.use("/api/email-optimization", emailOptimizationRoutes);
+  app.use("/api/brevo", brevoIntegrationRoutes);
 
   // Legacy routes for backward compatibility (these will be deprecated)
   

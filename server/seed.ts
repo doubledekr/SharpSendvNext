@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { db } from "./database";
 import { 
   publishers,
@@ -15,14 +16,20 @@ export async function seedDatabase() {
   
   try {
     // Create demo publisher first
-    const demoPublisher = await db.insert(publishers).values({
-      name: "Demo Publisher",
-      email: "admin@demo.com",
-      subdomain: "demo",
-      plan: "premium"
-    }).onConflictDoNothing().returning();
+    const existingPublisher = await db.select().from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
     
-    const publisherId = demoPublisher[0]?.id || "demo-publisher-id";
+    let publisherId: string;
+    if (existingPublisher.length > 0) {
+      publisherId = existingPublisher[0].id;
+    } else {
+      const demoPublisher = await db.insert(publishers).values({
+        name: "Demo Publisher",
+        email: "admin@demo.com",
+        subdomain: "demo",
+        plan: "premium"
+      }).returning();
+      publisherId = demoPublisher[0].id;
+    }
 
     // Create demo user
     const hashedPassword = await bcrypt.hash("demo", 10);
