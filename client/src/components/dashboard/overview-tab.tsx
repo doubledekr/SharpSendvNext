@@ -70,6 +70,7 @@ interface MarketEventsFeed {
 }
 
 interface FatigueStats {
+  guardrailsEnabled: boolean;
   totalSubscribers: number;
   tiredSubscribers: number;
   blockedToday: number;
@@ -514,13 +515,27 @@ export default function OverviewTab() {
             <CardTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-orange-600" />
               Email Fatigue Guardian
+              {fatigueStats && (
+                <Badge 
+                  variant={fatigueStats.guardrailsEnabled ? "default" : "secondary"}
+                  className={fatigueStats.guardrailsEnabled ? "bg-green-500" : "bg-gray-500"}
+                >
+                  {fatigueStats.guardrailsEnabled ? "Active" : "Monitoring Only"}
+                </Badge>
+              )}
             </CardTitle>
             {fatigueStats && (
               <div className="flex gap-2">
-                {fatigueStats.blockedToday > 0 && (
+                {fatigueStats.guardrailsEnabled && fatigueStats.blockedToday > 0 && (
                   <Badge variant="destructive" className="bg-red-500/90">
                     <UserX className="w-3 h-3 mr-1" />
                     {fatigueStats.blockedToday} Blocked
+                  </Badge>
+                )}
+                {!fatigueStats.guardrailsEnabled && fatigueStats.tiredSubscribers > 0 && (
+                  <Badge className="bg-yellow-500 text-white">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    {fatigueStats.tiredSubscribers} Over Limit
                   </Badge>
                 )}
                 {fatigueStats.criticalCount > 0 && (
@@ -545,6 +560,21 @@ export default function OverviewTab() {
             </div>
           ) : fatigueStats ? (
             <div className="space-y-4">
+              {/* Guardrails Status Notice */}
+              {!fatigueStats.guardrailsEnabled && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                      Guardrails Disabled - Tracking only, no blocking
+                    </span>
+                  </div>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                    Statistics are being collected but subscribers won't be blocked from receiving emails.
+                  </p>
+                </div>
+              )}
+              
               {/* Fatigue Overview */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
@@ -621,6 +651,31 @@ export default function OverviewTab() {
 
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
+                <Button 
+                  size="sm" 
+                  variant={fatigueStats.guardrailsEnabled ? "destructive" : "default"}
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/fatigue/toggle-guardrails', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ enabled: !fatigueStats.guardrailsEnabled })
+                      });
+                      
+                      if (response.ok) {
+                        // Refresh the stats
+                        fetchMarketData();
+                      }
+                    } catch (error) {
+                      console.error('Error toggling guardrails:', error);
+                    }
+                  }}
+                >
+                  <Shield className="w-3 h-3 mr-1" />
+                  {fatigueStats.guardrailsEnabled ? 'Disable Guardrails' : 'Enable Guardrails'}
+                </Button>
                 <Button 
                   size="sm" 
                   variant="outline"

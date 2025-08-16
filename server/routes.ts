@@ -149,11 +149,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         results, 
         blockedCount,
-        allowedCount: results.length - blockedCount
+        allowedCount: results.length - blockedCount,
+        guardrailsEnabled: tracker.getGuardrailsStatus()
       });
     } catch (error) {
       console.error("Error checking send eligibility:", error);
       res.status(500).json({ error: "Failed to check send eligibility" });
+    }
+  });
+  
+  app.post("/api/fatigue/toggle-guardrails", async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      const { EmailFatigueTracker } = await import("./services/email-fatigue-tracker");
+      const tracker = EmailFatigueTracker.getInstance();
+      
+      tracker.setGuardrailsEnabled(enabled);
+      
+      res.json({ 
+        success: true,
+        guardrailsEnabled: enabled,
+        message: enabled ? "Guardrails enabled - Subscribers will be blocked at limits" : "Guardrails disabled - No blocking but stats still collected"
+      });
+    } catch (error) {
+      console.error("Error toggling guardrails:", error);
+      res.status(500).json({ error: "Failed to toggle guardrails" });
     }
   });
 

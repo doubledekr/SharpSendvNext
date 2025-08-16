@@ -42,6 +42,9 @@ export class EmailFatigueTracker {
     warningThreshold: 80
   };
   
+  // Guardrails enabled/disabled state
+  private guardrailsEnabled: boolean = true;
+  
   // In-memory storage for demo (would use database in production)
   private emailHistory: Map<string, EmailFrequency> = new Map();
   private segmentStats: Map<string, { daily: number; weekly: number; subscribers: Set<string> }> = new Map();
@@ -239,9 +242,10 @@ export class EmailFatigueTracker {
     const alerts = this.getFatigueAlerts();
     
     return {
+      guardrailsEnabled: this.guardrailsEnabled,
       totalSubscribers: this.emailHistory.size,
       tiredSubscribers: tiredList.length,
-      blockedToday: tiredList.filter(s => s.status === 'blocked').length,
+      blockedToday: this.guardrailsEnabled ? tiredList.filter(s => s.status === 'blocked').length : 0,
       warningCount: alerts.filter(a => a.severity === 'warning').length,
       criticalCount: alerts.filter(a => a.severity === 'critical').length,
       averageFatigueScore: Math.round(
@@ -267,7 +271,11 @@ export class EmailFatigueTracker {
   private generateRecommendations(tiredList: any[], alerts: FatigueAlert[]): string[] {
     const recommendations: string[] = [];
     
-    if (tiredList.filter(s => s.status === 'blocked').length > 0) {
+    if (!this.guardrailsEnabled) {
+      if (tiredList.filter(s => s.status === 'blocked').length > 0) {
+        recommendations.push(`⚠️ Guardrails disabled: ${tiredList.filter(s => s.status === 'blocked').length} subscribers would be blocked but are still receiving emails.`);
+      }
+    } else if (tiredList.filter(s => s.status === 'blocked').length > 0) {
       recommendations.push(`${tiredList.filter(s => s.status === 'blocked').length} subscribers have hit daily limits. They'll be auto-excluded from today's sends.`);
     }
     
@@ -352,13 +360,35 @@ export class EmailFatigueTracker {
   /**
    * Check if send should be blocked
    */
-  public shouldBlockSend(subscriberId: string): { blocked: boolean; reason?: string } {
+  public shouldBlockSend(subscriberId: string): { blocked: boolean; reason?: string; guardrailsDisabled?: boolean } {
     const frequency = this.emailHistory.get(subscriberId);
     
     if (!frequency) {
       return { blocked: false };
     }
     
+    // If guardrails are disabled, never block but still provide the reason
+    if (!this.guardrailsEnabled) {
+      if (frequency.dailyCount >= this.defaultThresholds.dailyLimit) {
+        return { 
+          blocked: false, 
+          guardrailsDisabled: true,
+          reason: `Would block: Daily limit reached (${frequency.dailyCount}/${this.defaultThresholds.dailyLimit}) - Guardrails disabled` 
+        };
+      }
+      
+      if (frequency.weeklyCount >= this.defaultThresholds.weeklyLimit) {
+        return { 
+          blocked: false, 
+          guardrailsDisabled: true,
+          reason: `Would block: Weekly limit reached (${frequency.weeklyCount}/${this.defaultThresholds.weeklyLimit}) - Guardrails disabled` 
+        };
+      }
+      
+      return { blocked: false };
+    }
+    
+    // Guardrails enabled - normal blocking behavior
     if (frequency.dailyCount >= this.defaultThresholds.dailyLimit) {
       return { 
         blocked: true, 
@@ -374,5 +404,19 @@ export class EmailFatigueTracker {
     }
     
     return { blocked: false };
+  }
+  
+  /**
+   * Enable or disable guardrails
+   */
+  public setGuardrailsEnabled(enabled: boolean): void {
+    this.guardrailsEnabled = enabled;
+  }
+  
+  /**
+   * Get current guardrails status
+   */
+  public getGuardrailsStatus(): boolean {
+    return this.guardrailsEnabled;
   }
 }
