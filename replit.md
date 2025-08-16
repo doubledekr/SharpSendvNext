@@ -8,6 +8,13 @@ SharpSend.io is an AI-powered newsletter personalization platform designed speci
 
 Preferred communication style: Simple, everyday language.
 
+## Pricing Strategy
+B2B SaaS pricing with high-margin credit system:
+- Starter: $99/month (2 cohorts, 1K emails, $0.15 overage)
+- Professional: $299/month (5 cohorts, 5K emails, $0.12 overage)  
+- Enterprise: $799/month (unlimited cohorts, 20K emails, $0.08 overage)
+- Revenue focus on overage charges for scalable growth
+
 ## Recent Changes
 
 **August 16, 2025 - SharpSend Strategic Alignment Completed**

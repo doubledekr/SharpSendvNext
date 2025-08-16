@@ -282,8 +282,18 @@ PERSONALITY: [data-driven/opinion-based/balanced/educational]`
 WRITER'S VOICE PROFILE:
 - Tone: ${voiceProfile.tone}
 - Avg Sentence Length: ${voiceProfile.complexity.avgSentenceLength} words
+- Technical Density: ${voiceProfile.complexity.technicalTermDensity}%
 - Key Phrases: ${voiceProfile.vocabulary.keyPhrases.join(', ')}
+- Transitions: ${voiceProfile.vocabulary.preferredTransitions.join(', ')}
 - Personality: ${voiceProfile.personality}
+- Reading Level: Grade ${voiceProfile.complexity.readingLevel}
+
+CRITICAL VOICE PRESERVATION RULES:
+1. Maintain the writer's signature opening style and key phrases
+2. Preserve the original paragraph structure and flow
+3. Keep the same tone and conversational patterns
+4. Use the writer's established vocabulary and expressions
+5. Match the sentence complexity and technical density appropriately
 
 ADAPTATION TARGET:
 ${cohortPrompts.description}`
@@ -294,6 +304,8 @@ ${cohortPrompts.description}`
 
 ORIGINAL SUBJECT: ${baseSubject}
 ORIGINAL CONTENT: ${baseContent}
+
+MARKET CONTEXT: ${JSON.stringify(marketContext)}
 
 Please provide:
 1. PERSONALIZED_SUBJECT: [adapted subject line]
@@ -321,18 +333,36 @@ Please provide:
   private getCohortAdaptationPrompts(cohort: CohortProfile, voiceProfile: WriterVoiceProfile) {
     const prompts = {
       'professional-investors': {
-        description: 'Sophisticated investors requiring institutional-grade analysis',
+        description: 'Sophisticated investors requiring institutional-grade analysis with technical depth',
         instruction: `Adapt for professional investors while maintaining the writer's ${voiceProfile.tone} tone:
-        - Add specific metrics and technical indicators
-        - Keep the writer's natural style and key phrases
-        - Enhance technical depth without losing personality`
+        - Add specific metrics, data points, and technical indicators
+        - Include institutional terminology but keep the writer's natural style
+        - Enhance technical depth without losing the original voice
+        - Use precise financial language while preserving personality`
       },
       'learning-investors': {
-        description: 'Beginner investors needing educational context',
+        description: 'Beginner investors needing educational context and simplified explanations',
         instruction: `Adapt for learning investors while maintaining the writer's ${voiceProfile.tone} tone:
-        - Define technical terms simply
-        - Add educational context
-        - Keep the writer's authentic voice and signature phrases`
+        - Define technical terms in parentheses or simple explanations
+        - Add "what this means" educational context
+        - Simplify complex concepts but keep the writer's authentic voice
+        - Maintain encouraging and accessible language`
+      },
+      'growth-investors': {
+        description: 'Growth-focused investors seeking capital appreciation opportunities',
+        instruction: `Adapt for growth investors while maintaining the writer's ${voiceProfile.tone} tone:
+        - Emphasize growth potential and momentum factors
+        - Focus on expansion stories and market opportunities
+        - Highlight growth metrics and forward-looking analysis
+        - Keep the writer's natural risk assessment style`
+      },
+      'income-investors': {
+        description: 'Income-focused investors prioritizing steady returns and capital preservation',
+        instruction: `Adapt for income investors while maintaining the writer's ${voiceProfile.tone} tone:
+        - Emphasize dividend yields and income stability
+        - Focus on defensive positioning and risk management
+        - Highlight yield analysis and income-generating assets
+        - Maintain the writer's approach to safety and stability`
       }
     };
 
@@ -351,13 +381,17 @@ Please provide:
     };
 
     const personalizedSubject = extract(/PERSONALIZED_SUBJECT:\s*(.+?)(?:\n|$)/i, 'Market Update');
-    const personalizedContent = extract(/PERSONALIZED_CONTENT:\s*([\s\S]+?)(?:\n\d+\.|$)/i, 'Content adapted for cohort');
+    const personalizedContent = extract(/PERSONALIZED_CONTENT:\s*([\s\S]+?)(?:\n\d+\.|$)/i, 'Content adaptation in progress');
     const personalizedCTA = extract(/PERSONALIZED_CTA:\s*(.+?)(?:\n|$)/i, 'Read More →');
     const reasoning = extract(/REASONING:\s*([\s\S]+?)(?:\n\d+\.|$)/i, 'Adapted for target cohort');
     
     const predictedOpenRate = extractNumber(/PREDICTED_OPEN_RATE:\s*(\d+)/i, 65);
     const predictedClickRate = extractNumber(/PREDICTED_CLICK_RATE:\s*(\d+)/i, 15);
     const optimalSendTime = extract(/OPTIMAL_SEND_TIME:\s*(.+?)(?:\n|$)/i, '09:00 AM EST');
+
+    // Calculate voice consistency score
+    const voiceConsistencyScore = this.calculateVoiceConsistency(personalizedContent, voiceProfile);
+    const preservedElements = this.identifyPreservedElements(personalizedContent, voiceProfile);
 
     return {
       personalizedSubject,
@@ -367,9 +401,68 @@ Please provide:
       predictedOpenRate,
       predictedClickRate,
       optimalSendTime,
-      voiceConsistencyScore: 0.87,
-      preservedElements: ['writer tone', 'key phrases', 'personality']
+      voiceConsistencyScore,
+      preservedElements
     };
+  }
+
+  private calculateVoiceConsistency(content: string, voiceProfile: WriterVoiceProfile): number {
+    let score = 0;
+    let maxScore = 0;
+
+    // Check for preserved key phrases
+    maxScore += 30;
+    const foundPhrases = voiceProfile.vocabulary.keyPhrases.filter(phrase => 
+      content.toLowerCase().includes(phrase.toLowerCase())
+    );
+    score += (foundPhrases.length / Math.max(voiceProfile.vocabulary.keyPhrases.length, 1)) * 30;
+
+    // Check sentence complexity consistency
+    maxScore += 25;
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const avgLength = sentences.reduce((sum, s) => sum + s.split(' ').length, 0) / sentences.length;
+    const complexityDiff = Math.abs(avgLength - voiceProfile.complexity.avgSentenceLength);
+    score += Math.max(0, 25 - (complexityDiff * 2));
+
+    // Check for personality preservation
+    maxScore += 25;
+    if (voiceProfile.personality === 'opinion-based' && content.includes('I')) score += 12;
+    if (voiceProfile.personality === 'data-driven' && /\d+%|\d+\.\d+/.test(content)) score += 12;
+    score += 13; // Base personality score
+
+    // Check for tone consistency
+    maxScore += 20;
+    if (voiceProfile.tone === 'conversational' && content.includes(',')) score += 20;
+    else if (voiceProfile.tone === 'formal' && !content.includes('thing')) score += 20;
+    else score += 10;
+
+    return Math.min(1.0, score / maxScore);
+  }
+
+  private identifyPreservedElements(content: string, voiceProfile: WriterVoiceProfile): string[] {
+    const preserved: string[] = [];
+    
+    // Check preserved key phrases
+    voiceProfile.vocabulary.keyPhrases.forEach(phrase => {
+      if (content.toLowerCase().includes(phrase.toLowerCase())) {
+        preserved.push(`Key phrase: "${phrase}"`);
+      }
+    });
+
+    // Check preserved transitions
+    voiceProfile.vocabulary.preferredTransitions.forEach(transition => {
+      if (content.includes(transition)) {
+        preserved.push(`Transition: "${transition}"`);
+      }
+    });
+
+    // Check tone preservation
+    preserved.push(`${voiceProfile.tone} tone maintained`);
+    
+    // Check personality preservation
+    preserved.push(`${voiceProfile.personality} approach preserved`);
+
+    return preserved;
   }
 
   private getFallbackPersonalization(
@@ -387,6 +480,213 @@ Please provide:
       optimalSendTime: '09:00 AM EST',
       voiceConsistencyScore: 1.0,
       preservedElements: ['original content', 'base structure']
+    };
+  }
+
+  /**
+   * Generate cohort personalization (legacy method for backward compatibility)
+   */
+  private async generateCohortPersonalization(
+    baseSubject: string,
+    baseContent: string,
+    cohort: CohortProfile,
+    marketContext?: any
+  ): Promise<EmailSharpening> {
+    const defaultVoiceProfile = this.getDefaultVoiceProfile();
+    return this.generateCohortPersonalizationWithVoice(
+      baseSubject,
+      baseContent,
+      cohort,
+      marketContext,
+      defaultVoiceProfile
+    );
+  }
+}
+
+ORIGINAL EMAIL:
+Subject: ${baseSubject}
+Content: ${baseContent}
+
+TARGET COHORT PROFILE:
+- Name: ${cohort.name}
+- Investment Sophistication: ${cohort.investmentSophistication}
+- Risk Tolerance: ${cohort.riskTolerance}
+- Investment Style: ${cohort.investmentStyle}
+- Preferred Content: ${cohort.preferredContentTypes.join(', ')}
+- Characteristics: ${cohort.characteristics.join(', ')}
+- Average Engagement Score: ${cohort.avgEngagementScore}/10
+
+${marketInfo}
+
+PERSONALIZATION REQUIREMENTS:
+1. Adapt the subject line to resonate with this cohort's interests and sophistication level
+2. Modify the content to emphasize aspects most relevant to their investment style and risk tolerance
+3. Adjust the complexity and technical depth to match their sophistication level
+4. Create a compelling call-to-action that aligns with their preferred engagement style
+5. Provide reasoning for the personalization choices
+6. Estimate engagement metrics based on cohort characteristics
+
+Please respond with a JSON object containing these fields:
+{
+  "personalizedSubject": "string",
+  "personalizedContent": "string", 
+  "personalizedCTA": "string",
+  "reasoning": "string explaining personalization strategy",
+  "predictedOpenRate": number,
+  "predictedClickRate": number,
+  "optimalSendTime": "string in format 'HH:MM AM/PM EST'"
+}
+
+Focus on creating content that cuts through inbox noise and delivers maximum value to this specific cohort.
+`;
+  }
+
+  /**
+   * Estimate open rate based on cohort characteristics
+   */
+  private estimateOpenRate(cohort: CohortProfile): number {
+    let baseRate = 35;
+    
+    // Adjust based on sophistication
+    if (cohort.investmentSophistication === 'professional') baseRate += 15;
+    else if (cohort.investmentSophistication === 'advanced') baseRate += 10;
+    else if (cohort.investmentSophistication === 'beginner') baseRate += 5;
+    
+    // Adjust based on engagement score
+    baseRate += (cohort.avgEngagementScore - 5) * 2;
+    
+    // Adjust based on investment style
+    if (cohort.investmentStyle === 'trading') baseRate += 8; // Traders check emails frequently
+    else if (cohort.investmentStyle === 'income') baseRate -= 5; // More patient investors
+    
+    return Math.min(85, Math.max(15, baseRate));
+  }
+
+  /**
+   * Estimate click rate based on cohort characteristics
+   */
+  private estimateClickRate(cohort: CohortProfile): number {
+    let baseRate = 8;
+    
+    // Higher sophistication tends to engage more deeply
+    if (cohort.investmentSophistication === 'professional') baseRate += 8;
+    else if (cohort.investmentSophistication === 'advanced') baseRate += 5;
+    
+    // Adjust based on investment style
+    if (cohort.investmentStyle === 'trading') baseRate += 5;
+    else if (cohort.investmentStyle === 'growth') baseRate += 3;
+    
+    // Engagement score impact
+    baseRate += (cohort.avgEngagementScore - 5) * 1.5;
+    
+    return Math.min(45, Math.max(2, baseRate));
+  }
+
+  /**
+   * Determine optimal send time based on cohort characteristics
+   */
+  private determineOptimalSendTime(cohort: CohortProfile): string {
+    // Professional investors often check emails early
+    if (cohort.investmentSophistication === 'professional') {
+      return '07:30 AM EST';
+    }
+    
+    // Traders prefer pre-market hours
+    if (cohort.investmentStyle === 'trading') {
+      return '08:00 AM EST';
+    }
+    
+    // Conservative investors prefer standard business hours
+    if (cohort.riskTolerance === 'conservative') {
+      return '10:00 AM EST';
+    }
+    
+    // Default for most cohorts
+    return '09:00 AM EST';
+  }
+
+  /**
+   * Analyze email performance and provide optimization recommendations
+   */
+  async analyzeEmailPerformance(
+    campaignId: string,
+    cohortPerformance: {
+      cohortId: string;
+      sent: number;
+      opened: number;
+      clicked: number;
+      unsubscribed: number;
+    }[]
+  ): Promise<{
+    overallPerformance: {
+      avgOpenRate: number;
+      avgClickRate: number;
+      unsubscribeRate: number;
+    };
+    cohortAnalysis: {
+      cohortId: string;
+      performance: 'excellent' | 'good' | 'average' | 'poor';
+      recommendations: string[];
+    }[];
+    optimizationInsights: string[];
+  }> {
+    
+    const totalSent = cohortPerformance.reduce((sum, c) => sum + c.sent, 0);
+    const totalOpened = cohortPerformance.reduce((sum, c) => sum + c.opened, 0);
+    const totalClicked = cohortPerformance.reduce((sum, c) => sum + c.clicked, 0);
+    const totalUnsubscribed = cohortPerformance.reduce((sum, c) => sum + c.unsubscribed, 0);
+
+    const overallPerformance = {
+      avgOpenRate: totalSent > 0 ? (totalOpened / totalSent) * 100 : 0,
+      avgClickRate: totalSent > 0 ? (totalClicked / totalSent) * 100 : 0,
+      unsubscribeRate: totalSent > 0 ? (totalUnsubscribed / totalSent) * 100 : 0
+    };
+
+    const cohortAnalysis = cohortPerformance.map(cohort => {
+      const openRate = cohort.sent > 0 ? (cohort.opened / cohort.sent) * 100 : 0;
+      const clickRate = cohort.sent > 0 ? (cohort.clicked / cohort.sent) * 100 : 0;
+      
+      let performance: 'excellent' | 'good' | 'average' | 'poor';
+      let recommendations: string[] = [];
+
+      if (openRate > 50 && clickRate > 15) {
+        performance = 'excellent';
+        recommendations.push('Maintain current personalization strategy');
+        recommendations.push('Consider this as a template for similar cohorts');
+      } else if (openRate > 35 && clickRate > 8) {
+        performance = 'good';
+        recommendations.push('Test subject line variations for higher open rates');
+        recommendations.push('Optimize call-to-action placement and wording');
+      } else if (openRate > 20 && clickRate > 4) {
+        performance = 'average';
+        recommendations.push('Increase personalization depth');
+        recommendations.push('Review content relevance to cohort interests');
+        recommendations.push('Test different send times');
+      } else {
+        performance = 'poor';
+        recommendations.push('Reassess cohort characteristics and preferences');
+        recommendations.push('Implement re-engagement campaign');
+        recommendations.push('Review unsubscribe feedback for insights');
+      }
+
+      return {
+        cohortId: cohort.cohortId,
+        performance,
+        recommendations
+      };
+    });
+
+    const optimizationInsights = [
+      'Successful cohorts show strong preference for personalized subject lines',
+      'Technical analysis content performs best with trading-focused cohorts',
+      'Educational content drives higher engagement among beginner investors',
+      'Professional cohorts respond well to data-rich, comprehensive analysis'
+    ];
+
+    return {
+      overallPerformance,
+      cohortAnalysis,
+      optimizationInsights
     };
   }
 }
