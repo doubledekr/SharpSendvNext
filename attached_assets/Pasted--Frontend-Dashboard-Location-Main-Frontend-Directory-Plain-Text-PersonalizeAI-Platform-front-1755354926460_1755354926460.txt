@@ -1,0 +1,98 @@
+📁 Frontend Dashboard Location
+Main Frontend Directory:
+Plain Text
+PersonalizeAI-Platform/
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx                    # Main dashboard component
+│   │   ├── components/
+│   │   │   ├── OverviewTab.jsx        # Overview dashboard tab
+│   │   │   ├── SubscribersTab.jsx     # Subscribers management
+│   │   │   ├── PersonalizationTab.jsx # AI personalization
+│   │   │   ├── AnalyticsTab.jsx       # Analytics dashboard
+│   │   │   ├── ABTestingTab.jsx       # A/B testing lab
+│   │   │   ├── RevenueImpactTab.jsx   # Revenue analysis
+│   │   │   ├── EmailIntegrationTab.jsx # Email platforms
+│   │   │   └── AdvancedFeaturesTab.jsx # Advanced AI features
+│   │   ├── main.jsx                   # React entry point
+│   │   └── index.css                  # Styling
+│   ├── package.json                   # Dependencies
+│   ├── vite.config.js                 # Vite configuration
+│   ├── tailwind.config.js             # Tailwind CSS config
+│   └── index.html                     # HTML template
+🎯 Key Files for Replit
+1. Main Dashboard Component:
+frontend/src/App.jsx - Contains the complete 8-tab dashboard with:
+Navigation tabs
+All dashboard components
+API integration
+State management
+2. Individual Tab Components:
+frontend/src/components/ - Each tab is a separate component:
+OverviewTab.jsx - Key metrics and KPIs
+SubscribersTab.jsx - Subscriber management interface
+PersonalizationTab.jsx - AI segmentation dashboard
+AnalyticsTab.jsx - Charts and performance metrics
+And 4 more professional tabs...
+3. Configuration Files:
+package.json - All React dependencies
+vite.config.js - Development server config
+tailwind.config.js - UI styling framework
+🚀 Replit Setup Instructions
+Option 1: Import Entire Repository
+Import from GitHub in Replit
+Select repository: https://github.com/doubledekr/PersonalizeAI-Platform.git
+Replit will automatically detect the frontend in /frontend/ directory
+Option 2: Configure Replit Run Command
+In your .replit file, set:
+toml
+run = "cd frontend && npm install && npm run dev"
+
+[env]
+NODE_ENV = "development"
+Option 3: Manual Setup in Replit
+If Replit doesn't auto-detect:
+Bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+🔧 Important: API Configuration
+The frontend expects the backend API at a specific URL. In Replit, you'll need to update:
+frontend/src/App.jsx - Line ~15:
+JavaScript
+// Change this to your Replit backend URL
+const API_BASE_URL = 'https://your-repl-name.your-username.repl.co:8000/api'
+📋 What Replit Will Get
+Complete Dashboard Features:
+✅ Professional 8-tab interface with Tailwind CSS styling
+
+✅ Real-time data visualization with charts and metrics
+
+✅ Responsive design that works on desktop and mobile
+
+✅ Interactive components for subscriber management
+
+✅ Revenue impact calculator showing $285K projections
+
+✅ A/B testing interface with live results
+
+✅ Email platform integration status dashboard
+
+✅ Advanced AI features monitoring and control
+Technical Stack:
+React 18 with modern hooks
+Vite for fast development
+Tailwind CSS for professional styling
+Recharts for data visualization
+Lucide React for icons
+🎯 Replit-Specific Notes
+Port Configuration: Frontend runs on port 3000 by default
+Backend Integration: Make sure backend runs on port 8000
+Environment Variables: Set VITE_API_URL in Replit secrets
+Host Configuration: Vite config already includes allowedHosts: 'all'
+The complete dashboard design is ready to use in the frontend/ directory - Replit just needs to run npm install && npm run dev from that folder! 🚀
