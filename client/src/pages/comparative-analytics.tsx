@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import NavigationHeader from "@/components/dashboard/navigation-header";
+import Sidebar from "@/components/dashboard/sidebar";
 import {
   BarChart3,
   TrendingUp,
@@ -43,6 +44,7 @@ import {
 
 export default function ComparativeAnalytics() {
   const [selectedPeriod, setSelectedPeriod] = useState('7days');
+  const [sidebarTab, setSidebarTab] = useState("overview");
   
   // Email version performance data
   const versionPerformance = [
@@ -167,7 +169,10 @@ export default function ComparativeAnalytics() {
     <div className="min-h-screen bg-slate-900">
       <NavigationHeader currentPage="comparative-analytics" />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex">
+        <Sidebar activeTab={sidebarTab} onTabChange={setSidebarTab} />
+        
+        <div className="flex-1 ml-64 px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Comparative Analytics</h1>
           <p className="text-slate-400">Compare performance across variations, times, and segments</p>
@@ -536,6 +541,7 @@ export default function ComparativeAnalytics() {
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );

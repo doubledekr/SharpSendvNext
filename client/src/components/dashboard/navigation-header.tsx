@@ -64,13 +64,7 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ currentPage }) => {
       description: 'Preview and approve campaigns',
       badge: 'AI'
     },
-    {
-      id: 'analytics',
-      label: 'Analytics',
-      path: '/analytics',
-      icon: TrendingUp,
-      description: 'Performance and cohort insights'
-    }
+
   ];
 
   return (

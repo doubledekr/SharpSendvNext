@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import NavigationHeader from "@/components/dashboard/navigation-header";
+import Sidebar from "@/components/dashboard/sidebar";
 import {
   User,
   CreditCard,
@@ -25,6 +26,7 @@ import {
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("account");
+  const [sidebarTab, setSidebarTab] = useState("overview");
   
   const subscriptionData = {
     plan: "Enterprise",
@@ -59,7 +61,10 @@ export default function Profile() {
     <div className="min-h-screen bg-slate-900">
       <NavigationHeader currentPage="profile" />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex">
+        <Sidebar activeTab={sidebarTab} onTabChange={setSidebarTab} />
+        
+        <div className="flex-1 ml-64 px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Account & Profile</h1>
           <p className="text-slate-400">Manage your account settings, subscription, and billing</p>
@@ -376,6 +381,7 @@ export default function Profile() {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );
