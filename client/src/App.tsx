@@ -16,6 +16,8 @@ import NotFound from "@/pages/not-found";
 import { CampaignManagement } from "@/pages/CampaignManagement";
 import { AssignmentPortal } from "@/pages/AssignmentPortal";
 import EmailPlatformDashboard from "@/pages/email-platform-dashboard";
+import InternalDashboard from "@/pages/internal-dashboard";
+import Documentation from "@/pages/documentation";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -63,6 +65,8 @@ function Router() {
       <Route path="/analytics" component={() => <ProtectedRoute component={CohortAnalytics} />} />
       <Route path="/intelligence" component={() => <ProtectedRoute component={SharpSendIntelligence} />} />
       <Route path="/email-platforms" component={() => <ProtectedRoute component={EmailPlatformDashboard} />} />
+      <Route path="/internal" component={() => <ProtectedRoute component={InternalDashboard} />} />
+      <Route path="/documentation" component={() => <ProtectedRoute component={Documentation} />} />
       <Route path="/campaigns" component={CampaignManagement} />
       <Route path="/assignment/:token" component={AssignmentPortal} />
       <Route component={NotFound} />

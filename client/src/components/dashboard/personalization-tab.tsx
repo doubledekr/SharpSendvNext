@@ -11,7 +11,8 @@ import {
   Settings, 
   Send, 
   Eye, 
-  RefreshCw 
+  RefreshCw,
+  Edit
 } from "lucide-react";
 
 export default function PersonalizationTab() {

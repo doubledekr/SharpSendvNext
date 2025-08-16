@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { CampaignManagementService } from './services/campaign-management';
-import { AIAssignmentGeneratorService } from './services/ai-assignment-generator';
+import { AIAssignmentGenerator } from './services/ai-assignment-generator';
 import { z } from 'zod';
 
 const router = Router();
 const campaignService = new CampaignManagementService();
-const aiAssignmentService = new AIAssignmentGeneratorService();
+const aiAssignmentService = new AIAssignmentGenerator();
 
 // Validation schemas
 const createProjectSchema = z.object({

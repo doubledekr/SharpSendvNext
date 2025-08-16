@@ -70,14 +70,6 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ currentPage }) => {
       path: '/analytics',
       icon: TrendingUp,
       description: 'Performance and cohort insights'
-    },
-    {
-      id: 'email-platforms',
-      label: 'Email Platforms',
-      path: '/email-platforms',
-      icon: Mail,
-      description: 'Multi-platform email management',
-      badge: '99.95%'
     }
   ];
 

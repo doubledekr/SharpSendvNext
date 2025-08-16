@@ -7,7 +7,13 @@ import {
   FlaskConical, 
   DollarSign, 
   Mail, 
-  Settings 
+  Settings,
+  Server,
+  BookOpen,
+  HelpCircle,
+  Code,
+  FileText,
+  Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -21,12 +27,23 @@ const navigationItems = [
   { id: 'overview', label: 'Overview', icon: ChartLine },
   { id: 'subscribers', label: 'Subscribers', icon: Users },
   { id: 'personalization', label: 'Personalization', icon: Wand2 },
-  { id: 'campaigns', label: 'Campaign Projects', icon: Settings, isExternal: true },
+  { id: 'campaigns', label: 'Campaign Projects', icon: Settings, isExternal: true, path: '/campaigns' },
+  { id: 'internal', label: 'Internal System', icon: Database, isExternal: true, path: '/internal' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'abtesting', label: 'A/B Testing', icon: FlaskConical },
   { id: 'revenue', label: 'Revenue Impact', icon: DollarSign },
   { id: 'email', label: 'Email Integration', icon: Mail },
   { id: 'advanced', label: 'Advanced Features', icon: Settings },
+];
+
+const emailIntegrationItems = [
+  { id: 'email-platforms', label: 'Platform Status', icon: Server, path: '/email-platforms', badge: '99.95%' },
+];
+
+const helpItems = [
+  { id: 'documentation', label: 'Documentation', icon: BookOpen },
+  { id: 'api', label: 'API Reference', icon: Code },
+  { id: 'faq', label: 'FAQ & Help', icon: HelpCircle },
 ];
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
@@ -53,7 +70,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           
           if ((item as any).isExternal) {
             return (
-              <Link key={item.id} href="/campaigns">
+              <Link key={item.id} href={(item as any).path || "/campaigns"}>
                 <Button
                   variant="ghost"
                   className="w-full justify-start space-x-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-700"
@@ -63,6 +80,50 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                   <span>{item.label}</span>
                 </Button>
               </Link>
+            );
+          }
+
+          if (item.id === 'email') {
+            return (
+              <div key={item.id}>
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive 
+                      ? 'bg-brand-blue text-white hover:bg-brand-blue' 
+                      : 'text-slate-300 hover:bg-slate-700'
+                  }`}
+                  onClick={() => onTabChange(item.id)}
+                  data-testid={`button-tab-${item.id}`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Button>
+                {/* Email Integration Submenu */}
+                {isActive && (
+                  <div className="ml-4 mt-2 space-y-1">
+                    {emailIntegrationItems.map((subItem) => {
+                      const SubIcon = subItem.icon;
+                      return (
+                        <Link key={subItem.id} href={subItem.path}>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start space-x-2 px-3 py-2 text-sm rounded-lg transition-colors text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+                          >
+                            <SubIcon className="h-4 w-4" />
+                            <span className="flex-1">{subItem.label}</span>
+                            {subItem.badge && (
+                              <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">
+                                {subItem.badge}
+                              </span>
+                            )}
+                          </Button>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           }
 
@@ -84,6 +145,36 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* Documentation Section */}
+      <div className="p-4 border-t border-dark-border mt-auto">
+        <p className="text-xs text-slate-500 uppercase font-semibold mb-3">Resources</p>
+        <div className="space-y-1">
+          <Link href="/documentation">
+            <Button
+              variant="ghost"
+              className="w-full justify-start space-x-2 px-3 py-2 text-sm rounded-lg transition-colors text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Documentation</span>
+            </Button>
+          </Link>
+          {helpItems.filter(item => item.id !== 'documentation').map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.id} href="/documentation">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start space-x-2 px-3 py-2 text-sm rounded-lg transition-colors text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </Button>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
 
       {/* User Profile */}
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-dark-border bg-dark-surface">
