@@ -17,7 +17,10 @@ import {
   Send,
   FileEdit,
   Zap,
-  AlertTriangle
+  AlertTriangle,
+  UserX,
+  Mail,
+  Shield
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +69,22 @@ interface MarketEventsFeed {
   lastUpdated: string;
 }
 
+interface FatigueStats {
+  totalSubscribers: number;
+  tiredSubscribers: number;
+  blockedToday: number;
+  warningCount: number;
+  criticalCount: number;
+  averageFatigueScore: number;
+  topTiredSegments: Array<{
+    name: string;
+    avgDaily: number;
+    avgWeekly: number;
+    subscribers: number;
+  }>;
+  recommendations: string[];
+}
+
 export default function OverviewTab() {
   // Use demo data that matches the header values
   const analytics = {
@@ -80,6 +99,8 @@ export default function OverviewTab() {
   const [loadingMarket, setLoadingMarket] = useState(true);
   const [marketEvents, setMarketEvents] = useState<MarketEventsFeed | null>(null);
   const [loadingEvents, setLoadingEvents] = useState(true);
+  const [fatigueStats, setFatigueStats] = useState<FatigueStats | null>(null);
+  const [loadingFatigue, setLoadingFatigue] = useState(true);
 
   // Fetch market data on component mount
   useEffect(() => {
@@ -90,10 +111,11 @@ export default function OverviewTab() {
   }, []);
 
   const fetchMarketData = async () => {
-    // Fetch both sentiment and events in parallel
-    const [sentimentResponse, eventsResponse] = await Promise.all([
+    // Fetch sentiment, events, and fatigue data in parallel
+    const [sentimentResponse, eventsResponse, fatigueResponse] = await Promise.all([
       fetch('/api/market-sentiment').catch(() => null),
-      fetch('/api/market-events-feed').catch(() => null)
+      fetch('/api/market-events-feed').catch(() => null),
+      fetch('/api/fatigue/dashboard-stats').catch(() => null)
     ]);
     
     if (sentimentResponse) {
@@ -115,6 +137,17 @@ export default function OverviewTab() {
       } catch (error) {
         console.error('Error parsing market events:', error);
         setLoadingEvents(false);
+      }
+    }
+    
+    if (fatigueResponse) {
+      try {
+        const data = await fatigueResponse.json();
+        setFatigueStats(data);
+        setLoadingFatigue(false);
+      } catch (error) {
+        console.error('Error parsing fatigue stats:', error);
+        setLoadingFatigue(false);
       }
     }
   };
@@ -456,6 +489,150 @@ export default function OverviewTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Email Fatigue Monitoring Card */}
+      <Card className="mb-6 border-orange-500/20 bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/10 dark:to-gray-900">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-orange-600" />
+              Email Fatigue Guardian
+            </CardTitle>
+            {fatigueStats && (
+              <div className="flex gap-2">
+                {fatigueStats.blockedToday > 0 && (
+                  <Badge variant="destructive" className="bg-red-500/90">
+                    <UserX className="w-3 h-3 mr-1" />
+                    {fatigueStats.blockedToday} Blocked
+                  </Badge>
+                )}
+                {fatigueStats.criticalCount > 0 && (
+                  <Badge className="bg-orange-500 text-white">
+                    {fatigueStats.criticalCount} Critical
+                  </Badge>
+                )}
+                {fatigueStats.warningCount > 0 && (
+                  <Badge className="bg-yellow-500 text-white">
+                    {fatigueStats.warningCount} Warnings
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingFatigue ? (
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          ) : fatigueStats ? (
+            <div className="space-y-4">
+              {/* Fatigue Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {fatigueStats.tiredSubscribers}
+                  </div>
+                  <div className="text-xs text-gray-500">Tired Subscribers</div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {fatigueStats.averageFatigueScore}%
+                  </div>
+                  <div className="text-xs text-gray-500">Avg Fatigue Score</div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="text-2xl font-bold text-red-600">
+                    {fatigueStats.blockedToday}
+                  </div>
+                  <div className="text-xs text-gray-500">Blocked Today</div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="text-2xl font-bold text-green-600">
+                    {fatigueStats.totalSubscribers - fatigueStats.tiredSubscribers}
+                  </div>
+                  <div className="text-xs text-gray-500">Healthy</div>
+                </div>
+              </div>
+
+              {/* Top Tired Segments */}
+              {fatigueStats.topTiredSegments && fatigueStats.topTiredSegments.length > 0 && (
+                <div className="border-t pt-3">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <Mail className="w-4 h-4 inline mr-1" />
+                    Most Emailed Segments
+                  </h4>
+                  <div className="space-y-2">
+                    {fatigueStats.topTiredSegments.map((segment, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-white dark:bg-gray-800 rounded p-2">
+                        <div className="flex-1">
+                          <span className="font-medium text-sm">{segment.name}</span>
+                          <span className="text-xs text-gray-500 ml-2">({segment.subscribers} subscribers)</span>
+                        </div>
+                        <div className="flex gap-3 text-xs">
+                          <Badge className={segment.avgDaily >= 2.5 ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}>
+                            {segment.avgDaily.toFixed(1)}/day
+                          </Badge>
+                          <Badge className={segment.avgWeekly >= 8 ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"}>
+                            {segment.avgWeekly.toFixed(1)}/week
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {fatigueStats.recommendations && fatigueStats.recommendations.length > 0 && (
+                <div className="border-t pt-3">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <Lightbulb className="w-4 h-4 inline mr-1" />
+                    Smart Recommendations
+                  </h4>
+                  <div className="space-y-1">
+                    {fatigueStats.recommendations.map((rec, idx) => (
+                      <div key={idx} className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{rec}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    console.log('View tired list');
+                    // Could navigate to detailed tired list view
+                  }}
+                >
+                  <UserX className="w-3 h-3 mr-1" />
+                  View Tired List
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    console.log('Configure limits');
+                    // Could open settings modal
+                  }}
+                >
+                  <Shield className="w-3 h-3 mr-1" />
+                  Configure Limits
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-gray-500">Fatigue monitoring data unavailable</div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Key Metrics Grid */}
       <div className="metrics-grid">

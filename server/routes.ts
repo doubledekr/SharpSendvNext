@@ -97,6 +97,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email fatigue tracking endpoints
+  app.get("/api/fatigue/dashboard-stats", async (req, res) => {
+    try {
+      const { EmailFatigueTracker } = await import("./services/email-fatigue-tracker");
+      const tracker = EmailFatigueTracker.getInstance();
+      const stats = tracker.getDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching fatigue stats:", error);
+      res.status(500).json({ error: "Failed to fetch fatigue statistics" });
+    }
+  });
+  
+  app.get("/api/fatigue/tired-list", async (req, res) => {
+    try {
+      const { EmailFatigueTracker } = await import("./services/email-fatigue-tracker");
+      const tracker = EmailFatigueTracker.getInstance();
+      const tiredList = tracker.getTiredList();
+      res.json({ subscribers: tiredList, count: tiredList.length });
+    } catch (error) {
+      console.error("Error fetching tired list:", error);
+      res.status(500).json({ error: "Failed to fetch tired list" });
+    }
+  });
+  
+  app.get("/api/fatigue/alerts", async (req, res) => {
+    try {
+      const { EmailFatigueTracker } = await import("./services/email-fatigue-tracker");
+      const tracker = EmailFatigueTracker.getInstance();
+      const alerts = tracker.getFatigueAlerts();
+      res.json({ alerts, count: alerts.length });
+    } catch (error) {
+      console.error("Error fetching fatigue alerts:", error);
+      res.status(500).json({ error: "Failed to fetch fatigue alerts" });
+    }
+  });
+  
+  app.post("/api/fatigue/check-send", async (req, res) => {
+    try {
+      const { subscriberIds } = req.body;
+      const { EmailFatigueTracker } = await import("./services/email-fatigue-tracker");
+      const tracker = EmailFatigueTracker.getInstance();
+      
+      const results = subscriberIds.map((id: string) => ({
+        subscriberId: id,
+        ...tracker.shouldBlockSend(id)
+      }));
+      
+      const blockedCount = results.filter((r: any) => r.blocked).length;
+      res.json({ 
+        results, 
+        blockedCount,
+        allowedCount: results.length - blockedCount
+      });
+    } catch (error) {
+      console.error("Error checking send eligibility:", error);
+      res.status(500).json({ error: "Failed to check send eligibility" });
+    }
+  });
+
   // Market events news feed with email opportunities
   app.get("/api/market-events-feed", async (req, res) => {
     try {
