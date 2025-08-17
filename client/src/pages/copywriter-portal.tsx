@@ -54,6 +54,8 @@ interface ContentDraft {
   };
 }
 
+import MainLayout from '@/components/layout/MainLayout';
+
 export default function CopywriterPortal() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -410,13 +412,14 @@ export default function CopywriterPortal() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Copywriter Portal</h1>
-          <p className="text-gray-600">Manage your assigned content tasks and create compelling copy</p>
-        </div>
+    <MainLayout currentPage="copywriter">
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Copywriter Portal</h1>
+            <p className="text-gray-600">Manage your assigned content tasks and create compelling copy</p>
+          </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -539,6 +542,7 @@ export default function CopywriterPortal() {
         </Card>
       </div>
     </div>
+    </MainLayout>
   );
 }
 

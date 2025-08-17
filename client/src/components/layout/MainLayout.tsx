@@ -13,8 +13,8 @@ export default function MainLayout({ children, currentPage }: MainLayoutProps) {
   const [activeTab, setActiveTab] = useState('overview');
   
   // Check if we're on a page that should have the full layout
-  const shouldShowLayout = !['/login', '/register', '/', '/assignment'].some(path => 
-    location.startsWith(path)
+  const shouldShowLayout = !['/login', '/register', '/'].some(path => 
+    location === path
   );
 
   if (!shouldShowLayout) {
