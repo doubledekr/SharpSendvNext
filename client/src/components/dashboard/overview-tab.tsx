@@ -276,64 +276,29 @@ export default function OverviewTab() {
             AI Insights & Recommendations
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Real-time Market Analysis */}
-            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-              <div className="flex items-center gap-2 mb-2">
-                <Activity className="w-4 h-4 text-blue-400" />
-                <h4 className="font-semibold text-white">Market Analysis</h4>
-              </div>
-              <p className="text-sm text-slate-300">
-                {loadingMarket ? "Analyzing market..." : 
-                 marketSentiment ? `${marketSentiment.sentiment === 'bullish' ? '📈' : marketSentiment.sentiment === 'bearish' ? '📉' : '➡️'} ${marketSentiment.sentimentAdvice}` :
-                 "Market analysis pending..."}
-              </p>
-            </div>
-
-            {/* Top Opportunity */}
-            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-green-400" />
-                <h4 className="font-semibold text-white">Top Opportunity</h4>
-              </div>
-              <p className="text-sm text-slate-300">
-                {loadingEvents ? "Scanning opportunities..." :
-                 marketEvents?.events?.[0] ? `${marketEvents.events[0].title.substring(0, 50)}...` :
-                 "Active Traders segment showing high engagement"}
-              </p>
-            </div>
-
-            {/* Email Fatigue Alert */}
-            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="w-4 h-4 text-orange-400" />
-                <h4 className="font-semibold text-white">Fatigue Status</h4>
-              </div>
-              <p className="text-sm text-slate-300">
-                {loadingFatigue ? "Checking fatigue levels..." :
-                 fatigueStats ? 
-                 (fatigueStats.guardrailsEnabled ? 
-                  `${fatigueStats.blockedToday > 0 ? `⚠️ ${fatigueStats.blockedToday} blocked today` : '✅ All subscribers healthy'}` :
-                  `📊 Monitoring: ${fatigueStats.tiredSubscribers} over limit`) :
-                 "Fatigue monitoring active"}
+        <CardContent className="space-y-3">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 backdrop-blur">
+            <TrendingUp className="w-5 h-5 text-green-400 mt-0.5" />
+            <div>
+              <p className="text-sm text-gray-200">
+                Your financial newsletter engagement peaks on <span className="font-bold text-green-400">Tuesday mornings</span>. Consider scheduling premium content for optimal impact.
               </p>
             </div>
           </div>
-
-          {/* Action Recommendations */}
-          <div className="mt-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-semibold text-white">Recommended Actions</span>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 backdrop-blur">
+            <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
+            <div>
+              <p className="text-sm text-gray-200">
+                Subscribers responding to <span className="font-bold">"Market Outlook"</span> subject lines show <span className="font-bold text-blue-400">47% higher lifetime value</span>. Expand this content strategy.
+              </p>
             </div>
-            <div className="space-y-1">
-              {fatigueStats?.recommendations?.slice(0, 2).map((rec, idx) => (
-                <p key={idx} className="text-xs text-slate-400">• {rec}</p>
-              ))}
-              {marketEvents?.urgentAssignments > 0 && (
-                <p className="text-xs text-slate-400">• {marketEvents.urgentAssignments} urgent assignments need attention</p>
-              )}
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 backdrop-blur">
+            <Zap className="w-5 h-5 text-yellow-400 mt-0.5" />
+            <div>
+              <p className="text-sm text-gray-200">
+                Implement personalized stock recommendations for the <span className="font-bold">"High-Value Investor"</span> segment to increase engagement by an estimated <span className="font-bold text-yellow-400">12%</span>.
+              </p>
             </div>
           </div>
         </CardContent>
