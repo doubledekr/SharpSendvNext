@@ -4,6 +4,7 @@ import { imageAssets, emailTemplates, templateSections, imageCdnCache } from "@s
 import { eq, and } from "drizzle-orm";
 import { ImageStorageService, ObjectNotFoundError } from "./services/object-storage";
 import { TemplateManagerService } from "./services/template-manager";
+import { requireTenant } from "./middleware/tenant";
 import multer from "multer";
 
 const router = Router();
@@ -26,21 +27,26 @@ const imageStorageService = new ImageStorageService();
 const templateManager = new TemplateManagerService();
 
 // ============= Image Management Routes =============
+// All routes use requireTenant middleware to ensure tenant isolation
 
-// Get upload URL for client-side upload
-router.post("/api/images/upload-url", async (req, res) => {
+// Get upload URL for client-side upload (tenant-isolated)
+router.post("/api/images/upload-url", requireTenant, async (req: any, res) => {
   try {
-    const { publisherId, category = 'content' } = req.body;
+    const { category = 'content' } = req.body;
+    const publisherId = req.tenant?.publisherId;
     
     if (!publisherId) {
-      return res.status(400).json({ error: "Publisher ID is required" });
+      return res.status(400).json({ error: "Publisher context not found" });
     }
 
+    // Generate tenant-specific upload URL with isolated path
     const uploadUrl = await imageStorageService.getUploadUrl(publisherId, category);
     
     res.json({ 
       uploadUrl,
-      expiresIn: 900 // 15 minutes
+      expiresIn: 900, // 15 minutes
+      publisherId, // Return for confirmation
+      tenantPath: `publishers/${publisherId}/assets` // CDN path isolation
     });
   } catch (error) {
     console.error("Error generating upload URL:", error);
@@ -48,20 +54,23 @@ router.post("/api/images/upload-url", async (req, res) => {
   }
 });
 
-// Direct server upload (for smaller images)
-router.post("/api/images/upload", upload.single('image'), async (req, res) => {
+// Direct server upload (tenant-isolated)
+router.post("/api/images/upload", requireTenant, upload.single('image'), async (req: any, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No image file provided" });
     }
 
-    const { publisherId, category = 'content', altText, tags } = req.body;
+    const { category = 'content', altText, tags } = req.body;
+    const publisherId = req.tenant?.publisherId;
+    const publisherName = req.tenant?.name;
     
     if (!publisherId) {
-      return res.status(400).json({ error: "Publisher ID is required" });
+      return res.status(400).json({ error: "Publisher context not found" });
     }
 
-    // Upload to object storage
+    // Upload to tenant-specific storage path
+    const tenantPath = `publishers/${publisherId}`;
     const { originalUrl, cdnUrl, objectPath } = await imageStorageService.uploadImage(
       publisherId,
       req.file.originalname,
@@ -76,26 +85,27 @@ router.post("/api/images/upload", upload.single('image'), async (req, res) => {
       height: 600,
     };
 
-    // Save to database
+    // Save to database with tenant isolation
     const [imageAsset] = await db.insert(imageAssets)
       .values({
         publisherId,
         fileName: req.file.originalname,
         originalUrl,
-        cdnUrl,
+        cdnUrl: `${tenantPath}/${cdnUrl}`, // Tenant-specific CDN path
         mimeType: req.file.mimetype,
         fileSize: req.file.size,
         dimensions,
         altText,
         tags: tags ? tags.split(',').map((t: string) => t.trim()) : [],
         category,
-        uploadedBy: 'user', // Should come from auth context
+        uploadedBy: publisherName || 'publisher', // Use tenant context
       })
       .returning();
 
     res.json({
       success: true,
       image: imageAsset,
+      tenantPath, // Return tenant path for transparency
     });
   } catch (error) {
     console.error("Error uploading image:", error);
@@ -103,11 +113,10 @@ router.post("/api/images/upload", upload.single('image'), async (req, res) => {
   }
 });
 
-// Confirm upload and save metadata
-router.post("/api/images/confirm-upload", async (req, res) => {
+// Confirm upload and save metadata (tenant-isolated)
+router.post("/api/images/confirm-upload", requireTenant, async (req: any, res) => {
   try {
     const { 
-      publisherId, 
       uploadUrl, 
       fileName,
       mimeType,
@@ -117,6 +126,9 @@ router.post("/api/images/confirm-upload", async (req, res) => {
       category = 'content',
       dimensions
     } = req.body;
+    
+    const publisherId = req.tenant?.publisherId;
+    const publisherName = req.tenant?.name;
 
     if (!publisherId || !uploadUrl || !fileName) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -125,10 +137,11 @@ router.post("/api/images/confirm-upload", async (req, res) => {
     // Normalize the upload URL to object path
     const objectPath = imageStorageService.normalizeObjectPath(uploadUrl);
     
-    // Generate CDN URL
-    const cdnUrl = `/public-objects${objectPath.replace('/objects', '')}`;
+    // Generate tenant-specific CDN URL
+    const tenantPath = `publishers/${publisherId}`;
+    const cdnUrl = `/${tenantPath}/assets${objectPath.replace('/objects', '')}`;
 
-    // Save to database
+    // Save to database with tenant isolation
     const [imageAsset] = await db.insert(imageAssets)
       .values({
         publisherId,
@@ -141,13 +154,14 @@ router.post("/api/images/confirm-upload", async (req, res) => {
         altText,
         tags: tags || [],
         category,
-        uploadedBy: 'user', // Should come from auth context
+        uploadedBy: publisherName || 'publisher',
       })
       .returning();
 
     res.json({
       success: true,
       image: imageAsset,
+      tenantPath, // Return tenant path for transparency
     });
   } catch (error) {
     console.error("Error confirming upload:", error);
@@ -155,21 +169,23 @@ router.post("/api/images/confirm-upload", async (req, res) => {
   }
 });
 
-// Get images for a publisher
-router.get("/api/images", async (req, res) => {
+// Get images for current tenant
+router.get("/api/images", requireTenant, async (req: any, res) => {
   try {
-    const { publisherId, category, tags } = req.query;
+    const { category, tags } = req.query;
+    const publisherId = req.tenant?.publisherId;
     
     if (!publisherId) {
-      return res.status(400).json({ error: "Publisher ID is required" });
+      return res.status(400).json({ error: "Publisher context not found" });
     }
 
+    // Query only images for this tenant
     let query = db.select().from(imageAssets)
-      .where(eq(imageAssets.publisherId, publisherId as string));
+      .where(eq(imageAssets.publisherId, publisherId));
 
     if (category) {
       query = query.where(and(
-        eq(imageAssets.publisherId, publisherId as string),
+        eq(imageAssets.publisherId, publisherId),
         eq(imageAssets.category, category as string)
       ));
     }
@@ -186,7 +202,11 @@ router.get("/api/images", async (req, res) => {
       });
     }
 
-    res.json(filteredImages);
+    res.json({
+      images: filteredImages,
+      publisherId, // Include tenant ID for transparency
+      totalCount: filteredImages.length
+    });
   } catch (error) {
     console.error("Error fetching images:", error);
     res.status(500).json({ error: "Failed to fetch images" });
@@ -249,14 +269,17 @@ router.delete("/api/images/:imageId", async (req, res) => {
 });
 
 // ============= Template Management Routes =============
+// All template routes use tenant isolation
 
-// Create a new template
-router.post("/api/templates", async (req, res) => {
+// Create a new template (tenant-isolated)
+router.post("/api/templates", requireTenant, async (req: any, res) => {
   try {
-    const { publisherId, ...templateData } = req.body;
+    const templateData = req.body;
+    const publisherId = req.tenant?.publisherId;
+    const publisherName = req.tenant?.name;
     
     if (!publisherId) {
-      return res.status(400).json({ error: "Publisher ID is required" });
+      return res.status(400).json({ error: "Publisher context not found" });
     }
 
     // Generate default HTML if not provided

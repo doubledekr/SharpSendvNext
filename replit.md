@@ -78,7 +78,14 @@ The frontend features a modular component structure, including a multi-tab dashb
 
 ### System Design Choices
 
-The platform is multi-tenant. It incorporates AI for cohort analysis, investment sophistication assessment, risk tolerance analysis, investment style identification, and real-time market intelligence. Email content is enhanced with market timing intelligence, volatility-based send optimization, and live pricing/citations. It features robust email fatigue tracking with dashboard monitoring and prevention features.
+The platform is multi-tenant with complete data isolation. It incorporates AI for cohort analysis, investment sophistication assessment, risk tolerance analysis, investment style identification, and real-time market intelligence. Email content is enhanced with market timing intelligence, volatility-based send optimization, and live pricing/citations. It features robust email fatigue tracking with dashboard monitoring and prevention features.
+
+**Multi-Tenant Architecture:**
+- **Subdomain-based routing**: Each publisher has their own subdomain (e.g., demo.sharpsend.io, publish.sharpsend.io)
+- **Complete data isolation**: All database queries filter by publisher_id to ensure tenant data separation
+- **CDN content isolation**: Each publisher's assets are stored in isolated paths (publishers/{publisherId}/assets)
+- **Tenant middleware**: Automatically loads publisher context based on subdomain for all API requests
+- **Isolated storage paths**: Images, templates, and all CDN content are stored in tenant-specific directories to prevent data intermingling
 
 ### Email Tracking & Attribution System
 

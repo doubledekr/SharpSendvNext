@@ -1273,52 +1273,50 @@ Your SharpSend Team`,
         })}
       </div>
 
-      {/* Charts Section */}
-      <div className="charts-grid">
-        <div className="chart-card-enhanced">
-          <div className="mb-6">
-            <h3 className="text-xl font-semibold text-white">Engagement Trends</h3>
-            <p className="text-slate-400 text-sm mt-1">Real-time engagement analytics</p>
+      {/* Charts Section - Compact View */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+          <div className="mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-500" />
+              Engagement Trends
+            </h3>
           </div>
-          <div className="chart-content">
-            <div className="chart-placeholder">
-              <TrendingUp className="chart-icon text-green-500" />
-              <p className="text-lg font-medium text-slate-300">Engagement trending upward</p>
-              <p className="text-sm text-slate-400 mt-2">34.7% current rate</p>
-              <div className="mt-4 flex items-center justify-center gap-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-500">+8.3%</p>
-                  <p className="text-xs text-slate-400">This month</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-400">74.2%</p>
-                  <p className="text-xs text-slate-400">Average rate</p>
-                </div>
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-green-500">34.7%</p>
+              <p className="text-xs text-slate-400">Current rate</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium text-green-400">+8.3%</p>
+              <p className="text-xs text-slate-400">This month</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium text-blue-400">74.2%</p>
+              <p className="text-xs text-slate-400">Average</p>
             </div>
           </div>
         </div>
 
-        <div className="chart-card-enhanced">
-          <div className="mb-6">
-            <h3 className="text-xl font-semibold text-white">Revenue Impact</h3>
-            <p className="text-slate-400 text-sm mt-1">Monthly revenue performance</p>
+        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+          <div className="mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-yellow-500" />
+              Revenue Growth
+            </h3>
           </div>
-          <div className="chart-content">
-            <div className="chart-placeholder">
-              <DollarSign className="chart-icon text-yellow-500" />
-              <p className="text-lg font-medium text-slate-300">Revenue growth: +23.8%</p>
-              <p className="text-sm text-slate-400 mt-2">$89,450 monthly</p>
-              <div className="mt-4 flex items-center justify-center gap-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-yellow-500">+$17.2K</p>
-                  <p className="text-xs text-slate-400">Increase</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-purple-400">$2.98</p>
-                  <p className="text-xs text-slate-400">Per subscriber</p>
-                </div>
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-yellow-500">$89.5K</p>
+              <p className="text-xs text-slate-400">Monthly</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium text-yellow-400">+23.8%</p>
+              <p className="text-xs text-slate-400">Growth</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium text-purple-400">$2.98</p>
+              <p className="text-xs text-slate-400">Per user</p>
             </div>
           </div>
         </div>
