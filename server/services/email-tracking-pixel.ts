@@ -22,6 +22,34 @@ interface EmailOpenEvent {
   lastOpenedAt?: Date;
   devices: Set<string>;
   locations: Set<string>;
+  // Conversion tracking
+  pageVisits?: PageVisit[];
+  purchases?: Purchase[];
+  clickedLinks?: ClickedLink[];
+  conversionValue?: number;
+}
+
+interface PageVisit {
+  url: string;
+  visitedAt: Date;
+  duration?: number;
+  source: 'email' | 'direct' | 'search' | 'social';
+  sessionId: string;
+}
+
+interface Purchase {
+  orderId: string;
+  amount: number;
+  purchasedAt: Date;
+  products: string[];
+  attributedToEmail: boolean;
+}
+
+interface ClickedLink {
+  url: string;
+  clickedAt: Date;
+  linkPosition: string;
+  linkText: string;
 }
 
 export class EmailTrackingPixel {
@@ -38,6 +66,10 @@ export class EmailTrackingPixel {
   
   // Per-email tracking overrides (emailId -> enabled)
   private emailTrackingOverrides: Map<string, boolean> = new Map();
+  
+  // Conversion tracking storage
+  private sessionTracking: Map<string, string> = new Map(); // sessionId -> subscriberId
+  private conversionWindows: Map<string, Date> = new Map(); // subscriberId -> email opened date
   
   private constructor() {
     // Initialize with some demo data
@@ -286,6 +318,275 @@ export class EmailTrackingPixel {
    */
   public getPlatformTrackingEnabled(): boolean {
     return this.platformTrackingEnabled;
+  }
+  
+  /**
+   * Track a page visit from an email recipient
+   */
+  public trackPageVisit(subscriberId: string, pageData: {
+    url: string;
+    sessionId: string;
+    duration?: number;
+    source?: string;
+  }): void {
+    // Link session to subscriber
+    this.sessionTracking.set(pageData.sessionId, subscriberId);
+    
+    // Find recent email opens for this subscriber
+    const subscriberEmails = this.subscriberOpens.get(subscriberId);
+    if (!subscriberEmails) return;
+    
+    // Add page visit to most recent email open event
+    subscriberEmails.forEach(trackingId => {
+      const event = this.trackingData.get(trackingId);
+      if (event && this.isWithinAttributionWindow(event.lastOpenedAt || event.openedAt)) {
+        if (!event.pageVisits) {
+          event.pageVisits = [];
+        }
+        event.pageVisits.push({
+          url: pageData.url,
+          visitedAt: new Date(),
+          duration: pageData.duration,
+          source: (pageData.source as any) || 'email',
+          sessionId: pageData.sessionId
+        });
+      }
+    });
+  }
+  
+  /**
+   * Track a purchase and attribute to email if applicable
+   */
+  public trackPurchase(subscriberId: string, purchaseData: {
+    orderId: string;
+    amount: number;
+    products: string[];
+    sessionId?: string;
+  }): boolean {
+    // Check if this purchase can be attributed to an email
+    const subscriberEmails = this.subscriberOpens.get(subscriberId);
+    if (!subscriberEmails) return false;
+    
+    let attributed = false;
+    
+    // Look for recent email opens within attribution window (7 days)
+    subscriberEmails.forEach(trackingId => {
+      const event = this.trackingData.get(trackingId);
+      if (event && this.isWithinAttributionWindow(event.lastOpenedAt || event.openedAt)) {
+        if (!event.purchases) {
+          event.purchases = [];
+        }
+        event.purchases.push({
+          orderId: purchaseData.orderId,
+          amount: purchaseData.amount,
+          purchasedAt: new Date(),
+          products: purchaseData.products,
+          attributedToEmail: true
+        });
+        
+        // Update conversion value
+        event.conversionValue = (event.conversionValue || 0) + purchaseData.amount;
+        attributed = true;
+      }
+    });
+    
+    return attributed;
+  }
+  
+  /**
+   * Track link clicks in emails
+   */
+  public trackLinkClick(trackingId: string, linkData: {
+    url: string;
+    linkPosition: string;
+    linkText: string;
+  }): void {
+    const event = this.trackingData.get(trackingId);
+    if (!event) return;
+    
+    if (!event.clickedLinks) {
+      event.clickedLinks = [];
+    }
+    
+    event.clickedLinks.push({
+      url: linkData.url,
+      clickedAt: new Date(),
+      linkPosition: linkData.linkPosition,
+      linkText: linkData.linkText
+    });
+  }
+  
+  /**
+   * Check if an event is within attribution window (7 days)
+   */
+  private isWithinAttributionWindow(date: Date): boolean {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return date > sevenDaysAgo;
+  }
+  
+  /**
+   * Get conversion analytics for a campaign
+   */
+  public getCampaignConversionStats(campaignId: string): any {
+    const campaignEmails = this.campaignOpens.get(campaignId);
+    if (!campaignEmails) {
+      return {
+        campaignId,
+        totalSent: 0,
+        totalOpens: 0,
+        conversions: 0,
+        conversionRate: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+        topProducts: [],
+        conversionFunnel: {
+          emailSent: 0,
+          emailOpened: 0,
+          linkClicked: 0,
+          pageVisited: 0,
+          purchaseMade: 0
+        }
+      };
+    }
+    
+    let totalRevenue = 0;
+    let conversions = 0;
+    let pageVisits = 0;
+    let linkClicks = 0;
+    const productCounts = new Map<string, number>();
+    
+    campaignEmails.forEach(trackingId => {
+      const event = this.trackingData.get(trackingId);
+      if (event) {
+        if (event.purchases && event.purchases.length > 0) {
+          conversions++;
+          event.purchases.forEach(purchase => {
+            totalRevenue += purchase.amount;
+            purchase.products.forEach(product => {
+              productCounts.set(product, (productCounts.get(product) || 0) + 1);
+            });
+          });
+        }
+        if (event.pageVisits && event.pageVisits.length > 0) {
+          pageVisits++;
+        }
+        if (event.clickedLinks && event.clickedLinks.length > 0) {
+          linkClicks++;
+        }
+      }
+    });
+    
+    const topProducts = Array.from(productCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([product, count]) => ({ product, count }));
+    
+    const totalOpens = campaignEmails.size;
+    
+    return {
+      campaignId,
+      totalSent: totalOpens * 1.5, // Estimate
+      totalOpens,
+      conversions,
+      conversionRate: totalOpens > 0 ? ((conversions / totalOpens) * 100).toFixed(2) : '0',
+      totalRevenue: totalRevenue.toFixed(2),
+      averageOrderValue: conversions > 0 ? (totalRevenue / conversions).toFixed(2) : '0',
+      topProducts,
+      conversionFunnel: {
+        emailSent: Math.floor(totalOpens * 1.5),
+        emailOpened: totalOpens,
+        linkClicked: linkClicks,
+        pageVisited: pageVisits,
+        purchaseMade: conversions
+      }
+    };
+  }
+  
+  /**
+   * Get subscriber journey analytics
+   */
+  public getSubscriberJourney(subscriberId: string): any {
+    const subscriberEmails = this.subscriberOpens.get(subscriberId);
+    if (!subscriberEmails) {
+      return {
+        subscriberId,
+        emailsOpened: 0,
+        totalPageVisits: 0,
+        totalPurchases: 0,
+        totalSpent: 0,
+        journey: []
+      };
+    }
+    
+    const journey: any[] = [];
+    let totalPageVisits = 0;
+    let totalPurchases = 0;
+    let totalSpent = 0;
+    
+    subscriberEmails.forEach(trackingId => {
+      const event = this.trackingData.get(trackingId);
+      if (event) {
+        // Email open event
+        journey.push({
+          type: 'email_open',
+          timestamp: event.firstOpenedAt || event.openedAt,
+          details: {
+            emailId: event.emailId,
+            campaignId: event.campaignId,
+            openCount: event.openCount
+          }
+        });
+        
+        // Page visits
+        if (event.pageVisits) {
+          totalPageVisits += event.pageVisits.length;
+          event.pageVisits.forEach(visit => {
+            journey.push({
+              type: 'page_visit',
+              timestamp: visit.visitedAt,
+              details: visit
+            });
+          });
+        }
+        
+        // Link clicks
+        if (event.clickedLinks) {
+          event.clickedLinks.forEach(click => {
+            journey.push({
+              type: 'link_click',
+              timestamp: click.clickedAt,
+              details: click
+            });
+          });
+        }
+        
+        // Purchases
+        if (event.purchases) {
+          totalPurchases += event.purchases.length;
+          event.purchases.forEach(purchase => {
+            totalSpent += purchase.amount;
+            journey.push({
+              type: 'purchase',
+              timestamp: purchase.purchasedAt,
+              details: purchase
+            });
+          });
+        }
+      }
+    });
+    
+    // Sort journey by timestamp
+    journey.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    
+    return {
+      subscriberId,
+      emailsOpened: subscriberEmails.size,
+      totalPageVisits,
+      totalPurchases,
+      totalSpent: totalSpent.toFixed(2),
+      averageOrderValue: totalPurchases > 0 ? (totalSpent / totalPurchases).toFixed(2) : '0',
+      journey: journey.slice(-20) // Last 20 events
+    };
   }
   
   /**

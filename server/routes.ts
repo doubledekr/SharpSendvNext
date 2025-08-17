@@ -346,6 +346,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to set privacy mode" });
     }
   });
+  
+  // Conversion tracking endpoints
+  app.post("/api/tracking/page-visit", async (req, res) => {
+    try {
+      const { subscriberId, url, sessionId, duration, source } = req.body;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      tracker.trackPageVisit(subscriberId, { url, sessionId, duration, source });
+      
+      res.json({ 
+        success: true,
+        message: "Page visit tracked successfully"
+      });
+    } catch (error) {
+      console.error("Error tracking page visit:", error);
+      res.status(500).json({ error: "Failed to track page visit" });
+    }
+  });
+  
+  app.post("/api/tracking/purchase", async (req, res) => {
+    try {
+      const { subscriberId, orderId, amount, products, sessionId } = req.body;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      const attributed = tracker.trackPurchase(subscriberId, { orderId, amount, products, sessionId });
+      
+      res.json({ 
+        success: true,
+        attributed,
+        message: attributed ? "Purchase attributed to email campaign" : "Purchase tracked but not attributed"
+      });
+    } catch (error) {
+      console.error("Error tracking purchase:", error);
+      res.status(500).json({ error: "Failed to track purchase" });
+    }
+  });
+  
+  app.post("/api/tracking/link-click", async (req, res) => {
+    try {
+      const { trackingId, url, linkPosition, linkText } = req.body;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      tracker.trackLinkClick(trackingId, { url, linkPosition, linkText });
+      
+      res.json({ 
+        success: true,
+        message: "Link click tracked successfully"
+      });
+    } catch (error) {
+      console.error("Error tracking link click:", error);
+      res.status(500).json({ error: "Failed to track link click" });
+    }
+  });
+  
+  app.get("/api/tracking/campaign-conversions/:campaignId", async (req, res) => {
+    try {
+      const { campaignId } = req.params;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      const stats = tracker.getCampaignConversionStats(campaignId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching campaign conversion stats:", error);
+      res.status(500).json({ error: "Failed to fetch campaign conversion statistics" });
+    }
+  });
+  
+  app.get("/api/tracking/subscriber-journey/:subscriberId", async (req, res) => {
+    try {
+      const { subscriberId } = req.params;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      const journey = tracker.getSubscriberJourney(subscriberId);
+      res.json(journey);
+    } catch (error) {
+      console.error("Error fetching subscriber journey:", error);
+      res.status(500).json({ error: "Failed to fetch subscriber journey" });
+    }
+  });
 
   // Market events news feed with email opportunities
   app.get("/api/market-events-feed", async (req, res) => {
