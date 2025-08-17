@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import NavigationHeader from "@/components/dashboard/navigation-header";
+import Sidebar from "@/components/dashboard/sidebar";
 import OverviewTab from "@/components/dashboard/overview-tab";
 import SubscribersTab from "@/components/dashboard/subscribers-tab";
 import PersonalizationTab from "@/components/dashboard/personalization-tab";
@@ -33,19 +35,11 @@ const tabDescriptions = {
   advanced: 'Advanced AI configuration and system monitoring'
 };
 
-interface DashboardProps {
-  activeTab?: string;
-  setActiveTab?: (tab: string) => void;
-}
-
-export default function Dashboard({ activeTab = 'overview', setActiveTab }: DashboardProps) {
-  // Use props if provided, otherwise use local state
-  const [localActiveTab, setLocalActiveTab] = useState('overview');
-  const currentTab = activeTab || localActiveTab;
-  const updateTab = setActiveTab || setLocalActiveTab;
+export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
 
   const renderTabContent = () => {
-    switch (currentTab) {
+    switch (activeTab) {
       case 'overview':
         return <OverviewTab />;
       case 'subscribers':
@@ -68,23 +62,27 @@ export default function Dashboard({ activeTab = 'overview', setActiveTab }: Dash
   };
 
   return (
-    <div className="bg-slate-900 min-h-screen">
-      {/* Main Content Area with proper padding to avoid sidebar overlap */}
-      <div>
-        {/* Header - Content header for the active tab with extra left padding */}
-        <header className="bg-slate-800 border-b border-slate-700 px-8 py-6 ml-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-white">{tabTitles[currentTab as keyof typeof tabTitles]}</h2>
-              <p className="text-slate-400 mt-1">{tabDescriptions[currentTab as keyof typeof tabDescriptions]}</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 bg-slate-700 px-4 py-2 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-slate-300">AI Engine: Active</span>
+    <div className="min-h-screen bg-slate-900">
+      <NavigationHeader currentPage="dashboard" />
+      
+      <div className="flex">
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        
+        <div className="flex-1 ml-64 overflow-auto">
+          {/* Header */}
+          <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">{tabTitles[activeTab as keyof typeof tabTitles]}</h2>
+                <p className="text-slate-400 mt-1">{tabDescriptions[activeTab as keyof typeof tabDescriptions]}</p>
               </div>
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 bg-slate-700 px-4 py-2 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-slate-300">AI Engine: Active</span>
+                </div>
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
                   data-testid="button-export-report"
                 >
                   <Download className="mr-2 h-4 w-4" />
@@ -94,11 +92,12 @@ export default function Dashboard({ activeTab = 'overview', setActiveTab }: Dash
             </div>
           </header>
 
-          {/* Tab Content with proper spacing */}
-          <main className="p-8 bg-slate-900 ml-2">
+          {/* Tab Content */}
+          <main className="p-8 bg-slate-900">
             {renderTabContent()}
           </main>
         </div>
       </div>
+    </div>
   );
 }

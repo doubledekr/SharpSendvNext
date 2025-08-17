@@ -58,7 +58,7 @@ const helpItems = [
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   return (
-    <div className="w-full h-full bg-dark-surface border-r border-dark-border overflow-y-auto shadow-xl">
+    <div className="w-64 bg-dark-surface border-r border-dark-border fixed h-[calc(100vh-4rem)] overflow-y-auto top-16 shadow-xl">
       {/* Logo Section - Now a simplified version since main logo is in header */}
       <div className="p-4 border-b border-dark-border bg-slate-800/50">
         <div className="flex items-center space-x-2">
