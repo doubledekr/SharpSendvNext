@@ -25,7 +25,10 @@ import {
   EyeOff,
   FileText,
   Save,
-  Loader2
+  Loader2,
+  Link,
+  Copy,
+  CheckCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -156,6 +159,7 @@ export default function OverviewTab() {
   const [generationStatus, setGenerationStatus] = useState("");
   const [emailDrafts, setEmailDrafts] = useState<any[]>([]);
   const [showDraftsModal, setShowDraftsModal] = useState(false);
+  const [copiedLinks, setCopiedLinks] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   // Fetch market data on component mount
@@ -326,9 +330,15 @@ export default function OverviewTab() {
       setGenerationProgress(100);
       setGenerationStatus("Complete!");
       
+      // Generate unique copywriter link
+      const copywriterId = Math.random().toString(36).substring(2, 15);
+      const copywriterLink = `${window.location.origin}/copywriter/${copywriterId}`;
+      
       // Create a draft email
       const newDraft = {
         id: Date.now(),
+        copywriterId,
+        copywriterLink,
         subject: `🚨 ${marketSentiment.sentiment === 'bullish' ? '📈' : marketSentiment.sentiment === 'bearish' ? '📉' : '⚖️'} Market ${marketSentiment.sentiment.toUpperCase()} Alert: ${focus}`,
         content: `Dear Valued Investor,
 
@@ -1215,6 +1225,47 @@ Your SharpSend Team`,
                           </Badge>
                           <span>{new Date(draft.createdAt).toLocaleString()}</span>
                         </div>
+                        {draft.copywriterLink && (
+                          <div className="mt-3 p-2 bg-muted rounded-md">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Link className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {draft.copywriterLink}
+                                </span>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="h-6 px-2"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(draft.copywriterLink);
+                                  setCopiedLinks(prev => new Set(prev).add(draft.id));
+                                  toast({
+                                    title: "Link Copied",
+                                    description: "Copywriter link copied to clipboard",
+                                  });
+                                  setTimeout(() => {
+                                    setCopiedLinks(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(draft.id);
+                                      return newSet;
+                                    });
+                                  }, 2000);
+                                }}
+                              >
+                                {copiedLinks.has(draft.id) ? (
+                                  <CheckCircle className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Share this link with copywriters to collaborate on content
+                            </p>
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline">

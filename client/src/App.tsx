@@ -10,6 +10,7 @@ import Onboarding from "@/pages/onboarding";
 import EditorialDashboard from "@/pages/editorial-dashboard-enhanced";
 import SharpSendIntelligence from "@/pages/sharpsend-intelligence";
 import CopywriterPortal from "@/pages/copywriter-portal-enhanced";
+import CopywriterCollabPortal from "@/pages/CopywriterPortal";
 import EmailPreviewApproval from "@/pages/email-preview-approval-enhanced";
 import CohortAnalytics from "@/pages/cohort-analytics-enhanced";
 import NotFound from "@/pages/not-found";
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/comparative-analytics" component={() => <ProtectedRoute component={ComparativeAnalytics} />} />
       <Route path="/campaigns" component={CampaignManagement} />
       <Route path="/assignment/:token" component={AssignmentPortal} />
+      <Route path="/copywriter/:id" component={CopywriterCollabPortal} />
       <Route component={NotFound} />
     </Switch>
   );
