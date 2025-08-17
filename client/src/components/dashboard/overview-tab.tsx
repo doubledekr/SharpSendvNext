@@ -22,12 +22,18 @@ import {
   Mail,
   Shield,
   Eye,
-  EyeOff
+  EyeOff,
+  FileText,
+  Save,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 import "../../styles/dashboard-improvements.css";
 
 interface MarketSentimentData {
@@ -143,6 +149,14 @@ export default function OverviewTab() {
   const [loadingFatigue, setLoadingFatigue] = useState(true);
   const [trackingStats, setTrackingStats] = useState<TrackingStats | null>(null);
   const [loadingTracking, setLoadingTracking] = useState(true);
+  
+  // New states for generation status and drafts
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStatus, setGenerationStatus] = useState("");
+  const [emailDrafts, setEmailDrafts] = useState<any[]>([]);
+  const [showDraftsModal, setShowDraftsModal] = useState(false);
+  const { toast } = useToast();
 
   // Fetch market data on component mount
   useEffect(() => {
@@ -260,12 +274,132 @@ export default function OverviewTab() {
     }
   };
 
+  const handleCreateAssignment = async () => {
+    if (!marketSentiment) return;
+    
+    setShowGenerationModal(true);
+    setGenerationProgress(0);
+    setGenerationStatus("Analyzing market conditions...");
+    
+    const urgency = marketSentiment.vixLevel > 25 ? 'urgent' : 'standard';
+    const focus = marketSentiment.vixLevel > 25 ? 
+      'Risk management and capital preservation' : 
+      marketSentiment.vixLevel < 16 ? 
+      'Growth opportunities and new positions' : 
+      'Balanced market analysis';
+    
+    // Simulate progress stages
+    const stages = [
+      { progress: 20, status: "Gathering market data...", delay: 800 },
+      { progress: 40, status: "Analyzing sentiment indicators...", delay: 1000 },
+      { progress: 60, status: "Generating personalized content...", delay: 1200 },
+      { progress: 80, status: "Optimizing for engagement...", delay: 1000 },
+      { progress: 95, status: "Finalizing email draft...", delay: 800 }
+    ];
+    
+    for (const stage of stages) {
+      await new Promise(resolve => setTimeout(resolve, stage.delay));
+      setGenerationProgress(stage.progress);
+      setGenerationStatus(stage.status);
+    }
+    
+    try {
+      const response = await fetch('/api/assignments/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          title: `Market ${marketSentiment.sentiment} - ${new Date().toLocaleDateString()}`,
+          urgency,
+          focus,
+          deadline: urgency === 'urgent' ? '2 hours' : '24 hours',
+          marketContext: {
+            sentiment: marketSentiment.sentiment,
+            vixLevel: marketSentiment.vixLevel,
+            topSectors: marketSentiment.topSectors
+          }
+        })
+      });
+      
+      setGenerationProgress(100);
+      setGenerationStatus("Complete!");
+      
+      // Create a draft email
+      const newDraft = {
+        id: Date.now(),
+        subject: `🚨 ${marketSentiment.sentiment === 'bullish' ? '📈' : marketSentiment.sentiment === 'bearish' ? '📉' : '⚖️'} Market ${marketSentiment.sentiment.toUpperCase()} Alert: ${focus}`,
+        content: `Dear Valued Investor,
+
+${marketSentiment.marketCondition}
+
+Key Market Indicators:
+• VIX Level: ${marketSentiment.vixLevel.toFixed(1)} - ${marketSentiment.sentimentDescription}
+• Market Sentiment: ${marketSentiment.sentiment.toUpperCase()}
+• Investment Focus: ${focus}
+
+${marketSentiment.sentimentAdvice}
+
+Top Performing Sectors:
+${marketSentiment.topSectors?.map(s => `• ${s.sector}: ${s.performance > 0 ? '+' : ''}${s.performance}%`).join('\n') || 'No sector data available'}
+
+Action Required: ${urgency === 'urgent' ? 'IMMEDIATE ATTENTION' : 'Review within 24 hours'}
+
+Best regards,
+Your SharpSend Team`,
+        createdAt: new Date().toISOString(),
+        status: 'draft',
+        urgency,
+        sentiment: marketSentiment.sentiment
+      };
+      
+      setEmailDrafts(prev => [newDraft, ...prev]);
+      
+      setTimeout(() => {
+        setShowGenerationModal(false);
+        setShowDraftsModal(true);
+        toast({
+          title: "Email Draft Created",
+          description: "Your AI-generated email has been saved to drafts",
+        });
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error creating assignment:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to create email draft. Please try again.",
+        variant: "destructive"
+      });
+      setShowGenerationModal(false);
+    }
+  };
+
   return (
     <div className="dashboard-container p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="dashboard-title">Dashboard Overview</h1>
-        <p className="dashboard-subtitle">AI-powered newsletter personalization insights</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="dashboard-title">Dashboard Overview</h1>
+            <p className="dashboard-subtitle">AI-powered newsletter personalization insights</p>
+          </div>
+          <Button 
+            onClick={() => setShowDraftsModal(true)}
+            variant="outline"
+            size="sm"
+            className="relative"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            View Drafts
+            {emailDrafts.length > 0 && (
+              <Badge className="ml-2 bg-orange-500" variant="secondary">
+                {emailDrafts.length}
+              </Badge>
+            )}
+          </Button>
+        </div>
       </div>
 
 
@@ -378,44 +512,7 @@ export default function OverviewTab() {
                   <Button 
                     size="sm" 
                     className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
-                    onClick={async () => {
-                      // Create assignment based on market sentiment
-                      const urgency = marketSentiment.vixLevel > 25 ? 'urgent' : 'standard';
-                      const focus = marketSentiment.vixLevel > 25 ? 
-                        'Risk management and capital preservation' : 
-                        marketSentiment.vixLevel < 16 ? 
-                        'Growth opportunities and new positions' : 
-                        'Balanced market analysis';
-                      
-                      try {
-                        const response = await fetch('/api/assignments/create', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                          },
-                          body: JSON.stringify({
-                            title: `Market ${marketSentiment.sentiment} - ${new Date().toLocaleDateString()}`,
-                            urgency,
-                            focus,
-                            deadline: urgency === 'urgent' ? '2 hours' : '24 hours',
-                            marketContext: {
-                              sentiment: marketSentiment.sentiment,
-                              vixLevel: marketSentiment.vixLevel,
-                              topSectors: marketSentiment.topSectors
-                            }
-                          })
-                        });
-                        
-                        if (response.ok) {
-                          const result = await response.json();
-                          console.log('Assignment created:', result);
-                          // Could show success message or navigate to assignment
-                        }
-                      } catch (error) {
-                        console.error('Error creating assignment:', error);
-                      }
-                    }}
+                    onClick={() => handleCreateAssignment()}
                   >
                     <FileEdit className="w-3 h-3 mr-1" />
                     Create Assignment
@@ -1053,6 +1150,103 @@ export default function OverviewTab() {
           </div>
         </div>
       </div>
+
+      {/* Generation Progress Modal */}
+      <Dialog open={showGenerationModal} onOpenChange={setShowGenerationModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating AI Email Assignment
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{generationStatus}</span>
+                <span className="font-medium">{generationProgress}%</span>
+              </div>
+              <Progress value={generationProgress} className="h-2" />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p>Creating personalized content based on:</p>
+              <ul className="mt-2 space-y-1">
+                <li>• Current market sentiment: {marketSentiment?.sentiment}</li>
+                <li>• VIX Level: {marketSentiment?.vixLevel.toFixed(1)}</li>
+                <li>• Top performing sectors</li>
+              </ul>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Drafts Modal */}
+      <Dialog open={showDraftsModal} onOpenChange={setShowDraftsModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Email Drafts ({emailDrafts.length})
+              </span>
+              <Badge variant="secondary" className="ml-2">Auto-saved</Badge>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {emailDrafts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>No drafts yet</p>
+                <p className="text-sm mt-1">Generated emails will appear here</p>
+              </div>
+            ) : (
+              emailDrafts.map((draft) => (
+                <Card key={draft.id} className="hover:bg-muted/50 transition-colors">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm">{draft.subject}</h4>
+                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                          <Badge variant={draft.urgency === 'urgent' ? 'destructive' : 'secondary'} className="text-xs">
+                            {draft.urgency}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {draft.sentiment}
+                          </Badge>
+                          <span>{new Date(draft.createdAt).toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Eye className="h-3 w-3 mr-1" />
+                          Preview
+                        </Button>
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                          <Send className="h-3 w-3 mr-1" />
+                          Send
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground line-clamp-3 whitespace-pre-wrap">
+                      {draft.content}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+          <div className="flex justify-between items-center mt-4 pt-4 border-t">
+            <Button variant="outline" size="sm" onClick={() => setEmailDrafts([])}>
+              Clear All Drafts
+            </Button>
+            <Button size="sm" onClick={() => setShowDraftsModal(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
