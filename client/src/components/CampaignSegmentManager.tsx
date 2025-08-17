@@ -117,29 +117,12 @@ export default function CampaignSegmentManager({
     }
   ];
 
-  // Fetch email versions
-  const { data: emailVersions, isLoading } = useQuery({
+  // Fetch email versions from the actual API
+  const { data: emailVersions, isLoading, refetch } = useQuery({
     queryKey: [`/api/campaigns/${campaignId}/versions`],
-    queryFn: async () => {
-      // Simulated data - replace with actual API call
-      return {
-        versions: segments.map(segment => ({
-          id: `version-${segment.id}`,
-          segmentId: segment.id,
-          segmentName: segment.name,
-          subject: `${baseSubject || 'Market Update'} - Tailored for ${segment.name}`,
-          content: `Personalized content for ${segment.name}...`,
-          previewText: `Special insights for ${segment.description}`,
-          personalizationLevel: 'high' as const,
-          status: 'draft' as const,
-          generatedAt: new Date().toISOString(),
-          stats: {
-            estimatedOpenRate: 25 + Math.random() * 20,
-            estimatedClickRate: 5 + Math.random() * 10
-          }
-        }))
-      };
-    }
+    enabled: !!campaignId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   // Credits tracking
@@ -552,11 +535,22 @@ export default function CampaignSegmentManager({
                 />
               </div>
               <div>
-                <Label>Email Content</Label>
-                <Textarea 
-                  className="w-full mt-1 h-64"
-                  defaultValue={editingVersion.content}
-                />
+                <Label>Email Content (HTML Preview)</Label>
+                <div className="mt-2 space-y-2">
+                  <div 
+                    className="p-4 bg-gray-50 dark:bg-gray-800 rounded border max-h-[300px] overflow-y-auto"
+                    dangerouslySetInnerHTML={{ __html: editingVersion.content }}
+                  />
+                  <details className="cursor-pointer">
+                    <summary className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">
+                      Show HTML Source
+                    </summary>
+                    <Textarea 
+                      className="mt-2 h-64 font-mono text-xs"
+                      defaultValue={editingVersion.content}
+                    />
+                  </details>
+                </div>
               </div>
             </div>
             <DialogFooter>

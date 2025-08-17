@@ -12,6 +12,37 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const MODEL = 'gpt-4o';
 
 /**
+ * Get all email versions for a campaign
+ */
+router.get('/api/campaigns/:campaignId/versions', async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+    
+    const versions = await db
+      .select()
+      .from(campaignEmailVersions)
+      .where(eq(campaignEmailVersions.campaignId, campaignId));
+    
+    res.json({
+      success: true,
+      versions: versions.map(v => ({
+        ...v,
+        stats: {
+          estimatedOpenRate: v.estimatedOpenRate || 0,
+          estimatedClickRate: v.estimatedClickRate || 0
+        }
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching email versions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch email versions'
+    });
+  }
+});
+
+/**
  * Generate email version for a specific segment
  */
 router.post('/api/campaigns/:campaignId/generate-version', async (req, res) => {
