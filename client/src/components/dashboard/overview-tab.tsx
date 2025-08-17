@@ -268,41 +268,7 @@ export default function OverviewTab() {
         <p className="dashboard-subtitle">AI-powered newsletter personalization insights</p>
       </div>
 
-      {/* AI Insights & Recommendations Section - Moved to Top */}
-      <Card className="mb-6 bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white">
-            <Lightbulb className="w-5 h-5 text-purple-400" />
-            AI Insights & Recommendations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 backdrop-blur">
-            <TrendingUp className="w-5 h-5 text-green-400 mt-0.5" />
-            <div>
-              <p className="text-sm text-gray-200">
-                Your financial newsletter engagement peaks on <span className="font-bold text-green-400">Tuesday mornings</span>. Consider scheduling premium content for optimal impact.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 backdrop-blur">
-            <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
-            <div>
-              <p className="text-sm text-gray-200">
-                Subscribers responding to <span className="font-bold">"Market Outlook"</span> subject lines show <span className="font-bold text-blue-400">47% higher lifetime value</span>. Expand this content strategy.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 backdrop-blur">
-            <Zap className="w-5 h-5 text-yellow-400 mt-0.5" />
-            <div>
-              <p className="text-sm text-gray-200">
-                Implement personalized stock recommendations for the <span className="font-bold">"High-Value Investor"</span> segment to increase engagement by an estimated <span className="font-bold text-yellow-400">12%</span>.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Market Intelligence Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

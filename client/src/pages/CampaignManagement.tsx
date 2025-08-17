@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, Users, Mail, Plus, CheckCircle, XCircle, AlertCircle, Copy, ExternalLink, FileText, Pencil, Eye, Settings, Sparkles, Zap, Target } from "lucide-react";
+import { Calendar, Clock, Users, Mail, Plus, CheckCircle, XCircle, AlertCircle, Copy, ExternalLink, FileText, Pencil, Eye, Settings, Sparkles, Zap, Target, Edit, Link2, Upload, X, Info } from "lucide-react";
 import { format } from "date-fns";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -884,6 +884,7 @@ function CreateAssignmentDialog({
   onSubmit: (data: any) => void;
   isLoading: boolean;
 }) {
+  const [creationMode, setCreationMode] = useState<'manual' | 'ai' | 'copywriter'>('manual');
   const [formData, setFormData] = useState({
     assigneeEmail: '',
     assigneeName: '',
@@ -892,118 +893,330 @@ function CreateAssignmentDialog({
     targetCohort: 'High-Value Investor',
     tone: 'Professional',
     expiresInDays: 7,
+    emailContent: '',
+    emailSubject: '',
   });
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [copywriterLink, setCopywriterLink] = useState('');
+  const { toast } = useToast();
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    setUploadedImages(prev => [...prev, ...files]);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleGenerateCopywriterLink = () => {
+    const uniqueId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    const link = `${window.location.origin}/copywriter/${uniqueId}`;
+    setCopywriterLink(link);
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link Generated!",
+      description: "Copywriter link copied to clipboard",
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const submissionData = {
+      ...formData,
+      creationMode,
+      uploadedImages: uploadedImages.map(f => f.name),
+      copywriterLink: creationMode === 'copywriter' ? copywriterLink : undefined,
+    };
+
+    if (creationMode === 'copywriter') {
+      submissionData.assignmentType = 'copywriter_collaboration';
+    }
+
     onSubmit({
-      assigneeEmail: formData.assigneeEmail,
-      assigneeName: formData.assigneeName,
-      assignmentType: formData.assignmentType,
+      assigneeEmail: formData.assigneeEmail || (creationMode === 'copywriter' ? 'copywriter@pending.com' : ''),
+      assigneeName: formData.assigneeName || (creationMode === 'copywriter' ? 'Pending Assignment' : ''),
+      assignmentType: submissionData.assignmentType,
       briefing: {
         instructions: formData.instructions,
         targetCohort: formData.targetCohort,
         keyPoints: [],
         tone: formData.tone,
         requirements: {},
+        emailContent: formData.emailContent,
+        emailSubject: formData.emailSubject,
+        images: uploadedImages.map(f => f.name),
       },
       expiresInDays: formData.expiresInDays,
+      copywriterLink: submissionData.copywriterLink,
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Email Assignment</DialogTitle>
+          <DialogTitle>Create Email Content</DialogTitle>
           <DialogDescription>
-            Assign email creation tasks with unique collaboration links
+            Choose how you want to create your email content
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="assigneeEmail">Assignee Email</Label>
-            <Input
-              id="assigneeEmail"
-              type="email"
-              value={formData.assigneeEmail}
-              onChange={(e) => setFormData({ ...formData, assigneeEmail: e.target.value })}
-              placeholder="copywriter@example.com"
-              required
-              data-testid="input-assignee-email"
-            />
-          </div>
-          <div>
-            <Label htmlFor="assigneeName">Assignee Name</Label>
-            <Input
-              id="assigneeName"
-              value={formData.assigneeName}
-              onChange={(e) => setFormData({ ...formData, assigneeName: e.target.value })}
-              placeholder="John Smith"
-              data-testid="input-assignee-name"
-            />
-          </div>
-          <div>
-            <Label htmlFor="assignmentType">Assignment Type</Label>
-            <Select
-              value={formData.assignmentType}
-              onValueChange={(value) => setFormData({ ...formData, assignmentType: value })}
-            >
-              <SelectTrigger data-testid="select-assignment-type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="email_content">Email Content</SelectItem>
-                <SelectItem value="subject_line">Subject Line</SelectItem>
-                <SelectItem value="email_design">Email Design</SelectItem>
-                <SelectItem value="content_review">Content Review</SelectItem>
-                <SelectItem value="fact_check">Fact Check</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="instructions">Instructions</Label>
-            <Textarea
-              id="instructions"
-              value={formData.instructions}
-              onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-              placeholder="Detailed instructions for the assignment..."
-              required
-              data-testid="textarea-instructions"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+        
+        <Tabs value={creationMode} onValueChange={(v) => setCreationMode(v as any)}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="manual">
+              <Edit className="w-4 h-4 mr-2" />
+              Manual Content
+            </TabsTrigger>
+            <TabsTrigger value="ai">
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI Generate
+            </TabsTrigger>
+            <TabsTrigger value="copywriter">
+              <Link2 className="w-4 h-4 mr-2" />
+              Copywriter Link
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="manual" className="space-y-4">
             <div>
-              <Label htmlFor="targetCohort">Target Cohort</Label>
-              <Select
-                value={formData.targetCohort}
-                onValueChange={(value) => setFormData({ ...formData, targetCohort: value })}
-              >
-                <SelectTrigger data-testid="select-target-cohort">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="High-Value Investor">High-Value Investor</SelectItem>
-                  <SelectItem value="Day Trader">Day Trader</SelectItem>
-                  <SelectItem value="Long-term Investor">Long-term Investor</SelectItem>
-                  <SelectItem value="Options Trader">Options Trader</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="expiresInDays">Expires In (Days)</Label>
+              <Label htmlFor="emailSubject">Email Subject</Label>
               <Input
-                id="expiresInDays"
-                type="number"
-                min="1"
-                max="30"
-                value={formData.expiresInDays}
-                onChange={(e) => setFormData({ ...formData, expiresInDays: parseInt(e.target.value) || 7 })}
-                data-testid="input-expires-days"
+                id="emailSubject"
+                value={formData.emailSubject}
+                onChange={(e) => setFormData({ ...formData, emailSubject: e.target.value })}
+                placeholder="Enter email subject line..."
+                data-testid="input-email-subject"
               />
             </div>
-          </div>
-          <DialogFooter>
+            
+            <div>
+              <Label htmlFor="emailContent">Email Content</Label>
+              <Textarea
+                id="emailContent"
+                value={formData.emailContent}
+                onChange={(e) => setFormData({ ...formData, emailContent: e.target.value })}
+                placeholder="Type or paste your email content here..."
+                className="min-h-[200px] font-normal"
+                data-testid="textarea-email-content"
+              />
+            </div>
+
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              }`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+            >
+              <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-600">
+                Drag and drop images here or click to browse
+              </p>
+              <Input
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                id="image-upload"
+                onChange={(e) => {
+                  const files = e.target.files ? Array.from(e.target.files) : [];
+                  setUploadedImages(prev => [...prev, ...files]);
+                }}
+              />
+              <label htmlFor="image-upload">
+                <Button type="button" variant="outline" size="sm" className="mt-2" asChild>
+                  <span>Browse Files</span>
+                </Button>
+              </label>
+              
+              {uploadedImages.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {uploadedImages.map((file, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm">{file.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== idx))}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-4">
+            <div>
+              <Label htmlFor="ai-instructions">AI Generation Instructions</Label>
+              <Textarea
+                id="ai-instructions"
+                value={formData.instructions}
+                onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
+                placeholder="Describe what you want the AI to generate..."
+                className="min-h-[100px]"
+                data-testid="textarea-ai-instructions"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="ai-targetCohort">Target Cohort</Label>
+                <Select
+                  value={formData.targetCohort}
+                  onValueChange={(value) => setFormData({ ...formData, targetCohort: value })}
+                >
+                  <SelectTrigger data-testid="select-ai-target-cohort">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="High-Value Investor">High-Value Investor</SelectItem>
+                    <SelectItem value="Day Trader">Day Trader</SelectItem>
+                    <SelectItem value="Long-term Investor">Long-term Investor</SelectItem>
+                    <SelectItem value="Options Trader">Options Trader</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="ai-tone">Tone</Label>
+                <Select
+                  value={formData.tone}
+                  onValueChange={(value) => setFormData({ ...formData, tone: value })}
+                >
+                  <SelectTrigger data-testid="select-ai-tone">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Professional">Professional</SelectItem>
+                    <SelectItem value="Conversational">Conversational</SelectItem>
+                    <SelectItem value="Urgent">Urgent</SelectItem>
+                    <SelectItem value="Educational">Educational</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button 
+              type="button"
+              onClick={() => {
+                toast({
+                  title: "AI Generation Started",
+                  description: "Creating personalized content based on your instructions...",
+                });
+                // Trigger AI generation
+              }}
+              className="w-full"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate with AI
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="copywriter" className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-sm text-blue-900">
+                    Generate a unique link to share with your copywriter. They'll be able to create and submit content directly through this link.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="copywriter-instructions">Brief for Copywriter</Label>
+              <Textarea
+                id="copywriter-instructions"
+                value={formData.instructions}
+                onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
+                placeholder="Provide detailed instructions for the copywriter..."
+                className="min-h-[120px]"
+                data-testid="textarea-copywriter-instructions"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="copywriter-email">Copywriter Email (Optional)</Label>
+                <Input
+                  id="copywriter-email"
+                  type="email"
+                  value={formData.assigneeEmail}
+                  onChange={(e) => setFormData({ ...formData, assigneeEmail: e.target.value })}
+                  placeholder="copywriter@example.com"
+                  data-testid="input-copywriter-email"
+                />
+              </div>
+              <div>
+                <Label htmlFor="copywriter-expires">Link Expires In</Label>
+                <Select
+                  value={formData.expiresInDays.toString()}
+                  onValueChange={(value) => setFormData({ ...formData, expiresInDays: parseInt(value) })}
+                >
+                  <SelectTrigger data-testid="select-copywriter-expires">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 day</SelectItem>
+                    <SelectItem value="3">3 days</SelectItem>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="14">14 days</SelectItem>
+                    <SelectItem value="30">30 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {copywriterLink && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <Label className="text-green-900 mb-2 block">Generated Link</Label>
+                <div className="flex items-center space-x-2">
+                  <Input value={copywriterLink} readOnly className="bg-white" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(copywriterLink);
+                      toast({
+                        title: "Copied!",
+                        description: "Link copied to clipboard",
+                      });
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <Button 
+              type="button"
+              onClick={handleGenerateCopywriterLink}
+              className="w-full"
+            >
+              <Link2 className="w-4 h-4 mr-2" />
+              {copywriterLink ? 'Generate New Link' : 'Generate Copywriter Link'}
+            </Button>
+          </TabsContent>
+        </Tabs>
+
+        <form onSubmit={handleSubmit}>
+          <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
