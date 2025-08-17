@@ -176,6 +176,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to toggle guardrails" });
     }
   });
+  
+  // Email Tracking Pixel Routes
+  app.get("/api/tracking/pixel/:trackingId.gif", async (req, res) => {
+    try {
+      const { trackingId } = req.params;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      // Track the open event
+      const userAgent = req.headers['user-agent'];
+      const ipAddress = req.ip;
+      tracker.trackOpen(trackingId.replace('.gif', ''), userAgent, ipAddress);
+      
+      // Return a 1x1 transparent GIF
+      const pixel = Buffer.from(
+        'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        'base64'
+      );
+      
+      res.writeHead(200, {
+        'Content-Type': 'image/gif',
+        'Content-Length': pixel.length,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      res.end(pixel);
+    } catch (error) {
+      console.error("Error serving tracking pixel:", error);
+      // Still return a pixel even if tracking fails
+      const pixel = Buffer.from(
+        'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        'base64'
+      );
+      res.writeHead(200, { 'Content-Type': 'image/gif' });
+      res.end(pixel);
+    }
+  });
+  
+  app.get("/api/tracking/dashboard-stats", async (req, res) => {
+    try {
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      const stats = tracker.getDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching tracking stats:", error);
+      res.status(500).json({ error: "Failed to fetch tracking statistics" });
+    }
+  });
+  
+  app.get("/api/tracking/campaign/:campaignId", async (req, res) => {
+    try {
+      const { campaignId } = req.params;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      const stats = tracker.getCampaignStats(campaignId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching campaign tracking stats:", error);
+      res.status(500).json({ error: "Failed to fetch campaign statistics" });
+    }
+  });
+  
+  app.get("/api/tracking/subscriber/:subscriberId", async (req, res) => {
+    try {
+      const { subscriberId } = req.params;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      const engagement = tracker.getSubscriberEngagement(subscriberId);
+      res.json(engagement);
+    } catch (error) {
+      console.error("Error fetching subscriber engagement:", error);
+      res.status(500).json({ error: "Failed to fetch subscriber engagement" });
+    }
+  });
+  
+  app.post("/api/tracking/generate-pixel", async (req, res) => {
+    try {
+      const { emailId, subscriberId, campaignId } = req.body;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      // Generate pixel HTML tag
+      const baseUrl = `https://${req.hostname}`;
+      const pixelTag = tracker.generatePixelTag(emailId, subscriberId, baseUrl, campaignId);
+      
+      res.json({ 
+        success: true,
+        pixelTag,
+        message: "Tracking pixel generated successfully"
+      });
+    } catch (error) {
+      console.error("Error generating tracking pixel:", error);
+      res.status(500).json({ error: "Failed to generate tracking pixel" });
+    }
+  });
+  
+  app.post("/api/tracking/toggle", async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      tracker.setPlatformTrackingEnabled(enabled);
+      
+      res.json({ 
+        success: true,
+        trackingEnabled: enabled,
+        message: enabled ? "Platform-wide email tracking enabled" : "Platform-wide email tracking disabled"
+      });
+    } catch (error) {
+      console.error("Error toggling tracking:", error);
+      res.status(500).json({ error: "Failed to toggle tracking" });
+    }
+  });
+  
+  app.post("/api/tracking/email-override", async (req, res) => {
+    try {
+      const { emailId, enabled } = req.body;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      tracker.setEmailTracking(emailId, enabled);
+      
+      res.json({ 
+        success: true,
+        emailId,
+        trackingEnabled: enabled,
+        message: enabled ? `Tracking enabled for email ${emailId}` : `Tracking disabled for email ${emailId}`
+      });
+    } catch (error) {
+      console.error("Error setting email tracking override:", error);
+      res.status(500).json({ error: "Failed to set email tracking override" });
+    }
+  });
+  
+  app.get("/api/tracking/email-status/:emailId", async (req, res) => {
+    try {
+      const { emailId } = req.params;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      const status = tracker.getEmailTrackingStatus(emailId);
+      res.json(status);
+    } catch (error) {
+      console.error("Error getting email tracking status:", error);
+      res.status(500).json({ error: "Failed to get email tracking status" });
+    }
+  });
+  
+  app.post("/api/tracking/privacy-mode", async (req, res) => {
+    try {
+      const { compliant } = req.body;
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      tracker.setPrivacyCompliant(compliant);
+      
+      res.json({ 
+        success: true,
+        privacyCompliant: compliant,
+        message: compliant ? "Privacy-compliant mode enabled" : "Full tracking mode enabled"
+      });
+    } catch (error) {
+      console.error("Error setting privacy mode:", error);
+      res.status(500).json({ error: "Failed to set privacy mode" });
+    }
+  });
 
   // Market events news feed with email opportunities
   app.get("/api/market-events-feed", async (req, res) => {

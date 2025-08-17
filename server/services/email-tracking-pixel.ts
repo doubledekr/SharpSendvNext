@@ -32,9 +32,12 @@ export class EmailTrackingPixel {
   private subscriberOpens: Map<string, Set<string>> = new Map();
   private campaignOpens: Map<string, Set<string>> = new Map();
   
-  // Privacy settings
+  // Platform-wide settings
+  private platformTrackingEnabled: boolean = true;
   private privacyCompliant: boolean = true;
-  private trackingEnabled: boolean = true;
+  
+  // Per-email tracking overrides (emailId -> enabled)
+  private emailTrackingOverrides: Map<string, boolean> = new Map();
   
   private constructor() {
     // Initialize with some demo data
@@ -66,8 +69,11 @@ export class EmailTrackingPixel {
   /**
    * Generate the complete pixel HTML tag
    */
-  public generatePixelTag(emailId: string, subscriberId: string, baseUrl: string, campaignId?: string): string {
-    if (!this.trackingEnabled) {
+  public generatePixelTag(emailId: string, subscriberId: string, baseUrl: string, campaignId?: string, forceTracking?: boolean): string {
+    // Check if tracking should be applied for this email
+    const shouldTrack = this.shouldTrackEmail(emailId, forceTracking);
+    
+    if (!shouldTrack) {
       return ''; // No tracking if disabled
     }
     
@@ -88,6 +94,44 @@ export class EmailTrackingPixel {
     
     // Return pixel tag with privacy-compliant attributes
     return `<img src="${pixelUrl}" alt="" width="1" height="1" border="0" style="display:block;width:1px;height:1px;border:0;" />`;
+  }
+  
+  /**
+   * Determine if an email should be tracked based on platform and email-specific settings
+   */
+  public shouldTrackEmail(emailId: string, forceTracking?: boolean): boolean {
+    // If force tracking is specified, use that
+    if (forceTracking !== undefined) {
+      return forceTracking;
+    }
+    
+    // Check if there's an email-specific override
+    if (this.emailTrackingOverrides.has(emailId)) {
+      return this.emailTrackingOverrides.get(emailId)!;
+    }
+    
+    // Otherwise use platform-wide setting
+    return this.platformTrackingEnabled;
+  }
+  
+  /**
+   * Set email-specific tracking preference
+   */
+  public setEmailTracking(emailId: string, enabled: boolean): void {
+    this.emailTrackingOverrides.set(emailId, enabled);
+  }
+  
+  /**
+   * Get email-specific tracking preference
+   */
+  public getEmailTrackingStatus(emailId: string): { platformEnabled: boolean; emailOverride?: boolean; effectiveStatus: boolean } {
+    const emailOverride = this.emailTrackingOverrides.get(emailId);
+    
+    return {
+      platformEnabled: this.platformTrackingEnabled,
+      emailOverride,
+      effectiveStatus: this.shouldTrackEmail(emailId)
+    };
   }
   
   /**
@@ -209,23 +253,39 @@ export class EmailTrackingPixel {
     const recentOpens = Array.from(this.trackingData.values())
       .filter(e => e.lastOpenedAt && e.lastOpenedAt > last24Hours).length;
     
+    // Count emails with tracking overrides
+    const emailsWithOverrides = this.emailTrackingOverrides.size;
+    const overridesDisabled = Array.from(this.emailTrackingOverrides.values())
+      .filter(enabled => !enabled).length;
+    
     return {
-      trackingEnabled: this.trackingEnabled,
+      trackingEnabled: this.platformTrackingEnabled,
       privacyCompliant: this.privacyCompliant,
       totalEmailsTracked: totalTracked,
       totalOpens,
       uniqueOpeners,
       averageOpenRate: totalTracked > 0 ? ((uniqueOpeners / totalTracked) * 100).toFixed(1) : '0',
       opensLast24Hours: recentOpens,
-      topCampaigns: this.getTopCampaigns(3)
+      topCampaigns: this.getTopCampaigns(3),
+      emailOverrides: {
+        total: emailsWithOverrides,
+        disabled: overridesDisabled
+      }
     };
   }
   
   /**
-   * Toggle tracking on/off
+   * Toggle platform-wide tracking on/off
    */
-  public setTrackingEnabled(enabled: boolean): void {
-    this.trackingEnabled = enabled;
+  public setPlatformTrackingEnabled(enabled: boolean): void {
+    this.platformTrackingEnabled = enabled;
+  }
+  
+  /**
+   * Get platform tracking status
+   */
+  public getPlatformTrackingEnabled(): boolean {
+    return this.platformTrackingEnabled;
   }
   
   /**

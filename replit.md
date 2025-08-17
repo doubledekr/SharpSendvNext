@@ -2,275 +2,73 @@
 
 ## Overview
 
-SharpSend.io is an AI-powered newsletter personalization platform designed specifically for financial publishers. The application provides comprehensive dashboard functionality for managing subscribers, creating personalized content with AI, running A/B tests, analyzing campaign performance, and calculating revenue impact. The platform integrates with various email marketing services and offers advanced analytics to help financial newsletter publishers optimize their content and maximize subscriber engagement.
+SharpSend.io is an AI-powered newsletter personalization platform built for financial publishers. It offers a comprehensive dashboard for managing subscribers, generating personalized content with AI, conducting A/B tests, analyzing campaign performance, and calculating revenue impact. The platform integrates with various email marketing services and provides advanced analytics to optimize content and maximize subscriber engagement. Its business vision includes a B2B SaaS pricing model with high-margin credit and overage charges, aiming for scalable growth. Key capabilities include AI-driven email personalization based on market sentiment, email fatigue management, real-time market event integration, and a hierarchical tracking pixel system.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## Pricing Strategy
-B2B SaaS pricing with high-margin credit system:
-- Starter: $99/month (2 cohorts, 1K emails, $0.15 overage)
-- Professional: $299/month (5 cohorts, 5K emails, $0.12 overage)  
-- Enterprise: $799/month (unlimited cohorts, 20K emails, $0.08 overage)
-- Revenue focus on overage charges for scalable growth
-
-## Recent Changes
-
-**August 16, 2025 - Navigation & AI Insights Improvements**
-- **Fixed Navigation Header: COMPLETED**
-  - ✅ Top navigation now stays fixed when scrolling
-  - ✅ Professional gradient logo with Brain icon
-  - ✅ Better visual hierarchy with shadow effects
-  - ✅ Improved junction between header and sidebar with clean styling
-  
-- **AI Insights Repositioning: COMPLETED**
-  - ✅ Moved AI Insights & Recommendations to top of dashboard
-  - ✅ Three-column layout showing Market Analysis, Top Opportunity, and Fatigue Status
-  - ✅ Prominent recommended actions section with dynamic updates
-  - ✅ Purple gradient card design for better visibility
-
-**August 16, 2025 - Market Sentiment Integration & Events Feed**
-- **Market Sentiment Always On by Default: COMPLETED**
-  - ✅ Market sentiment analysis now automatically included in all email generation
-  - ✅ VIX-based sentiment (Low VIX = Bullish, High VIX = Bearish) prominently displayed
-  - ✅ Real-time market conditions feed into email tone and content
-  - ✅ AI automatically adjusts messaging based on current market mood
-  
-- **Market Events News Feed Dashboard: COMPLETED**
-  - ✅ Live market events feed showing email opportunities
-  - ✅ Automatic assignment generation suggestions based on market triggers
-  - ✅ Priority levels for urgent market responses
-  - ✅ Direct connections between events and email campaigns
-  - ✅ One-click email generation and assignment creation
-  
-- **Enhanced Email Personalization: COMPLETED**
-  - ✅ All email generation now considers current VIX levels
-  - ✅ Market context automatically fetched if not provided
-  - ✅ Sector performance integrated into content suggestions
-  - ✅ Dynamic tone adjustment based on market volatility
-
-**August 16, 2025 - Email Fatigue Guardrails Implementation**
-- **Email Fatigue Tracking System: COMPLETED**
-  - ✅ Created EmailFatigueTracker service with intelligent monitoring
-  - ✅ Tracks daily (3 emails) and weekly (10 emails) limits per subscriber
-  - ✅ Generates tired list of over-emailed subscribers automatically
-  - ✅ Fatigue scoring system (0-100) with warning thresholds
-  
-- **Dashboard Fatigue Monitoring: COMPLETED**
-  - ✅ Added Email Fatigue Guardian card to main dashboard
-  - ✅ Shows tired subscribers, blocked count, and health metrics
-  - ✅ Displays most emailed segments with daily/weekly averages
-  - ✅ Smart recommendations for reducing email fatigue
-  - ✅ Real-time alerts for critical and warning levels
-  
-- **Fatigue Prevention Features: COMPLETED**
-  - ✅ Auto-blocks sends to subscribers at daily/weekly limits
-  - ✅ Segment and cohort-level fatigue analysis
-  - ✅ View Tired List and Configure Limits action buttons
-  - ✅ Color-coded severity indicators (red=blocked, orange=critical, yellow=warning)
-
-**August 16, 2025 - Complete Platform Enhancement with Internal Dashboard**
-- **Navigation & Organization Updates: COMPLETED**
-  - ✅ Added Internal System dashboard to sidebar navigation  
-  - ✅ Moved Email Platform Status to Email Integration submenu
-  - ✅ Added Documentation/API/FAQ section at bottom of sidebar
-  - ✅ Removed Email Platforms from top navigation bar
-  
-- **Internal SharpSend Dashboard: COMPLETED**
-  - ✅ Segment categorization and management interface
-  - ✅ User viewing and tracking system
-  - ✅ Past and pending email sends monitoring
-  - ✅ Email/event trigger management
-  - ✅ Send status tracking with detailed logs
-  
-- **AI Assignment Generator Service: COMPLETED**
-  - ✅ Market trigger to assignment link generation
-  - ✅ AI-powered email creation when copywriters unavailable
-  - ✅ Segment-specific variation generation
-  - ✅ Assignment urgency calculation and tracking
-  - ✅ Draft-to-variation adaptation system
-  
-- **Documentation System: COMPLETED**
-  - ✅ Comprehensive Quick Start guide
-  - ✅ API Reference with code examples
-  - ✅ Platform capabilities matrix
-  - ✅ FAQ and troubleshooting resources
-  - ✅ Copy-to-clipboard functionality for code snippets
-  
-- **Email Variations Styling: ENHANCED**
-  - ✅ Boxed variation display with color coding
-  - ✅ Segment-specific visual identification
-  - ✅ Performance prediction metrics
-  - ✅ Interactive preview and edit capabilities
-  - ✅ Copy, preview, and edit actions per variation
-
-**August 17, 2025 - Email Tracking Pixel System Implementation**
-- **Optional Tracking Pixel Generator: COMPLETED**
-  - ✅ Created EmailTrackingPixel service for generating and tracking pixels
-  - ✅ Implemented 1x1 transparent GIF serving with unique tracking IDs
-  - ✅ Built privacy-compliant tracking with proper cache headers
-  - ✅ Added email open tracking with device detection and location data
-  
-- **Tracking Dashboard Integration: COMPLETED**
-  - ✅ Added Email Open Tracking card to main dashboard
-  - ✅ Shows total tracked emails, opens, unique openers, and 24hr stats
-  - ✅ Displays top performing campaigns with open rates
-  - ✅ Toggle switches for enabling/disabling tracking and privacy mode
-  
-- **Backend Tracking Infrastructure: COMPLETED**
-  - ✅ API endpoints for serving tracking pixels (/api/tracking/pixel/:id.gif)
-  - ✅ Campaign and subscriber engagement statistics endpoints
-  - ✅ Pixel generation endpoint for creating tracking tags
-  - ✅ Privacy mode toggle for GDPR compliance
-  
-- **Tracking Features: COMPLETED**
-  - ✅ Track email opens with timestamps and frequency
-  - ✅ Device type detection (mobile, desktop, tablet)
-  - ✅ Geographic location tracking (when privacy mode allows)
-  - ✅ Campaign-level open rate analytics
-  - ✅ Subscriber engagement scoring system
-  - ✅ Peak open time analysis
-  - ✅ Optional system - can be completely disabled
-
-**August 16, 2025 - SharpSend Strategic Alignment Completed**
-- **Phase 1 Core Intelligence Infrastructure: COMPLETED**
-  - ✅ Fixed cohort detection service with sophisticated behavioral pattern recognition
-  - ✅ Implemented investment sophistication assessment (beginner → professional)  
-  - ✅ Built risk tolerance analysis (conservative → aggressive)
-  - ✅ Added investment style identification (value, growth, income, trading)
-  - ✅ Created market intelligence service with real-time financial context integration
-  - ✅ Verified APIs working: Cohort Analysis, Market Context, Churn Prediction
-
-- **Phase 2 Email Sharpening Engine: COMPLETED**
-  - ✅ Enhanced AI personalization with financial content-specific prompts
-  - ✅ Implemented cohort-specific content adaptation for all investor types
-  - ✅ Built performance prediction and optimization algorithms
-  - ✅ Created comprehensive email sharpening API with OpenAI integration
-
-- **Phase 3 Advanced Dashboard: COMPLETED**
-  - ✅ Built sophisticated Cohort Intelligence Dashboard with real-time analysis
-  - ✅ Integrated Editorial Workflow with cohort targeting and AI suggestions
-  - ✅ Created SharpSend Intelligence main page with comprehensive analytics
-  - ✅ Implemented churn risk prediction with intervention recommendations
-
-- **Phase 4 Financial Publisher Specialization: COMPLETED**
-  - ✅ Market timing intelligence with volatility-based send optimization
-  - ✅ Content emphasis recommendations based on market sentiment
-  - ✅ Real-time market alerts and proactive content opportunities
-  - ✅ Email content enhancement with live pricing and citations
-  - ✅ Publisher intelligence dashboard with sector performance tracking
-
-- **Technical Architecture Enhancements**
-  - ✅ Multi-tenant platform with PostgreSQL database
-  - ✅ MarketAux and Polygon API integrations for financial data
-  - ✅ OpenAI GPT-4 integration for sophisticated email personalization
-  - ✅ Demo authentication: demo@sharpsend.com / demo123
-  - ✅ All core services validated and functioning
-  - ✅ Publisher Intelligence Service with proactive market monitoring
-  - ✅ Market Alert Service with real-time event detection
-  - ✅ Content Enhancement Engine with live data integration
-
 ## System Architecture
 
 ### Frontend Architecture
 
-The frontend is built as a React Single Page Application (SPA) using modern development tools:
-
-- **Framework**: React 18 with TypeScript for type safety and better developer experience
-- **Routing**: Wouter for lightweight client-side routing
-- **Build Tool**: Vite for fast development and optimized production builds
-- **UI Framework**: Radix UI components with shadcn/ui design system
-- **Styling**: Tailwind CSS with custom CSS variables for theming
-- **State Management**: TanStack Query (React Query) for server state management
-- **Form Handling**: React Hook Form with Zod validation for type-safe forms
+The frontend is a React 18 SPA utilizing TypeScript. It uses Wouter for routing, Vite for building, Radix UI with shadcn/ui for components, and Tailwind CSS for styling. State management is handled by TanStack Query, and forms use React Hook Form with Zod validation.
 
 ### Backend Architecture
 
-The backend follows a REST API architecture pattern:
-
-- **Runtime**: Node.js with Express.js framework
-- **Language**: TypeScript for full-stack type safety
-- **Database ORM**: Drizzle ORM with PostgreSQL for type-safe database operations
-- **API Design**: RESTful endpoints organized by resource (subscribers, campaigns, A/B tests, etc.)
-- **Middleware**: Custom logging and error handling middleware
-- **Development**: Hot module replacement with Vite integration for seamless development experience
+The backend is a Node.js Express.js REST API, written in TypeScript. It uses Drizzle ORM with PostgreSQL for type-safe database operations and includes custom middleware for logging and error handling.
 
 ### Data Storage Solutions
 
-The application uses PostgreSQL as the primary database:
-
-- **Database**: PostgreSQL via Neon Database serverless platform
-- **ORM**: Drizzle ORM for type-safe database queries and migrations
-- **Schema Management**: Centralized schema definitions in shared directory for frontend/backend consistency
-- **Validation**: Zod schemas for runtime validation and type generation
-- **Migration Strategy**: Drizzle Kit for database schema migrations
+PostgreSQL, hosted on Neon Database, serves as the primary data store. Drizzle ORM is used for database interactions and migrations, with Zod schemas for validation and type generation.
 
 ### Key Data Models
 
-The platform manages several core entities:
-
-- **Users**: Authentication and authorization
-- **Subscribers**: Newsletter subscriber management with segmentation
-- **Campaigns**: Email campaign tracking and analytics
-- **A/B Tests**: Testing framework for campaign optimization
-- **Email Integrations**: Third-party email service provider connections
-- **Analytics**: Performance metrics and engagement tracking
+Core entities include Users, Subscribers, Campaigns, A/B Tests, Email Integrations, and Analytics.
 
 ### Authentication and Authorization
 
-The application implements session-based authentication:
-
-- **Session Management**: Express sessions with PostgreSQL session store
-- **Session Storage**: connect-pg-simple for persistent session storage
-- **Security**: Secure session configuration with proper cookie settings
+Session-based authentication is implemented using Express sessions with a PostgreSQL session store (connect-pg-simple).
 
 ### Component Architecture
 
-The frontend is organized into a modular component structure:
+The frontend features a modular component structure, including a multi-tab dashboard with sidebar navigation, specialized tab components for functional areas, and reusable shadcn/ui components. Shared TypeScript interfaces ensure consistency between frontend and backend. The system also includes an AI Assignment Generator Service for market-triggered content creation and a comprehensive documentation system.
 
-- **Dashboard Structure**: Multi-tab dashboard with sidebar navigation
-- **Tab Components**: Specialized components for each functional area (Overview, Subscribers, Personalization, Analytics, A/B Testing, Revenue, Email Integration, Advanced Features)
-- **UI Components**: Reusable shadcn/ui components for consistent design
-- **Shared Types**: TypeScript interfaces shared between frontend and backend
+### System Design Choices
+
+The platform is multi-tenant. It incorporates AI for cohort analysis, investment sophistication assessment, risk tolerance analysis, investment style identification, and real-time market intelligence. Email content is enhanced with market timing intelligence, volatility-based send optimization, and live pricing/citations. It features robust email fatigue tracking with dashboard monitoring and prevention features, and an optional, privacy-compliant email tracking pixel system with hierarchical control.
 
 ## External Dependencies
 
 ### Database Services
 
-- **Neon Database**: Serverless PostgreSQL hosting platform for scalable database management
-- **Drizzle ORM**: Type-safe database ORM for PostgreSQL operations
+- **Neon Database**: Serverless PostgreSQL hosting.
+- **Drizzle ORM**: Type-safe database ORM.
 
 ### Email Service Integrations
 
-The platform supports integration with major email marketing providers:
-
-- **Mailchimp**: Popular email marketing platform integration
-- **ConvertKit**: Creator-focused email marketing service
-- **Campaign Monitor**: Enterprise email marketing solution
-- **SendGrid**: Transactional and marketing email service
+- **Mailchimp**
+- **ConvertKit**
+- **Campaign Monitor**
+- **SendGrid**
 
 ### Development and Build Tools
 
-- **Vite**: Fast build tool and development server
-- **TypeScript**: Static type checking for JavaScript
-- **ESBuild**: Fast JavaScript bundler for production builds
-- **PostCSS**: CSS processing with Tailwind CSS compilation
+- **Vite**: Build tool and development server.
+- **TypeScript**: Static type checking.
+- **ESBuild**: JavaScript bundler.
+- **PostCSS**: CSS processing.
 
 ### UI and Design Libraries
 
-- **Radix UI**: Headless, accessible component primitives
-- **Tailwind CSS**: Utility-first CSS framework
-- **Lucide React**: Icon library for consistent iconography
-- **Class Variance Authority**: Utility for creating component variants
-- **Date-fns**: Date manipulation and formatting library
+- **Radix UI**: Headless, accessible component primitives.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **Lucide React**: Icon library.
+- **Class Variance Authority**: Component variant utility.
+- **Date-fns**: Date manipulation.
 
-### Development Environment
+### AI and Financial Data APIs
 
-- **Replit Integration**: Platform optimized for Replit development environment
-- **Hot Module Replacement**: Development server with instant code updates
-- **Runtime Error Handling**: Enhanced error overlays for development debugging
-
-### AI and Analytics
-
-The platform is designed to integrate with AI services for content personalization and analytics processing, though specific AI service integrations are implemented at the API level rather than as direct frontend dependencies.
+- **MarketAux**: For financial data.
+- **Polygon API**: For financial data.
+- **OpenAI GPT-4**: For AI-powered email personalization and intelligence.

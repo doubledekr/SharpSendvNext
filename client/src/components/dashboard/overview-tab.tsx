@@ -102,6 +102,10 @@ interface TrackingStats {
     totalOpens: number;
     openRate: string;
   }>;
+  emailOverrides?: {
+    total: number;
+    disabled: number;
+  };
 }
 
 // Helper function to format email frequency as a range
@@ -623,7 +627,7 @@ export default function OverviewTab() {
                   variant={trackingStats.trackingEnabled ? "default" : "secondary"}
                   className={trackingStats.trackingEnabled ? "bg-indigo-500" : "bg-gray-500"}
                 >
-                  {trackingStats.trackingEnabled ? "Active" : "Disabled"}
+                  {trackingStats.trackingEnabled ? "Platform Active" : "Platform Disabled"}
                 </Badge>
               )}
             </CardTitle>
@@ -649,15 +653,35 @@ export default function OverviewTab() {
             </div>
           ) : trackingStats ? (
             <div className="space-y-4">
-              {/* Tracking Notice */}
+              {/* Platform-wide Tracking Status */}
               {!trackingStats.trackingEnabled && (
                 <div className="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg p-3">
                   <div className="flex items-center gap-2">
                     <EyeOff className="w-4 h-4 text-gray-600" />
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      Tracking Disabled - No pixels will be added to emails
+                      Platform Tracking Disabled - No pixels will be added to any emails
                     </span>
                   </div>
+                </div>
+              )}
+              
+              {/* Email Override Info */}
+              {trackingStats.emailOverrides && trackingStats.emailOverrides.total > 0 && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        Email-Specific Overrides Active
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {trackingStats.emailOverrides.disabled} disabled / {trackingStats.emailOverrides.total} total
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    {trackingStats.emailOverrides.disabled} email{trackingStats.emailOverrides.disabled !== 1 ? 's' : ''} have tracking disabled despite platform settings
+                  </p>
                 </div>
               )}
               
@@ -740,7 +764,7 @@ export default function OverviewTab() {
                   }}
                 >
                   {trackingStats.trackingEnabled ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
-                  {trackingStats.trackingEnabled ? 'Disable Tracking' : 'Enable Tracking'}
+                  {trackingStats.trackingEnabled ? 'Disable Platform Tracking' : 'Enable Platform Tracking'}
                 </Button>
                 <Button 
                   size="sm" 
