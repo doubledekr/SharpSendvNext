@@ -379,24 +379,24 @@ export function CampaignManagement() {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                   <h5 className="font-medium text-sm">
-                                    {assignment.assignmentType.replace('_', ' ')}
+                                    {assignment.title || 'Email Assignment'}
                                   </h5>
                                   {getStatusBadge(assignment.status)}
                                 </div>
                                 <p className="text-xs text-gray-600 mt-1">
-                                  Assigned to: {assignment.assigneeName || assignment.assigneeEmail}
+                                  Assigned to: {assignment.assigneeEmail}
                                 </p>
-                                {assignment.briefing && (
+                                {assignment.description && (
                                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                    {assignment.briefing.instructions}
+                                    {assignment.description}
                                   </p>
                                 )}
                                 <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                                   <span>Created {assignment.createdAt ? format(new Date(assignment.createdAt), 'MMM d') : 'Unknown'}</span>
-                                  {assignment.expiresAt && (
+                                  {assignment.dueDate && (
                                     <span className="flex items-center gap-1">
                                       <Clock className="w-3 h-3" />
-                                      Expires {format(new Date(assignment.expiresAt), 'MMM d')}
+                                      Due {format(new Date(assignment.dueDate), 'MMM d')}
                                     </span>
                                   )}
                                 </div>
@@ -412,7 +412,7 @@ export function CampaignManagement() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => {
-                                    const link = `${window.location.origin}/assignment/${assignment.uniqueToken}`;
+                                    const link = `${window.location.origin}/assignment/${assignment.id}`;
                                     navigator.clipboard.writeText(link);
                                     toast({ title: "Link Copied", description: "Assignment link copied to clipboard" });
                                   }}
