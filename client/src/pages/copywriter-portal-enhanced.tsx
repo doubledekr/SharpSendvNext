@@ -21,6 +21,8 @@ import "../styles/dashboard-improvements.css";
 
 export default function CopywriterPortal() {
   const [activeTab, setActiveTab] = useState("tasks");
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [showWritingModal, setShowWritingModal] = useState(false);
 
   const metrics = [
     {
@@ -256,12 +258,24 @@ export default function CopywriterPortal() {
 
                   <div className="flex gap-2 ml-4">
                     {task.status === "in progress" ? (
-                      <button className="flex items-center gap-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm">
+                      <button 
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setShowWritingModal(true);
+                        }}
+                        className="flex items-center gap-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
+                      >
                         <Edit className="w-4 h-4" />
                         Continue
                       </button>
                     ) : (
-                      <button className="flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm">
+                      <button 
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setShowWritingModal(true);
+                        }}
+                        className="flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                      >
                         <FileText className="w-4 h-4" />
                         Start Writing
                       </button>
