@@ -22,6 +22,48 @@ The backend is a Node.js Express.js REST API, written in TypeScript. It uses Dri
 
 PostgreSQL, hosted on Neon Database, serves as the primary data store. Drizzle ORM is used for database interactions and migrations, with Zod schemas for validation and type generation.
 
+### Data Architecture and Sources
+
+The platform combines multiple data sources to provide comprehensive analytics:
+
+#### **Pixel Tracking System (SharpSend Proprietary)**
+The hierarchical email tracking pixel system provides:
+- **Email Opens**: Direct tracking of when emails are opened, including multiple opens
+- **Click Tracking**: Records which links are clicked within emails
+- **Page Visits**: Tracks website activity following email opens (with session linking)
+- **Purchase Attribution**: Connects purchases to specific email campaigns (7-day attribution window)
+- **Device & Location Data**: Captures device types and geographic information
+- **User Journey Mapping**: Full path from email open → website visit → purchase
+- **Conversion Funnels**: Email sent → opened → clicked → visited → purchased
+
+**Hierarchical Control Structure:**
+1. Platform-wide toggle (master control for all emails)
+2. Per-email overrides (disable tracking for specific emails)
+3. Privacy-compliant mode (anonymized tracking option)
+
+#### **Email Platform APIs (External Data)**
+Connected platforms (Mailchimp, ConvertKit, SendGrid, etc.) provide:
+- **Subscriber Counts**: Total active subscribers and list sizes
+- **List Management**: New signups, unsubscribes, bounces
+- **Delivery Metrics**: Sent, delivered, bounced, failed
+- **Compliance Data**: Opt-in/opt-out status, GDPR compliance
+- **Segmentation Data**: Tags, groups, custom fields
+
+#### **Payment System Integration (Revenue Tracking)**
+When connected to Stripe or payment processors:
+- **Transaction Data**: Purchase amounts, products, timestamps
+- **Subscription Status**: Active, cancelled, churned
+- **Revenue Attribution**: Links revenue to email campaigns
+- **Customer Lifetime Value**: Tracks total spend per subscriber
+
+#### **Combined Analytics Dashboard**
+The dashboard metrics come from these integrated sources:
+- **Total Subscribers**: Email platform APIs
+- **Engagement Rate**: Pixel data (opens/clicks) + Platform data (delivered)
+- **Monthly Revenue**: Payment integration + Pixel attribution
+- **Churn Rate**: Platform unsubscribes + Payment cancellations
+- **Conversion Rate**: Pixel tracking (purchases/opens)
+
 ### Key Data Models
 
 Core entities include Users, Subscribers, Campaigns, A/B Tests, Email Integrations, and Analytics.
@@ -36,7 +78,32 @@ The frontend features a modular component structure, including a multi-tab dashb
 
 ### System Design Choices
 
-The platform is multi-tenant. It incorporates AI for cohort analysis, investment sophistication assessment, risk tolerance analysis, investment style identification, and real-time market intelligence. Email content is enhanced with market timing intelligence, volatility-based send optimization, and live pricing/citations. It features robust email fatigue tracking with dashboard monitoring and prevention features, and an optional, privacy-compliant email tracking pixel system with hierarchical control.
+The platform is multi-tenant. It incorporates AI for cohort analysis, investment sophistication assessment, risk tolerance analysis, investment style identification, and real-time market intelligence. Email content is enhanced with market timing intelligence, volatility-based send optimization, and live pricing/citations. It features robust email fatigue tracking with dashboard monitoring and prevention features.
+
+### Email Tracking & Attribution System
+
+**Hierarchical Tracking Control:**
+- Platform-wide master toggle for default tracking behavior
+- Per-email override capability for granular control
+- Privacy-compliant mode for anonymized tracking
+
+**Conversion Attribution Features:**
+- 7-day attribution window for purchase tracking
+- Multi-touch attribution across email campaigns
+- Session-based linking of email opens to website activity
+- Full customer journey visualization
+
+**Data Collection Points:**
+1. **Pixel Events**: Opens, re-opens, device types, locations
+2. **Click Events**: Link clicks with position and context
+3. **Page Visits**: URL, duration, traffic source attribution
+4. **Purchases**: Order ID, amount, products, email attribution
+
+**Privacy & Compliance:**
+- GDPR-compliant tracking options
+- User consent management
+- Anonymization capabilities
+- Transparent tracking indicators
 
 ## External Dependencies
 
