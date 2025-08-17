@@ -21,6 +21,11 @@ export default function MainLayout({ children, currentPage }: MainLayoutProps) {
     return <>{children}</>;
   }
 
+  // Pass the activeTab and setActiveTab to children if they're on the dashboard
+  const childrenWithProps = location === '/dashboard' 
+    ? React.cloneElement(children as React.ReactElement, { activeTab, setActiveTab })
+    : children;
+
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Fixed Navigation Header */}
@@ -28,11 +33,15 @@ export default function MainLayout({ children, currentPage }: MainLayoutProps) {
         <NavigationHeader currentPage={currentPage || location.substring(1)} />
       </div>
       
-      <div className="flex pt-16"> {/* Add padding-top to account for fixed header */}
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="flex">
+        {/* Fixed Sidebar */}
+        <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40">
+          <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
         
-        <div className="flex-1 ml-64 overflow-auto">
-          {children}
+        {/* Main Content Area with proper spacing */}
+        <div className="flex-1 ml-64 mt-16 overflow-auto">
+          {childrenWithProps}
         </div>
       </div>
     </div>

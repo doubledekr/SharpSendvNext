@@ -51,6 +51,10 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ currentPage }) => {
     targetAudience: ''
   });
 
+  // Get publisher info from localStorage
+  const publisherInfo = JSON.parse(localStorage.getItem('publisher') || '{}');
+  const publisherName = publisherInfo.name || 'Demo Publisher';
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('publisher');
@@ -131,6 +135,13 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ currentPage }) => {
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-xs text-green-400 font-medium">AI Engine: Active</span>
+          </div>
+          
+          <div className="h-8 w-px bg-slate-600 mx-2"></div>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">Publisher:</span>
+            <span className="text-sm font-semibold text-white">{publisherName}</span>
           </div>
         </div>
 
