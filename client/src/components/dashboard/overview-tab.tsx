@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   Users, 
   TrendingUp, 
@@ -140,6 +142,7 @@ function formatEmailFrequency(avg: number): string {
 }
 
 export default function OverviewTab() {
+  const [, setLocation] = useLocation();
   // Use demo data that matches the header values
   const analytics = {
     totalSubscribers: 12847,
@@ -948,10 +951,16 @@ Your SharpSend Team`,
                   </h4>
                   <div className="space-y-2">
                     {trackingStats.topCampaigns.map((campaign, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                      <div key={idx} className="flex items-center justify-between group">
+                        <button
+                          onClick={() => {
+                            setLocation(`/campaign-management?campaign=${encodeURIComponent(campaign.campaignId)}`);
+                          }}
+                          className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors cursor-pointer flex items-center gap-1"
+                        >
                           {campaign.campaignId}
-                        </span>
+                          <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-xs">
                             {campaign.uniqueOpens} opens

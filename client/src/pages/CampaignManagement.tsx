@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -42,12 +43,28 @@ interface CampaignAnalytics {
 }
 
 export function CampaignManagement() {
+  const [location] = useLocation();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [sparklyTrigger, setSparklyTrigger] = useState(false);
+  const [highlightedCampaign, setHighlightedCampaign] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Parse campaign from URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    const campaignId = params.get('campaign');
+    if (campaignId) {
+      setHighlightedCampaign(campaignId);
+      // Show a toast notification about the selected campaign
+      toast({
+        title: "Campaign Selected",
+        description: `Viewing details for campaign: ${campaignId}`,
+      });
+    }
+  }, [location]);
 
   // Fetch campaign projects
   const { data: projects, isLoading: projectsLoading } = useQuery<{ data: CampaignProject[] }>({
@@ -160,6 +177,71 @@ export function CampaignManagement() {
           </Button>
         </div>
       </div>
+
+      {/* Highlighted Campaign Details */}
+      {highlightedCampaign && (
+        <Card className="mb-6 border-2 border-indigo-500 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-indigo-600" />
+                Campaign Details: {highlightedCampaign}
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setHighlightedCampaign(null)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
+                <p className="text-xs text-gray-500 mb-1">Status</p>
+                <p className="font-semibold">Active</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
+                <p className="text-xs text-gray-500 mb-1">Total Opens</p>
+                <p className="font-semibold">2,847</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
+                <p className="text-xs text-gray-500 mb-1">Click Rate</p>
+                <p className="font-semibold">34.2%</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
+                <p className="text-xs text-gray-500 mb-1">Revenue</p>
+                <p className="font-semibold">$12,450</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">Subject: Financial Markets Weekly Update</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">Audience: Premium Subscribers (5,200)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">Sent: {new Date().toLocaleDateString()}</span>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button size="sm" variant="default">
+                <Eye className="w-4 h-4 mr-2" />
+                View Full Report
+              </Button>
+              <Button size="sm" variant="outline">
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Campaign
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Projects List */}
