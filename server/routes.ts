@@ -10,6 +10,7 @@ import { brevoIntegrationRoutes } from "./routes-brevo-integration";
 import { contentManagementRoutes } from "./routes-content-management";
 import { campaignManagementRoutes } from "./routes-campaign-management";
 import { registerEmailPlatformRoutes } from "./routes-email-platforms";
+import { emailImageRoutes } from "./routes-email-images";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -784,6 +785,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to calculate revenue impact" });
     }
   });
+
+  // Register email image routes
+  app.use(emailImageRoutes);
 
   // Error handling middleware
   app.use((err: any, req: any, res: any, next: any) => {

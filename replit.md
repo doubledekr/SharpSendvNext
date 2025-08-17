@@ -66,7 +66,7 @@ The dashboard metrics come from these integrated sources:
 
 ### Key Data Models
 
-Core entities include Users, Subscribers, Campaigns, A/B Tests, Email Integrations, and Analytics.
+Core entities include Users, Subscribers, Campaigns, A/B Tests, Email Integrations, Analytics, and Email Images.
 
 ### Authentication and Authorization
 
@@ -104,6 +104,35 @@ The platform is multi-tenant. It incorporates AI for cohort analysis, investment
 - User consent management
 - Anonymization capabilities
 - Transparent tracking indicators
+
+### Email Image Management System
+
+**Image Upload & Storage:**
+- Object storage integration for reliable image hosting
+- Direct upload from file system with drag-and-drop support
+- Base64 image conversion to hosted URLs
+- Automatic image optimization for email delivery
+- Public URL generation for email embedding
+
+**Email Composer Features:**
+- Rich text editor with WYSIWYG interface
+- Image insertion via upload or URL
+- Personalization token support ({{first_name}}, {{company}}, etc.)
+- AI-powered content generation
+- Segment-specific targeting
+- Real-time preview capabilities
+
+**Image Handling Methods:**
+1. **Direct Upload**: Upload images to object storage via `/api/email-images/upload`
+2. **URL Embedding**: Insert external images via URL reference
+3. **Library Selection**: Choose from pre-uploaded image library
+4. **Base64 Conversion**: Convert inline base64 images to hosted URLs
+
+**Technical Implementation:**
+- Frontend: EmailImageUploader and EmailComposer components
+- Backend: Object storage service with signed URL generation
+- Image serving: CDN-ready with proper caching headers
+- Format support: PNG, JPG, GIF up to 10MB
 
 ## External Dependencies
 
