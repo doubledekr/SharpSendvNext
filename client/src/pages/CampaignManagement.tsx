@@ -17,6 +17,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { SparklyEffects, triggerSparkly } from "@/components/SparklyEffects";
+import CampaignSegmentManager from "@/components/CampaignSegmentManager";
 import type { CampaignProject, EmailAssignment } from "../../../shared/schema";
 
 interface ProjectWithDetails {
@@ -355,6 +356,17 @@ export function CampaignManagement() {
                       </div>
                     </div>
                   )}
+
+                  {/* Segment-Specific Email Customization */}
+                  <div className="mt-6">
+                    <Label className="text-sm font-medium mb-2 block">Email Customization by Segment</Label>
+                    <CampaignSegmentManager 
+                      campaignId={selectedProject}
+                      campaignName={projectDetails.data.project.name}
+                      baseContent={projectDetails.data.project.description || ''}
+                      baseSubject={projectDetails.data.project.name}
+                    />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="assignments" className="space-y-4">
