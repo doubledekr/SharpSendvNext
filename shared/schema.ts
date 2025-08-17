@@ -11,6 +11,7 @@ export const users = pgTable("users", {
 
 export const subscribers = pgTable("subscribers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
   email: text("email").notNull(),
   name: text("name").notNull(),
   segment: text("segment").notNull(),
@@ -19,22 +20,31 @@ export const subscribers = pgTable("subscribers", {
   joinedAt: timestamp("joined_at").defaultNow(),
   isActive: boolean("is_active").default(true),
   metadata: jsonb("metadata").$type<Record<string, any>>(),
+  preferences: jsonb("preferences").$type<Record<string, any>>(),
+  tags: text("tags").array(),
 });
 
 export const campaigns = pgTable("campaigns", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
   name: text("name").notNull(),
   subjectLine: text("subject_line").notNull(),
   content: text("content").notNull(),
+  status: text("status").notNull().default("draft"),
+  scheduledAt: timestamp("scheduled_at"),
   sentAt: timestamp("sent_at"),
   openRate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
   clickRate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
   revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
   subscriberCount: integer("subscriber_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const abTests = pgTable("ab_tests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  campaignId: varchar("campaign_id"),
   name: text("name").notNull(),
   status: text("status").notNull().default("active"),
   variantA: jsonb("variant_a").$type<{
@@ -53,26 +63,40 @@ export const abTests = pgTable("ab_tests", {
   }>(),
   confidenceLevel: decimal("confidence_level", { precision: 5, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
 });
 
 export const emailIntegrations = pgTable("email_integrations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
   platform: text("platform").notNull(),
   isConnected: boolean("is_connected").default(false),
   apiKey: text("api_key"),
+  apiSecret: text("api_secret"),
   lastSync: timestamp("last_sync"),
   campaignsSent: integer("campaigns_sent").default(0),
   status: text("status").default("inactive"),
+  config: jsonb("config").$type<{
+    webhookUrl?: string;
+    listId?: string;
+    fromEmail?: string;
+    replyTo?: string;
+    region?: string;
+  }>(),
 });
 
 export const analytics = pgTable("analytics", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
   date: timestamp("date").defaultNow(),
   totalSubscribers: integer("total_subscribers").default(0),
   engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0"),
   churnRate: decimal("churn_rate", { precision: 5, scale: 2 }).default("0"),
   monthlyRevenue: decimal("monthly_revenue", { precision: 10, scale: 2 }).default("0"),
   revenueGrowth: decimal("revenue_growth", { precision: 5, scale: 2 }).default("0"),
+  openRate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
+  clickRate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
+  unsubscribeRate: decimal("unsubscribe_rate", { precision: 5, scale: 2 }).default("0"),
 });
 
 // Content Request System for Editorial Dashboard
@@ -161,6 +185,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 export const insertSubscriberSchema = createInsertSchema(subscribers).pick({
+  publisherId: true,
   email: true,
   name: true,
   segment: true,
@@ -170,9 +195,11 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).pick({
 });
 
 export const insertCampaignSchema = createInsertSchema(campaigns).pick({
+  publisherId: true,
   name: true,
   subjectLine: true,
   content: true,
+  status: true,
   openRate: true,
   clickRate: true,
   revenue: true,
@@ -180,6 +207,8 @@ export const insertCampaignSchema = createInsertSchema(campaigns).pick({
 });
 
 export const insertABTestSchema = createInsertSchema(abTests).pick({
+  publisherId: true,
+  campaignId: true,
   name: true,
   status: true,
   variantA: true,
@@ -188,11 +217,14 @@ export const insertABTestSchema = createInsertSchema(abTests).pick({
 });
 
 export const insertEmailIntegrationSchema = createInsertSchema(emailIntegrations).pick({
+  publisherId: true,
   platform: true,
   isConnected: true,
   apiKey: true,
+  apiSecret: true,
   campaignsSent: true,
   status: true,
+  config: true,
 });
 
 export const insertContentRequestSchema = createInsertSchema(contentRequests).pick({
