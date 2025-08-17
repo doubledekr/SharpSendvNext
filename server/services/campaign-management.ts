@@ -2,14 +2,10 @@ import crypto from 'crypto';
 import { db } from '../database';
 import { 
   campaignProjects, 
-  emailAssignments, 
-  assignmentLinks, 
-  campaignCollaborators,
+  emailAssignments,
   type CampaignProject,
-  type EmailAssignment,
-  type AssignmentLink,
-  type CampaignCollaborator
-} from '../../shared/schema';
+  type EmailAssignment
+} from '../../shared/schema-multitenant';
 import { eq, and, desc } from 'drizzle-orm';
 
 export interface CampaignProjectInput {
@@ -85,12 +81,11 @@ export class CampaignManagementService {
   }
 
   /**
-   * Get campaign project with assignments and collaborators
+   * Get campaign project with assignments
    */
   async getCampaignProjectWithDetails(projectId: string): Promise<{
     project: CampaignProject;
     assignments: EmailAssignment[];
-    collaborators: CampaignCollaborator[];
   } | null> {
     const project = await db
       .select()
@@ -100,23 +95,15 @@ export class CampaignManagementService {
 
     if (!project[0]) return null;
 
-    const [assignments, collaborators] = await Promise.all([
-      db
-        .select()
-        .from(emailAssignments)
-        .where(eq(emailAssignments.campaignProjectId, projectId))
-        .orderBy(desc(emailAssignments.createdAt)),
-      db
-        .select()
-        .from(campaignCollaborators)
-        .where(eq(campaignCollaborators.campaignProjectId, projectId))
-        .orderBy(desc(campaignCollaborators.invitedAt))
-    ]);
+    const assignments = await db
+      .select()
+      .from(emailAssignments)
+      .where(eq(emailAssignments.projectId, projectId))
+      .orderBy(desc(emailAssignments.createdAt));
 
     return {
       project: project[0],
-      assignments,
-      collaborators
+      assignments
     };
   }
 
