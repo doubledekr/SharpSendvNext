@@ -168,6 +168,47 @@ export const aiContentHistory = pgTable("ai_content_history", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Campaign Projects Table
+export const campaignProjects = pgTable("campaign_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("draft"), // draft, in_progress, review, approved, scheduled, sent, cancelled
+  targetAudience: jsonb("target_audience").$type<{
+    cohorts: string[];
+    estimatedReach: number;
+    segmentCriteria: Record<string, any>;
+  }>(),
+  timeline: jsonb("timeline").$type<{
+    dueDate: string;
+    publishDate: string;
+    milestones: Array<{ name: string; date: string; completed: boolean }>;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdBy: varchar("created_by").notNull(),
+});
+
+// Email Assignments for Copywriter Portal
+export const emailAssignments = pgTable("email_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => campaignProjects.id, { onDelete: "cascade" }),
+  publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
+  assigneeEmail: text("assignee_email").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("pending"), // pending, in_progress, submitted, approved, revision_requested
+  content: text("content"),
+  feedback: text("feedback"),
+  marketTriggers: jsonb("market_triggers").$type<any[]>(),
+  dueDate: timestamp("due_date"),
+  submittedAt: timestamp("submitted_at"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Email Send Queue for scheduled emails
 export const emailSendQueue = pgTable("email_send_queue", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -299,6 +340,29 @@ export const insertEmailSendQueueSchema = createInsertSchema(emailSendQueue).pic
   metadata: true,
 });
 
+export const insertCampaignProjectSchema = createInsertSchema(campaignProjects).pick({
+  publisherId: true,
+  name: true,
+  description: true,
+  status: true,
+  targetAudience: true,
+  timeline: true,
+  createdBy: true,
+});
+
+export const insertEmailAssignmentSchema = createInsertSchema(emailAssignments).pick({
+  projectId: true,
+  publisherId: true,
+  assigneeEmail: true,
+  title: true,
+  description: true,
+  status: true,
+  content: true,
+  feedback: true,
+  marketTriggers: true,
+  dueDate: true,
+});
+
 // Types
 export type InsertPublisher = z.infer<typeof insertPublisherSchema>;
 export type Publisher = typeof publishers.$inferSelect;
@@ -326,6 +390,12 @@ export type AiContentHistory = typeof aiContentHistory.$inferSelect;
 
 export type InsertEmailSendQueue = z.infer<typeof insertEmailSendQueueSchema>;
 export type EmailSendQueue = typeof emailSendQueue.$inferSelect;
+
+export type InsertCampaignProject = z.infer<typeof insertCampaignProjectSchema>;
+export type CampaignProject = typeof campaignProjects.$inferSelect;
+
+export type InsertEmailAssignment = z.infer<typeof insertEmailAssignmentSchema>;
+export type EmailAssignment = typeof emailAssignments.$inferSelect;
 
 export type Analytics = typeof analytics.$inferSelect;
 
