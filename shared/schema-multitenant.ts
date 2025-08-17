@@ -316,6 +316,22 @@ export const emailMetrics = pgTable("email_metrics", {
   date: timestamp("date").defaultNow(),
 });
 
+export const campaignEmailVersions = pgTable("campaign_email_versions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  campaignId: varchar("campaign_id", { length: 255 }).notNull(),
+  segmentId: varchar("segment_id", { length: 255 }).notNull(),
+  segmentName: varchar("segment_name", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  content: text("content").notNull(),
+  previewText: varchar("preview_text", { length: 500 }),
+  personalizationLevel: varchar("personalization_level", { length: 50 }).$type<'low' | 'medium' | 'high'>().default('high'),
+  status: varchar("status", { length: 50 }).$type<'draft' | 'generated' | 'approved' | 'sent'>().default('generated'),
+  generatedAt: timestamp("generated_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
+  estimatedOpenRate: decimal("estimated_open_rate", { precision: 5, scale: 2 }),
+  estimatedClickRate: decimal("estimated_click_rate", { precision: 5, scale: 2 }),
+});
+
 // Types for assignments workflow
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = typeof assignments.$inferInsert;
