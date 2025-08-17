@@ -28,7 +28,10 @@ import {
   Loader2,
   Link,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Folder,
+  Edit2,
+  RefreshCw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +40,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 import "../../styles/dashboard-improvements.css";
+import "../../styles/draft-animation.css";
 
 interface MarketSentimentData {
   sentiment: 'bullish' | 'bearish' | 'neutral';
@@ -160,6 +165,9 @@ export default function OverviewTab() {
   const [emailDrafts, setEmailDrafts] = useState<any[]>([]);
   const [showDraftsModal, setShowDraftsModal] = useState(false);
   const [copiedLinks, setCopiedLinks] = useState<Set<number>>(new Set());
+  const [showDraftAnimation, setShowDraftAnimation] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<string | null>(null);
+  const [editedEvents, setEditedEvents] = useState<Map<string, any>>(new Map());
   const { toast } = useToast();
 
   // Fetch market data on component mount
@@ -366,14 +374,17 @@ Your SharpSend Team`,
       
       setEmailDrafts(prev => [newDraft, ...prev]);
       
+      // Show draft animation
+      setShowDraftAnimation(true);
+      
       setTimeout(() => {
         setShowGenerationModal(false);
-        setShowDraftsModal(true);
+        setShowDraftAnimation(false);
         toast({
           title: "Email Draft Created",
           description: "Your AI-generated email has been saved to drafts",
         });
-      }, 1000);
+      }, 2000);
       
     } catch (error) {
       console.error('Error creating assignment:', error);
@@ -547,8 +558,9 @@ Your SharpSend Team`,
                 <Newspaper className="w-5 h-5" />
                 Market Events & Email Opportunities
               </CardTitle>
-              {marketEvents && (
-                <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                {marketEvents && (
+                  <div className="flex gap-2">
                   <Badge variant="secondary" className="bg-blue-500/20 text-blue-400">
                     {marketEvents.totalOpportunities} Opportunities
                   </Badge>
@@ -557,8 +569,23 @@ Your SharpSend Team`,
                       {marketEvents.urgentAssignments} Urgent
                     </Badge>
                   )}
-                </div>
-              )}
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ['/api/market-events-feed'] });
+                    toast({
+                      title: "Market Events Refreshed",
+                      description: "Latest market events have been loaded",
+                    });
+                  }}
+                  className="h-8 px-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -571,48 +598,209 @@ Your SharpSend Team`,
             ) : marketEvents && marketEvents.events.length > 0 ? (
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-3">
-                  {marketEvents.events.map((event) => (
-                    <div key={event.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {event.type === 'alert' && <AlertTriangle className="w-4 h-4 text-red-400" />}
-                          {event.type === 'opportunity' && <TrendingUp className="w-4 h-4 text-green-400" />}
-                          {event.type === 'bullish' && <TrendingUp className="w-4 h-4 text-green-400" />}
-                          {event.type === 'bearish' && <TrendingDown className="w-4 h-4 text-red-400" />}
-                          {event.type === 'news' && <Newspaper className="w-4 h-4 text-blue-400" />}
-                          <h4 className="font-semibold text-white text-sm">{event.title}</h4>
-                        </div>
-                        <Badge className={
-                          event.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                          event.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-gray-500/20 text-gray-400'
-                        }>
-                          {event.priority}
-                        </Badge>
-                      </div>
-                      
-                      <p className="text-slate-300 text-xs mb-3">{event.description}</p>
-                      
-                      {event.emailOpportunity.suggested && (
-                        <div className="bg-slate-900/50 rounded p-2 mb-2">
-                          <div className="flex items-center gap-2 text-xs mb-1">
-                            <Send className="w-3 h-3 text-blue-400" />
-                            <span className="text-blue-400 font-semibold">Email Opportunity</span>
-                            <Badge className="bg-blue-500/10 text-blue-300 text-xs">
-                              {event.emailOpportunity.urgency}
-                            </Badge>
+                  {marketEvents.events.map((event) => {
+                    const isEditing = editingEvent === event.id;
+                    const editedEvent = editedEvents.get(event.id) || event;
+                    
+                    return (
+                      <div key={event.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {editedEvent.type === 'alert' && <AlertTriangle className="w-4 h-4 text-red-400" />}
+                            {editedEvent.type === 'opportunity' && <TrendingUp className="w-4 h-4 text-green-400" />}
+                            {editedEvent.type === 'bullish' && <TrendingUp className="w-4 h-4 text-green-400" />}
+                            {editedEvent.type === 'bearish' && <TrendingDown className="w-4 h-4 text-red-400" />}
+                            {editedEvent.type === 'news' && <Newspaper className="w-4 h-4 text-blue-400" />}
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editedEvent.title}
+                                onChange={(e) => {
+                                  setEditedEvents(prev => {
+                                    const newMap = new Map(prev);
+                                    newMap.set(event.id, { ...editedEvent, title: e.target.value });
+                                    return newMap;
+                                  });
+                                }}
+                                className="flex-1 px-2 py-1 text-sm bg-slate-900 border border-slate-600 rounded text-white"
+                              />
+                            ) : (
+                              <h4 className="font-semibold text-white text-sm">{editedEvent.title}</h4>
+                            )}
                           </div>
-                          <p className="text-slate-400 text-xs">
-                            Template: {event.emailOpportunity.template}
-                          </p>
-                          <p className="text-slate-500 text-xs">
-                            Segments: {event.emailOpportunity.segments.join(', ')}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            {isEditing ? (
+                              <select
+                                value={editedEvent.priority}
+                                onChange={(e) => {
+                                  setEditedEvents(prev => {
+                                    const newMap = new Map(prev);
+                                    newMap.set(event.id, { ...editedEvent, priority: e.target.value });
+                                    return newMap;
+                                  });
+                                }}
+                                className="px-2 py-1 text-xs bg-slate-900 border border-slate-600 rounded text-white"
+                              >
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                              </select>
+                            ) : (
+                              <Badge className={
+                                editedEvent.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                                editedEvent.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-gray-500/20 text-gray-400'
+                              }>
+                                {editedEvent.priority}
+                              </Badge>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => {
+                                if (isEditing) {
+                                  setEditingEvent(null);
+                                  toast({
+                                    title: "Event Updated",
+                                    description: "Market event has been updated successfully",
+                                  });
+                                } else {
+                                  setEditingEvent(event.id);
+                                  if (!editedEvents.has(event.id)) {
+                                    setEditedEvents(prev => new Map(prev).set(event.id, { ...event }));
+                                  }
+                                }
+                              }}
+                            >
+                              {isEditing ? <CheckCircle className="w-3 h-3 text-green-400" /> : <Edit2 className="w-3 h-3 text-slate-400" />}
+                            </Button>
+                          </div>
                         </div>
-                      )}
+                        
+                        {isEditing ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={editedEvent.description}
+                              onChange={(e) => {
+                                setEditedEvents(prev => {
+                                  const newMap = new Map(prev);
+                                  newMap.set(event.id, { ...editedEvent, description: e.target.value });
+                                  return newMap;
+                                });
+                              }}
+                              className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-600 rounded text-slate-300 h-16"
+                            />
+                            <select
+                              value={editedEvent.type}
+                              onChange={(e) => {
+                                setEditedEvents(prev => {
+                                  const newMap = new Map(prev);
+                                  newMap.set(event.id, { ...editedEvent, type: e.target.value });
+                                  return newMap;
+                                });
+                              }}
+                              className="px-2 py-1 text-xs bg-slate-900 border border-slate-600 rounded text-white"
+                            >
+                              <option value="alert">Alert</option>
+                              <option value="opportunity">Opportunity</option>
+                              <option value="bullish">Bullish</option>
+                              <option value="bearish">Bearish</option>
+                              <option value="news">News</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <p className="text-slate-300 text-xs mb-3">{editedEvent.description}</p>
+                        )}
+                        
+                        {editedEvent.emailOpportunity.suggested && (
+                          <div className="bg-slate-900/50 rounded p-2 mb-2">
+                            <div className="flex items-center gap-2 text-xs mb-1">
+                              <Send className="w-3 h-3 text-blue-400" />
+                              <span className="text-blue-400 font-semibold">Email Opportunity</span>
+                              {isEditing ? (
+                                <select
+                                  value={editedEvent.emailOpportunity.urgency}
+                                  onChange={(e) => {
+                                    setEditedEvents(prev => {
+                                      const newMap = new Map(prev);
+                                      newMap.set(event.id, { 
+                                        ...editedEvent, 
+                                        emailOpportunity: {
+                                          ...editedEvent.emailOpportunity,
+                                          urgency: e.target.value
+                                        }
+                                      });
+                                      return newMap;
+                                    });
+                                  }}
+                                  className="px-2 py-1 text-xs bg-slate-900 border border-slate-600 rounded text-blue-300"
+                                >
+                                  <option value="high">High</option>
+                                  <option value="medium">Medium</option>
+                                  <option value="low">Low</option>
+                                </select>
+                              ) : (
+                                <Badge className="bg-blue-500/10 text-blue-300 text-xs">
+                                  {editedEvent.emailOpportunity.urgency}
+                                </Badge>
+                              )}
+                            </div>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editedEvent.emailOpportunity.template}
+                                onChange={(e) => {
+                                  setEditedEvents(prev => {
+                                    const newMap = new Map(prev);
+                                    newMap.set(event.id, { 
+                                      ...editedEvent, 
+                                      emailOpportunity: {
+                                        ...editedEvent.emailOpportunity,
+                                        template: e.target.value
+                                      }
+                                    });
+                                    return newMap;
+                                  });
+                                }}
+                                className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-600 rounded text-slate-400 mb-1"
+                                placeholder="Template"
+                              />
+                            ) : (
+                              <p className="text-slate-400 text-xs">
+                                Template: {editedEvent.emailOpportunity.template}
+                              </p>
+                            )}
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editedEvent.emailOpportunity.segments.join(', ')}
+                                onChange={(e) => {
+                                  setEditedEvents(prev => {
+                                    const newMap = new Map(prev);
+                                    newMap.set(event.id, { 
+                                      ...editedEvent, 
+                                      emailOpportunity: {
+                                        ...editedEvent.emailOpportunity,
+                                        segments: e.target.value.split(',').map(s => s.trim())
+                                      }
+                                    });
+                                    return newMap;
+                                  });
+                                }}
+                                className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-600 rounded text-slate-500"
+                                placeholder="Segments (comma-separated)"
+                              />
+                            ) : (
+                              <p className="text-slate-500 text-xs">
+                                Segments: {editedEvent.emailOpportunity.segments.join(', ')}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       
-                      {event.assignment.needed && (
-                        <div className="bg-orange-900/20 rounded p-2">
+                        {event.assignment.needed && (
+                          <div className="bg-orange-900/20 rounded p-2">
                           <div className="flex items-center gap-2 text-xs mb-1">
                             <FileEdit className="w-3 h-3 text-orange-400" />
                             <span className="text-orange-400 font-semibold">Assignment Needed</span>
@@ -640,7 +828,8 @@ Your SharpSend Team`,
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </ScrollArea>
             ) : (
@@ -1298,6 +1487,24 @@ Your SharpSend Team`,
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Draft Animation Overlay */}
+      {showDraftAnimation && (
+        <div className="draft-animation-overlay">
+          <div className="draft-animation-item">
+            <div className="draft-animation-icon">
+              <FileText className="h-6 w-6" />
+            </div>
+            <div className="draft-animation-content">
+              <div className="draft-animation-title">Saving to Drafts</div>
+              <div className="draft-animation-subtitle">Email assignment created</div>
+            </div>
+          </div>
+          <div className="draft-folder-indicator">
+            <Folder className="h-8 w-8" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
