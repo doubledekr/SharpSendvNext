@@ -20,7 +20,9 @@ import {
   AlertTriangle,
   UserX,
   Mail,
-  Shield
+  Shield,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +88,22 @@ interface FatigueStats {
   recommendations: string[];
 }
 
+interface TrackingStats {
+  trackingEnabled: boolean;
+  privacyCompliant: boolean;
+  totalEmailsTracked: number;
+  totalOpens: number;
+  uniqueOpeners: number;
+  averageOpenRate: string;
+  opensLast24Hours: number;
+  topCampaigns: Array<{
+    campaignId: string;
+    uniqueOpens: number;
+    totalOpens: number;
+    openRate: string;
+  }>;
+}
+
 // Helper function to format email frequency as a range
 function formatEmailFrequency(avg: number): string {
   if (avg === 0) return "0";
@@ -119,6 +137,8 @@ export default function OverviewTab() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [fatigueStats, setFatigueStats] = useState<FatigueStats | null>(null);
   const [loadingFatigue, setLoadingFatigue] = useState(true);
+  const [trackingStats, setTrackingStats] = useState<TrackingStats | null>(null);
+  const [loadingTracking, setLoadingTracking] = useState(true);
 
   // Fetch market data on component mount
   useEffect(() => {
@@ -129,11 +149,12 @@ export default function OverviewTab() {
   }, []);
 
   const fetchMarketData = async () => {
-    // Fetch sentiment, events, and fatigue data in parallel
-    const [sentimentResponse, eventsResponse, fatigueResponse] = await Promise.all([
+    // Fetch sentiment, events, fatigue, and tracking data in parallel
+    const [sentimentResponse, eventsResponse, fatigueResponse, trackingResponse] = await Promise.all([
       fetch('/api/market-sentiment').catch(() => null),
       fetch('/api/market-events-feed').catch(() => null),
-      fetch('/api/fatigue/dashboard-stats').catch(() => null)
+      fetch('/api/fatigue/dashboard-stats').catch(() => null),
+      fetch('/api/tracking/dashboard-stats').catch(() => null)
     ]);
     
     if (sentimentResponse) {
@@ -166,6 +187,17 @@ export default function OverviewTab() {
       } catch (error) {
         console.error('Error parsing fatigue stats:', error);
         setLoadingFatigue(false);
+      }
+    }
+    
+    if (trackingResponse) {
+      try {
+        const data = await trackingResponse.json();
+        setTrackingStats(data);
+        setLoadingTracking(false);
+      } catch (error) {
+        console.error('Error parsing tracking stats:', error);
+        setLoadingTracking(false);
       }
     }
   };
@@ -578,6 +610,182 @@ export default function OverviewTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Email Tracking Pixel Card */}
+      <Card className="mb-6 border-indigo-500/20 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/10 dark:to-gray-900">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-indigo-600" />
+              Email Open Tracking
+              {trackingStats && (
+                <Badge 
+                  variant={trackingStats.trackingEnabled ? "default" : "secondary"}
+                  className={trackingStats.trackingEnabled ? "bg-indigo-500" : "bg-gray-500"}
+                >
+                  {trackingStats.trackingEnabled ? "Active" : "Disabled"}
+                </Badge>
+              )}
+            </CardTitle>
+            {trackingStats && (
+              <div className="flex gap-2">
+                <Badge className="bg-blue-500 text-white">
+                  {trackingStats.averageOpenRate}% Open Rate
+                </Badge>
+                {trackingStats.privacyCompliant && (
+                  <Badge className="bg-green-500 text-white">
+                    Privacy Compliant
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingTracking ? (
+            <div className="animate-pulse space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          ) : trackingStats ? (
+            <div className="space-y-4">
+              {/* Tracking Notice */}
+              {!trackingStats.trackingEnabled && (
+                <div className="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <EyeOff className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      Tracking Disabled - No pixels will be added to emails
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Tracking Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Tracked</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {trackingStats.totalEmailsTracked.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Opens</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {trackingStats.totalOpens.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Unique Openers</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {trackingStats.uniqueOpeners.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">24hr Opens</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {trackingStats.opensLast24Hours.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Top Campaigns */}
+              {trackingStats.topCampaigns.length > 0 && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Top Performing Campaigns
+                  </h4>
+                  <div className="space-y-2">
+                    {trackingStats.topCampaigns.map((campaign, idx) => (
+                      <div key={idx} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {campaign.campaignId}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {campaign.uniqueOpens} opens
+                          </Badge>
+                          <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 text-xs">
+                            {campaign.openRate}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  size="sm" 
+                  variant={trackingStats.trackingEnabled ? "destructive" : "default"}
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/tracking/toggle', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ enabled: !trackingStats.trackingEnabled })
+                      });
+                      
+                      if (response.ok) {
+                        // Refresh the stats
+                        fetchMarketData();
+                      }
+                    } catch (error) {
+                      console.error('Error toggling tracking:', error);
+                    }
+                  }}
+                >
+                  {trackingStats.trackingEnabled ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+                  {trackingStats.trackingEnabled ? 'Disable Tracking' : 'Enable Tracking'}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    console.log('View tracking details');
+                    // Could navigate to detailed tracking view
+                  }}
+                >
+                  <Mail className="w-3 h-3 mr-1" />
+                  Generate Pixel
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/tracking/privacy-mode', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ compliant: !trackingStats.privacyCompliant })
+                      });
+                      
+                      if (response.ok) {
+                        fetchMarketData();
+                      }
+                    } catch (error) {
+                      console.error('Error toggling privacy mode:', error);
+                    }
+                  }}
+                >
+                  <Shield className="w-3 h-3 mr-1" />
+                  {trackingStats.privacyCompliant ? 'Full Tracking' : 'Privacy Mode'}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              No tracking data available
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Email Fatigue Monitoring Card */}
       <Card className="mb-6 border-orange-500/20 bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/10 dark:to-gray-900">
