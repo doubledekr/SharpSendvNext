@@ -121,6 +121,33 @@ export const contentRequests = pgTable("content_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Email Send Queue for scheduled emails
+export const emailSendQueue = pgTable("email_send_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  campaignId: varchar("campaign_id"),
+  emailType: text("email_type").notNull(), // campaign, newsletter, alert, etc
+  recipientEmail: text("recipient_email").notNull(),
+  recipientName: text("recipient_name"),
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  status: text("status").notNull().default("pending"), // pending, sending, sent, failed, cancelled
+  priority: integer("priority").default(0), // higher priority sends first
+  retryCount: integer("retry_count").default(0),
+  lastAttempt: timestamp("last_attempt"),
+  sentAt: timestamp("sent_at"),
+  error: text("error"),
+  metadata: jsonb("metadata").$type<{
+    cohort?: string;
+    personalizationData?: Record<string, any>;
+    trackingEnabled?: boolean;
+    platform?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Content Drafts for Copywriter Portal
 export const contentDrafts = pgTable("content_drafts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -245,6 +272,20 @@ export const insertContentRequestSchema = createInsertSchema(contentRequests).pi
   metadata: true,
 });
 
+export const insertEmailSendQueueSchema = createInsertSchema(emailSendQueue).pick({
+  publisherId: true,
+  campaignId: true,
+  emailType: true,
+  recipientEmail: true,
+  recipientName: true,
+  subject: true,
+  content: true,
+  scheduledFor: true,
+  status: true,
+  priority: true,
+  metadata: true,
+});
+
 export const insertContentDraftSchema = createInsertSchema(contentDrafts).pick({
   contentRequestId: true,
   title: true,
@@ -301,6 +342,9 @@ export type ContentDraft = typeof contentDrafts.$inferSelect;
 
 export type InsertEmailCampaign = z.infer<typeof insertEmailCampaignSchema>;
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
+
+export type InsertEmailSendQueue = z.infer<typeof insertEmailSendQueueSchema>;
+export type EmailSendQueue = typeof emailSendQueue.$inferSelect;
 
 // Campaign Projects Table
 export const campaignProjects = pgTable("campaign_projects", {

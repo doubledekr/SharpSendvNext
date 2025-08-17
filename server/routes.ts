@@ -11,6 +11,7 @@ import { contentManagementRoutes } from "./routes-content-management";
 import { campaignManagementRoutes } from "./routes-campaign-management";
 import { registerEmailPlatformRoutes } from "./routes-email-platforms";
 import imageTemplateRoutes from "./routes-images-templates";
+import { registerSendQueueRoutes } from "./routes-send-queue";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -573,7 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         events: events.sort((a, b) => {
-          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
         }),
         marketSentiment: marketContext.marketSentiment,
@@ -670,6 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/content", contentManagementRoutes);
   campaignManagementRoutes(app);
   registerEmailPlatformRoutes(app);
+  registerSendQueueRoutes(app);
 
   // Legacy routes for backward compatibility (these will be deprecated)
   

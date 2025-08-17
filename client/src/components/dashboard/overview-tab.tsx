@@ -954,7 +954,7 @@ Your SharpSend Team`,
                       <div key={idx} className="flex items-center justify-between group">
                         <button
                           onClick={() => {
-                            setLocation(`/campaign-management?campaign=${encodeURIComponent(campaign.campaignId)}`);
+                            setLocation(`/campaigns?campaign=${encodeURIComponent(campaign.campaignId)}`);
                           }}
                           className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors cursor-pointer flex items-center gap-1"
                         >

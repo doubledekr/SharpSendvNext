@@ -168,6 +168,38 @@ export const aiContentHistory = pgTable("ai_content_history", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Email Send Queue for scheduled emails
+export const emailSendQueue = pgTable("email_send_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
+  campaignId: varchar("campaign_id"),
+  emailType: text("email_type").notNull(), // campaign, newsletter, alert, etc
+  recipientEmail: text("recipient_email").notNull(),
+  recipientName: text("recipient_name"),
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  status: text("status").notNull().default("pending"), // pending, sending, sent, failed, cancelled
+  priority: integer("priority").default(0), // higher priority sends first
+  retryCount: integer("retry_count").default(0),
+  lastAttempt: timestamp("last_attempt"),
+  sentAt: timestamp("sent_at"),
+  error: text("error"),
+  metadata: jsonb("metadata").$type<{
+    cohort?: string;
+    personalizationData?: Record<string, any>;
+    trackingEnabled?: boolean;
+    platform?: string;
+    abTest?: {
+      variant: string;
+      strategy: string;
+      testType: string;
+    };
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertPublisherSchema = createInsertSchema(publishers).pick({
   name: true,
@@ -253,6 +285,20 @@ export const insertAiContentHistorySchema = createInsertSchema(aiContentHistory)
   tokensUsed: true,
 });
 
+export const insertEmailSendQueueSchema = createInsertSchema(emailSendQueue).pick({
+  publisherId: true,
+  campaignId: true,
+  emailType: true,
+  recipientEmail: true,
+  recipientName: true,
+  subject: true,
+  content: true,
+  scheduledFor: true,
+  status: true,
+  priority: true,
+  metadata: true,
+});
+
 // Types
 export type InsertPublisher = z.infer<typeof insertPublisherSchema>;
 export type Publisher = typeof publishers.$inferSelect;
@@ -277,6 +323,9 @@ export type CrmIntegration = typeof crmIntegrations.$inferSelect;
 
 export type InsertAiContentHistory = z.infer<typeof insertAiContentHistorySchema>;
 export type AiContentHistory = typeof aiContentHistory.$inferSelect;
+
+export type InsertEmailSendQueue = z.infer<typeof insertEmailSendQueueSchema>;
+export type EmailSendQueue = typeof emailSendQueue.$inferSelect;
 
 export type Analytics = typeof analytics.$inferSelect;
 
