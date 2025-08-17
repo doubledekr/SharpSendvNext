@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import EmailComposer from "@/components/email/EmailComposer";
 import { 
   Wand2, 
   Brain, 
@@ -17,16 +16,6 @@ import {
 } from "lucide-react";
 
 export default function PersonalizationTab() {
-  const handleEmailSave = (content: any) => {
-    console.log('Email saved:', content);
-    // Handle saving to backend
-  };
-
-  const handleEmailSend = (content: any) => {
-    console.log('Email sent:', content);
-    // Handle sending through backend
-  };
-
   return (
     <div className="space-y-8">
       {/* AI Content Generator */}
@@ -142,12 +131,6 @@ export default function PersonalizationTab() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Email Composer with Image Support */}
-      <EmailComposer 
-        onSave={handleEmailSave}
-        onSend={handleEmailSend}
-      />
 
       {/* Personalization Settings */}
       <Card className="bg-card border-border">
