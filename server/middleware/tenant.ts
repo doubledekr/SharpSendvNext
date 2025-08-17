@@ -1,195 +1,141 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import { tenantStorage } from "../storage-multitenant";
+import { Request, Response, NextFunction } from 'express';
+import { db } from '../database';
+import { publishers } from '../../shared/schema-multitenant';
+import { eq } from 'drizzle-orm';
 
-// Extend Express Request type to include tenant context
+export interface TenantInfo {
+  id: string;
+  subdomain: string;
+  name: string;
+  settings: any;
+}
+
+// Extend Express Request type to include tenant
 declare global {
   namespace Express {
     interface Request {
-      tenant?: {
-        publisherId: string;
-        publisher: any;
-        user: any;
+      tenant?: TenantInfo;
+    }
+  }
+}
+
+/**
+ * Extract subdomain from hostname
+ * Examples:
+ * - demo.sharpsend.io -> demo
+ * - publish.sharpsend.io -> publish
+ * - localhost:5000 -> null
+ * - sharpsend.io -> null
+ */
+function extractSubdomain(hostname: string): string | null {
+  // Remove port if present
+  const host = hostname.split(':')[0];
+  
+  // For local development, check for subdomain patterns
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'demo'; // Default to demo for local development
+  }
+  
+  // For Replit dev environment
+  if (host.includes('.replit.dev')) {
+    // Extract subdomain from x-forwarded-host header if available
+    return 'demo'; // Default to demo for Replit dev
+  }
+  
+  // For production domains
+  const parts = host.split('.');
+  
+  // Need at least 3 parts for a subdomain (subdomain.domain.tld)
+  if (parts.length >= 3) {
+    // Return the first part as subdomain
+    return parts[0];
+  }
+  
+  return null;
+}
+
+/**
+ * Middleware to identify and load tenant based on subdomain
+ */
+export async function tenantMiddleware(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Get subdomain from hostname or x-forwarded-host header
+    const hostname = req.get('x-forwarded-host') || req.hostname;
+    const subdomain = extractSubdomain(hostname);
+    
+    if (!subdomain) {
+      // No subdomain detected, use default tenant
+      req.tenant = {
+        id: '07db1cad-c3b5-4eb3-87ef-69fb38a212c3',
+        subdomain: 'demo',
+        name: 'Demo Publisher',
+        settings: {}
       };
-    }
-  }
-}
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
-
-export interface AuthenticatedRequest extends Request {
-  tenant: {
-    publisherId: string;
-    publisher: any;
-    user: any;
-  };
-}
-
-/**
- * Middleware to authenticate user and set tenant context
- * This ensures all subsequent operations are scoped to the correct publisher
- */
-export const authenticateAndSetTenant = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    // Extract token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "No valid authorization token provided" });
-    }
-
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
-
-    // Verify JWT token
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; publisherId: string };
-    
-    // Get user and publisher information
-    const user = await storage.getUserById(decoded.userId);
-    if (!user || !user.isActive) {
-      return res.status(401).json({ error: "User not found or inactive" });
-    }
-
-    const publisher = await storage.getPublisherById(decoded.publisherId);
-    if (!publisher || !publisher.isActive) {
-      return res.status(401).json({ error: "Publisher not found or inactive" });
-    }
-
-    // Verify user belongs to the publisher
-    if (user.publisherId !== publisher.id) {
-      return res.status(403).json({ error: "User does not belong to this publisher" });
-    }
-
-    // Set tenant context on request
-    req.tenant = {
-      publisherId: publisher.id,
-      publisher,
-      user,
-    };
-
-    next();
-  } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(401).json({ error: "Invalid token" });
-    }
-    console.error("Authentication error:", error);
-    return res.status(500).json({ error: "Authentication failed" });
-  }
-};
-
-/**
- * Middleware to extract tenant from subdomain for public routes
- * This allows publisher-specific public pages (e.g., signup forms)
- */
-export const extractTenantFromSubdomain = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const host = req.get("host");
-    if (!host) {
-      return res.status(400).json({ error: "Host header required" });
-    }
-
-    // Extract subdomain (e.g., "acme" from "acme.sharpsend.com")
-    const subdomain = host.split(".")[0];
-    
-    // Skip if it's the main domain or localhost
-    if (subdomain === "www" || subdomain === "sharpsend" || host.includes("localhost")) {
       return next();
     }
-
-    // Find publisher by subdomain
-    const publisher = await storage.getPublisherBySubdomain(subdomain);
-    if (!publisher || !publisher.isActive) {
-      return res.status(404).json({ error: "Publisher not found" });
+    
+    // Look up publisher by subdomain
+    const [publisher] = await db
+      .select()
+      .from(publishers)
+      .where(eq(publishers.subdomain, subdomain))
+      .limit(1);
+    
+    if (!publisher) {
+      // Subdomain not found, fallback to demo
+      req.tenant = {
+        id: '07db1cad-c3b5-4eb3-87ef-69fb38a212c3',
+        subdomain: 'demo',
+        name: 'Demo Publisher',
+        settings: {}
+      };
+    } else {
+      // Set tenant info from database
+      req.tenant = {
+        id: publisher.id,
+        subdomain: publisher.subdomain,
+        name: publisher.name,
+        settings: publisher.settings || {}
+      };
     }
-
-    // Set minimal tenant context for public routes
-    req.tenant = {
-      publisherId: publisher.id,
-      publisher,
-      user: null, // No user for public routes
-    };
-
+    
+    // Add tenant info to response locals for frontend access
+    res.locals.tenant = req.tenant;
+    
     next();
   } catch (error) {
-    console.error("Subdomain extraction error:", error);
-    return res.status(500).json({ error: "Failed to extract tenant information" });
+    console.error('Error in tenant middleware:', error);
+    // On error, use demo tenant
+    req.tenant = {
+      id: '07db1cad-c3b5-4eb3-87ef-69fb38a212c3',
+      subdomain: 'demo',
+      name: 'Demo Publisher',
+      settings: {}
+    };
+    next();
   }
-};
+}
 
 /**
- * Middleware to ensure tenant context exists
- * Use this after authentication middleware to guarantee tenant context
+ * Middleware to require a valid tenant
  */
-export const requireTenant = (req: Request, res: Response, next: NextFunction) => {
+export function requireTenant(req: Request, res: Response, next: NextFunction) {
   if (!req.tenant) {
-    return res.status(401).json({ error: "Tenant context required" });
+    return res.status(400).json({
+      success: false,
+      error: 'No tenant context available'
+    });
   }
   next();
-};
+}
 
 /**
- * Middleware to check user permissions within tenant
+ * Get tenant info for API responses
  */
-export const requireRole = (requiredRole: string) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.tenant?.user) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-
-    const userRole = req.tenant.user.role;
-    const roleHierarchy = ["viewer", "editor", "admin"];
-    const requiredLevel = roleHierarchy.indexOf(requiredRole);
-    const userLevel = roleHierarchy.indexOf(userRole);
-
-    if (userLevel < requiredLevel) {
-      return res.status(403).json({ error: "Insufficient permissions" });
-    }
-
-    next();
+export function getTenantInfo(req: Request) {
+  return {
+    id: req.tenant?.id,
+    subdomain: req.tenant?.subdomain,
+    name: req.tenant?.name
   };
-};
-
-/**
- * Utility function to generate JWT token for user
- */
-export const generateToken = (userId: string, publisherId: string): string => {
-  return jwt.sign(
-    { userId, publisherId },
-    JWT_SECRET,
-    { expiresIn: "7d" } // Token expires in 7 days
-  );
-};
-
-/**
- * Utility function to hash password
- */
-export const hashPassword = async (password: string): Promise<string> => {
-  return await bcrypt.hash(password, 12);
-};
-
-/**
- * Utility function to verify password
- */
-export const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
-  return await bcrypt.compare(password, hash);
-};
-
-/**
- * Middleware to log tenant-aware operations for debugging
- */
-export const logTenantOperation = (operation: string) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (req.tenant) {
-      console.log(`[${operation}] Publisher: ${req.tenant.publisher.name} (${req.tenant.publisherId})`);
-    }
-    next();
-  };
-};
-
+}

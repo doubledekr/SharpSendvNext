@@ -1,5 +1,10 @@
 import { tenantStorage } from "./storage-multitenant";
-import { hashPassword } from "./middleware/tenant";
+import crypto from "crypto";
+
+// Simple hash function for demo purposes
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 export async function seedDemoData() {
   try {

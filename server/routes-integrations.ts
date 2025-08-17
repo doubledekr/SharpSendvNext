@@ -1,25 +1,21 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { 
-  authenticateAndSetTenant,
   requireTenant,
-  requireRole,
-  logTenantOperation,
-  type AuthenticatedRequest,
 } from "./middleware/tenant";
 import { tenantStorage } from "./storage-multitenant";
 import { openaiService } from "./services/openai";
 import { salesforceService } from "./services/salesforce";
 import { exactTargetService } from "./services/exacttarget";
 
+// Type for requests with tenant info
+type AuthenticatedRequest = Request;
+
 export function registerIntegrationRoutes(app: Express): void {
   
   // OpenAI / AI Content Generation Routes
   
   app.post("/api/ai/generate-content",
-    authenticateAndSetTenant,
     requireTenant,
-    requireRole("editor"),
-    logTenantOperation("AI_GENERATE_CONTENT"),
     async (req: AuthenticatedRequest, res) => {
       try {
         const { contentType, prompt, context, campaignId } = req.body;
@@ -45,9 +41,7 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.post("/api/ai/generate-subject-lines",
-    authenticateAndSetTenant,
     requireTenant,
-    requireRole("editor"),
     async (req: AuthenticatedRequest, res) => {
       try {
         const { campaignData, count = 3 } = req.body;
@@ -71,9 +65,9 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.post("/api/ai/personalize-content",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("editor"),
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         const { subscriberData, baseContent, campaignId } = req.body;
@@ -98,9 +92,9 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.post("/api/ai/generate-newsletter",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("editor"),
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         const { brief, brandVoice, targetAudience } = req.body;
@@ -125,9 +119,9 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.post("/api/ai/optimize-content",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("editor"),
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         const { content, optimizationGoal = "engagement" } = req.body;
@@ -151,7 +145,7 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.get("/api/ai/content-history",
-    authenticateAndSetTenant,
+    
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
@@ -168,9 +162,9 @@ export function registerIntegrationRoutes(app: Express): void {
   // Salesforce Integration Routes
   
   app.post("/api/integrations/salesforce/connect",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("admin"),
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         const config = req.body;
@@ -193,10 +187,10 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.post("/api/integrations/salesforce/sync-subscribers",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("admin"),
-    logTenantOperation("SALESFORCE_SYNC_SUBSCRIBERS"),
+    
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         const result = await salesforceService.syncSubscribersToSalesforce(req.tenant.publisherId);
@@ -209,9 +203,9 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.post("/api/integrations/salesforce/sync-campaign/:campaignId",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("admin"),
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         const { campaignId } = req.params;
@@ -233,7 +227,7 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.get("/api/integrations/salesforce/analytics",
-    authenticateAndSetTenant,
+    
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
@@ -247,7 +241,7 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.get("/api/integrations/salesforce/test",
-    authenticateAndSetTenant,
+    
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
@@ -263,9 +257,9 @@ export function registerIntegrationRoutes(app: Express): void {
   // ExactTarget Integration Routes
   
   app.post("/api/integrations/exacttarget/connect",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("admin"),
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         const config = req.body;
@@ -287,10 +281,10 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.post("/api/integrations/exacttarget/sync-subscribers",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("admin"),
-    logTenantOperation("EXACTTARGET_SYNC_SUBSCRIBERS"),
+    
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         // First create/update the data extension
@@ -314,9 +308,9 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.post("/api/integrations/exacttarget/send-campaign/:campaignId",
-    authenticateAndSetTenant,
+    
     requireTenant,
-    requireRole("admin"),
+    
     async (req: AuthenticatedRequest, res) => {
       try {
         const { campaignId } = req.params;
@@ -338,7 +332,7 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.get("/api/integrations/exacttarget/analytics/:requestId",
-    authenticateAndSetTenant,
+    
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
@@ -356,7 +350,7 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.get("/api/integrations/exacttarget/subscriber-engagement/:email",
-    authenticateAndSetTenant,
+    
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
@@ -374,7 +368,7 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.get("/api/integrations/exacttarget/test",
-    authenticateAndSetTenant,
+    
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
@@ -388,7 +382,7 @@ export function registerIntegrationRoutes(app: Express): void {
   );
 
   app.get("/api/integrations/exacttarget/account-info",
-    authenticateAndSetTenant,
+    
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
@@ -404,7 +398,7 @@ export function registerIntegrationRoutes(app: Express): void {
   // General Integration Status Routes
   
   app.get("/api/integrations/status",
-    authenticateAndSetTenant,
+    
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {

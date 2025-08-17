@@ -67,8 +67,8 @@ const oneOffAssignmentSchema = z.object({
  */
 router.post('/projects', async (req, res) => {
   try {
-    const publisherId = '07db1cad-c3b5-4eb3-87ef-69fb38a212c3'; // Using demo publisher ID
-    const createdBy = 'demo-user'; // TODO: Extract from authentication
+    const publisherId = req.tenant?.id || '07db1cad-c3b5-4eb3-87ef-69fb38a212c3';
+    const createdBy = req.tenant?.name || 'demo-user';
 
     const validatedData = createProjectSchema.parse(req.body);
 
@@ -97,17 +97,23 @@ router.post('/projects', async (req, res) => {
 });
 
 /**
- * Get all campaign projects for publisher
+ * Get all campaign projects for the current tenant
  */
 router.get('/projects', async (req, res) => {
   try {
-    // For demo, get all campaign projects instead of filtering by publisher
-    const projects = await campaignService.getAllCampaignProjects();
+    // Get campaign projects for the current tenant (identified by subdomain)
+    const publisherId = req.tenant?.id || '07db1cad-c3b5-4eb3-87ef-69fb38a212c3';
+    const projects = await campaignService.getCampaignProjects(publisherId);
 
     res.json({
       success: true,
       data: projects,
-      message: 'Campaign projects retrieved successfully'
+      message: 'Campaign projects retrieved successfully',
+      tenant: {
+        id: req.tenant?.id,
+        subdomain: req.tenant?.subdomain,
+        name: req.tenant?.name
+      }
     });
   } catch (error) {
     console.error('Error fetching campaign projects:', error);

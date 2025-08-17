@@ -3,10 +3,14 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import { tenantMiddleware } from "./middleware/tenant";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Add tenant middleware to identify publisher by subdomain
+app.use(tenantMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();

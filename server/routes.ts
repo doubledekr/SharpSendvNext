@@ -46,6 +46,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get current tenant info based on subdomain
+  app.get('/api/tenant', (req, res) => {
+    if (!req.tenant) {
+      return res.status(400).json({ error: 'No tenant context available' });
+    }
+    
+    res.json({
+      id: req.tenant.id,
+      subdomain: req.tenant.subdomain,
+      name: req.tenant.name,
+      settings: req.tenant.settings,
+      url: `${req.tenant.subdomain}.sharpsend.io`
+    });
+  });
+
   // Market sentiment endpoint for dashboard
   app.get("/api/market-sentiment", async (req, res) => {
     try {
