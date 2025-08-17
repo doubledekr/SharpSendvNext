@@ -17,6 +17,19 @@ B2B SaaS pricing with high-margin credit system:
 
 ## Recent Changes
 
+**August 16, 2025 - Navigation & AI Insights Improvements**
+- **Fixed Navigation Header: COMPLETED**
+  - ✅ Top navigation now stays fixed when scrolling
+  - ✅ Professional gradient logo with Brain icon
+  - ✅ Better visual hierarchy with shadow effects
+  - ✅ Improved junction between header and sidebar with clean styling
+  
+- **AI Insights Repositioning: COMPLETED**
+  - ✅ Moved AI Insights & Recommendations to top of dashboard
+  - ✅ Three-column layout showing Market Analysis, Top Opportunity, and Fatigue Status
+  - ✅ Prominent recommended actions section with dynamic updates
+  - ✅ Purple gradient card design for better visibility
+
 **August 16, 2025 - Market Sentiment Integration & Events Feed**
 - **Market Sentiment Always On by Default: COMPLETED**
   - ✅ Market sentiment analysis now automatically included in all email generation

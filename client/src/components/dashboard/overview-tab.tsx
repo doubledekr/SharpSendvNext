@@ -227,10 +227,81 @@ export default function OverviewTab() {
   return (
     <div className="dashboard-container p-6">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="dashboard-title">Dashboard Overview</h1>
         <p className="dashboard-subtitle">AI-powered newsletter personalization insights</p>
       </div>
+
+      {/* AI Insights & Recommendations Section - Moved to Top */}
+      <Card className="mb-6 bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Lightbulb className="w-5 h-5 text-purple-400" />
+            AI Insights & Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Real-time Market Analysis */}
+            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="w-4 h-4 text-blue-400" />
+                <h4 className="font-semibold text-white">Market Analysis</h4>
+              </div>
+              <p className="text-sm text-slate-300">
+                {loadingMarket ? "Analyzing market..." : 
+                 marketSentiment ? `${marketSentiment.sentiment === 'bullish' ? '📈' : marketSentiment.sentiment === 'bearish' ? '📉' : '➡️'} ${marketSentiment.sentimentAdvice}` :
+                 "Market analysis pending..."}
+              </p>
+            </div>
+
+            {/* Top Opportunity */}
+            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4 text-green-400" />
+                <h4 className="font-semibold text-white">Top Opportunity</h4>
+              </div>
+              <p className="text-sm text-slate-300">
+                {loadingEvents ? "Scanning opportunities..." :
+                 marketEvents?.events?.[0] ? `${marketEvents.events[0].title.substring(0, 50)}...` :
+                 "Active Traders segment showing high engagement"}
+              </p>
+            </div>
+
+            {/* Email Fatigue Alert */}
+            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-4 h-4 text-orange-400" />
+                <h4 className="font-semibold text-white">Fatigue Status</h4>
+              </div>
+              <p className="text-sm text-slate-300">
+                {loadingFatigue ? "Checking fatigue levels..." :
+                 fatigueStats ? 
+                 (fatigueStats.guardrailsEnabled ? 
+                  `${fatigueStats.blockedToday > 0 ? `⚠️ ${fatigueStats.blockedToday} blocked today` : '✅ All subscribers healthy'}` :
+                  `📊 Monitoring: ${fatigueStats.tiredSubscribers} over limit`) :
+                 "Fatigue monitoring active"}
+              </p>
+            </div>
+          </div>
+
+          {/* Action Recommendations */}
+          <div className="mt-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-semibold text-white">Recommended Actions</span>
+            </div>
+            <div className="space-y-1">
+              {fatigueStats?.recommendations?.slice(0, 2).map((rec, idx) => (
+                <p key={idx} className="text-xs text-slate-400">• {rec}</p>
+              ))}
+              {marketEvents?.urgentAssignments > 0 && (
+                <p className="text-xs text-slate-400">• {marketEvents.urgentAssignments} urgent assignments need attention</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Market Intelligence Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

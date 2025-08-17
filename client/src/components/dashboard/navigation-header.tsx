@@ -68,23 +68,25 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ currentPage }) => {
   ];
 
   return (
-    <div className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+    <div className="bg-slate-800 border-b border-slate-700 px-6 py-3 shadow-lg">
       <div className="flex items-center justify-between">
         {/* Logo and Title */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Zap className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+              <Brain className="h-6 w-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">SharpSend.io</h1>
-              <p className="text-xs text-slate-400">Financial Publishers</p>
+              <p className="text-xs text-slate-400">Financial Publishers Platform</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-1 ml-4">
+          <div className="h-8 w-px bg-slate-600 mx-2"></div>
+          
+          <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-green-400 font-medium">AI Engine: Active</span>
+            <span className="text-xs text-green-400 font-medium">AI Engine: Active</span>
           </div>
         </div>
 

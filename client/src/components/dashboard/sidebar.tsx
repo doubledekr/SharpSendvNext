@@ -58,16 +58,14 @@ const helpItems = [
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   return (
-    <div className="w-64 bg-dark-surface border-r border-dark-border fixed h-full overflow-y-auto">
-      {/* Logo Section */}
-      <div className="p-6 border-b border-dark-border">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-brand-blue to-blue-600 rounded-lg flex items-center justify-center">
-            <Brain className="text-white text-lg" />
-          </div>
+    <div className="w-64 bg-dark-surface border-r border-dark-border fixed h-full overflow-y-auto top-16 shadow-xl">
+      {/* Logo Section - Now a simplified version since main logo is in header */}
+      <div className="p-4 border-b border-dark-border bg-slate-800/50">
+        <div className="flex items-center space-x-2">
+          <div className="w-2 h-8 bg-gradient-to-b from-brand-blue to-blue-600 rounded-full"></div>
           <div>
-            <h1 className="text-xl font-bold text-white">SharpSend.io</h1>
-            <p className="text-xs text-slate-400">Financial Publishers</p>
+            <p className="text-sm font-semibold text-white">Navigation</p>
+            <p className="text-xs text-slate-400">Dashboard Menu</p>
           </div>
         </div>
       </div>

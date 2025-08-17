@@ -23,9 +23,12 @@ export default function MainLayout({ children, currentPage }: MainLayoutProps) {
 
   return (
     <div className="min-h-screen bg-slate-900">
-      <NavigationHeader currentPage={currentPage || location.substring(1)} />
+      {/* Fixed Navigation Header */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <NavigationHeader currentPage={currentPage || location.substring(1)} />
+      </div>
       
-      <div className="flex">
+      <div className="flex pt-16"> {/* Add padding-top to account for fixed header */}
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
         
         <div className="flex-1 ml-64 overflow-auto">
