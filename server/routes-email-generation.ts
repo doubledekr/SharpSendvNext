@@ -28,28 +28,52 @@ SEGMENT DETAILS:
 - Base Subject Line: ${baseSubject}
 - Base Content Context: ${baseContent || 'Financial market insights and investment opportunities'}
 
-REQUIREMENTS:
-1. Create a COMPLETE, SUBSTANTIAL email (400-600 words minimum)
-2. Include:
-   - Personalized greeting addressing this specific segment's interests
-   - Hook that speaks directly to their investment style and goals
-   - 3-4 key market insights or investment opportunities
-   - Specific data points, statistics, or market trends
-   - Clear call-to-action tailored to this segment
-   - Professional sign-off
-3. Write in a tone that resonates with ${segmentName} investors
-4. Include relevant financial terminology appropriate for their sophistication level
-5. Make it scannable with short paragraphs and clear sections
-6. Ensure the content feels premium and exclusive to this segment
+CRITICAL REQUIREMENTS:
+1. Generate a COMPLETE, SUBSTANTIAL email with AT LEAST 500 words of actual content
+2. The email MUST include ALL of these sections with substantial content:
+   
+   a) PERSONALIZED GREETING (2-3 sentences)
+      - Address the specific segment by their characteristics
+      - Acknowledge their investment style
+   
+   b) COMPELLING HOOK (3-4 sentences)
+      - Current market situation relevant to this segment
+      - Why this email matters to them specifically
+   
+   c) MAIN CONTENT - 3 KEY INSIGHTS (400+ words total)
+      - Insight 1: Market trend analysis (150+ words)
+        * Specific data points and percentages
+        * What it means for their portfolio
+        * Action items
+      - Insight 2: Investment opportunity (150+ words)  
+        * Specific sectors or stocks to watch
+        * Entry points and risk considerations
+        * Time horizon expectations
+      - Insight 3: Risk management strategy (150+ words)
+        * Protection strategies for current conditions
+        * Portfolio allocation recommendations
+        * Warning signs to watch
+   
+   d) CALL TO ACTION (2-3 sentences)
+      - Clear next steps tailored to segment
+      - Urgency without being pushy
+   
+   e) PROFESSIONAL SIGN-OFF (1-2 sentences)
+      - Reassurance and support
+      - Contact information
+
+3. Use appropriate financial terminology for ${segmentName}
+4. Include specific numbers, percentages, and data points
+5. Format with HTML tags for better readability
 
 Generate a JSON response with:
 {
   "subject": "Compelling subject line tailored to this segment (50-70 characters)",
   "previewText": "Preview text that complements the subject (90-120 characters)",
-  "content": "Full HTML email content with proper formatting",
+  "content": "Full HTML email content with <h2>, <p>, <strong>, <ul> tags for formatting. MUST be 500+ words.",
   "personalizationLevel": "high",
   "keyPoints": ["point1", "point2", "point3"],
-  "estimatedReadTime": "X minutes"
+  "estimatedReadTime": "3-4 minutes"
 }`;
 
     const completion = await openai.chat.completions.create({
@@ -57,7 +81,7 @@ Generate a JSON response with:
       messages: [
         {
           role: "system",
-          content: "You are an expert financial newsletter copywriter who creates compelling, segment-specific email content that drives engagement and conversions."
+          content: "You are an expert financial newsletter copywriter who creates compelling, segment-specific email content that drives engagement and conversions. Always generate complete, detailed emails with at least 500 words of substantive content."
         },
         {
           role: "user",
@@ -65,8 +89,8 @@ Generate a JSON response with:
         }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 2000
+      temperature: 0.8,
+      max_tokens: 3500
     });
 
     const generatedEmail = JSON.parse(completion.choices[0].message.content || '{}');

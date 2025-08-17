@@ -408,9 +408,12 @@ export default function CampaignSegmentManager({
                 </div>
                 <div>
                   <Label>Content Preview</Label>
-                  <div className="mt-1 p-4 bg-gray-50 dark:bg-gray-800 rounded max-h-60 overflow-y-auto">
-                    {emailVersions.versions.find(v => v.segmentId === selectedSegment.id)?.content}
-                  </div>
+                  <div 
+                    className="mt-1 p-4 bg-gray-50 dark:bg-gray-800 rounded max-h-60 overflow-y-auto"
+                    dangerouslySetInnerHTML={{ 
+                      __html: emailVersions.versions.find(v => v.segmentId === selectedSegment.id)?.content || '' 
+                    }}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   {getPersonalizationBadge(
