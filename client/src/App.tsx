@@ -72,7 +72,7 @@ function Router() {
       <Route path="/documentation" component={() => <ProtectedRoute component={Documentation} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
       <Route path="/comparative-analytics" component={() => <ProtectedRoute component={ComparativeAnalytics} />} />
-      <Route path="/campaigns" component={CampaignManagement} />
+      <Route path="/campaigns" component={() => <ProtectedRoute component={CampaignManagement} />} />
       <Route path="/assignment/:token" component={AssignmentPortal} />
       <Route path="/copywriter/:id" component={CopywriterCollabPortal} />
       <Route component={NotFound} />
