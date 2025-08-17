@@ -241,6 +241,93 @@ export const emailSendQueue = pgTable("email_send_queue", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ============= Assignment Copywriter Workflow Tables =============
+
+export const assignments = pgTable("assignments", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  publisherId: varchar("publisher_id", { length: 255 }).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  priority: varchar("priority", { length: 50 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  assignmentLink: varchar("assignment_link", { length: 500 }),
+  copywriterId: varchar("copywriter_id", { length: 255 }),
+  marketContext: jsonb("market_context"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const drafts = pgTable("drafts", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  assignmentId: varchar("assignment_id", { length: 255 }),
+  publisherId: varchar("publisher_id", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 500 }),
+  content: text("content"),
+  segments: jsonb("segments"), // Array of segment variations
+  status: varchar("status", { length: 50 }).notNull().default('draft'),
+  feedback: text("feedback"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const sendQueue = pgTable("send_queue", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  publisherId: varchar("publisher_id", { length: 255 }).notNull(),
+  assignmentId: varchar("assignment_id", { length: 255 }),
+  segmentId: varchar("segment_id", { length: 255 }),
+  segmentName: varchar("segment_name", { length: 255 }),
+  subject: varchar("subject", { length: 500 }),
+  content: text("content"),
+  recipients: integer("recipients"),
+  pixelId: varchar("pixel_id", { length: 255 }),
+  platform: varchar("platform", { length: 50 }),
+  scheduledTime: timestamp("scheduled_time"),
+  status: varchar("status", { length: 50 }).notNull().$type<'queued' | 'sending' | 'sent' | 'failed'>(),
+  sentAt: timestamp("sent_at"),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const pixelTracking = pgTable("pixel_tracking", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  publisherId: varchar("publisher_id", { length: 255 }).notNull(),
+  campaignId: varchar("campaign_id", { length: 255 }),
+  segmentName: varchar("segment_name", { length: 255 }),
+  recipientCount: integer("recipient_count"),
+  trackingUrl: varchar("tracking_url", { length: 500 }),
+  opens: integer("opens").default(0),
+  lastOpened: timestamp("last_opened"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const emailMetrics = pgTable("email_metrics", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  publisherId: varchar("publisher_id", { length: 255 }).notNull(),
+  campaignId: varchar("campaign_id", { length: 255 }),
+  pixelId: varchar("pixel_id", { length: 255 }),
+  sent: integer("sent").default(0),
+  delivered: integer("delivered").default(0),
+  opened: integer("opened").default(0),
+  clicked: integer("clicked").default(0),
+  converted: integer("converted").default(0),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).default('0'),
+  date: timestamp("date").defaultNow(),
+});
+
+// Types for assignments workflow
+export type Assignment = typeof assignments.$inferSelect;
+export type InsertAssignment = typeof assignments.$inferInsert;
+export type Draft = typeof drafts.$inferSelect;
+export type InsertDraft = typeof drafts.$inferInsert;
+export type SendQueueItem = typeof sendQueue.$inferSelect;
+export type InsertSendQueueItem = typeof sendQueue.$inferInsert;
+export type PixelTracking = typeof pixelTracking.$inferSelect;
+export type InsertPixelTracking = typeof pixelTracking.$inferInsert;
+export type EmailMetric = typeof emailMetrics.$inferSelect;
+export type InsertEmailMetric = typeof emailMetrics.$inferInsert;
+
 // Insert schemas
 export const insertPublisherSchema = createInsertSchema(publishers).pick({
   name: true,

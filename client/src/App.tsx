@@ -21,6 +21,8 @@ import InternalDashboard from "@/pages/internal-dashboard";
 import Documentation from "@/pages/documentation";
 import Profile from "@/pages/profile";
 import ComparativeAnalytics from "@/pages/comparative-analytics";
+import AssignmentCopywriterFlow from "@/pages/AssignmentCopywriterFlow";
+import DemoAssignmentWorkflow from "@/pages/DemoAssignmentWorkflow";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -75,6 +77,8 @@ function Router() {
       <Route path="/campaigns" component={() => <ProtectedRoute component={CampaignManagement} />} />
       <Route path="/assignment/:token" component={AssignmentPortal} />
       <Route path="/copywriter/:id" component={CopywriterCollabPortal} />
+      <Route path="/assignment-copywriter/:id" component={() => <ProtectedRoute component={AssignmentCopywriterFlow} />} />
+      <Route path="/demo-assignment-workflow" component={() => <ProtectedRoute component={DemoAssignmentWorkflow} />} />
       <Route component={NotFound} />
     </Switch>
   );

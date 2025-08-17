@@ -12,6 +12,7 @@ import { campaignManagementRoutes } from "./routes-campaign-management";
 import { registerEmailPlatformRoutes } from "./routes-email-platforms";
 import imageTemplateRoutes from "./routes-images-templates";
 import { registerSendQueueRoutes } from "./routes-send-queue";
+import assignmentRoutes from "./routes-assignments";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -687,6 +688,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   campaignManagementRoutes(app);
   registerEmailPlatformRoutes(app);
   registerSendQueueRoutes(app);
+  app.use(assignmentRoutes);
+  app.use(imageTemplateRoutes);
 
   // Legacy routes for backward compatibility (these will be deprecated)
   
