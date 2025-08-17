@@ -411,3 +411,197 @@ export type AssignmentLink = typeof assignmentLinks.$inferSelect;
 
 export type InsertCampaignCollaborator = z.infer<typeof insertCampaignCollaboratorSchema>;
 export type CampaignCollaborator = typeof campaignCollaborators.$inferSelect;
+
+// Image Assets Table for Email Content
+export const imageAssets = pgTable("image_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  fileName: text("file_name").notNull(),
+  originalUrl: text("original_url"), // Original upload URL
+  cdnUrl: text("cdn_url"), // CDN-optimized URL
+  platformUrls: jsonb("platform_urls").$type<{
+    sendgrid?: string;
+    mailchimp?: string;
+    exacttarget?: string;
+    brevo?: string;
+  }>(), // Platform-specific URLs
+  mimeType: text("mime_type").notNull(),
+  fileSize: integer("file_size"), // in bytes
+  dimensions: jsonb("dimensions").$type<{
+    width: number;
+    height: number;
+  }>(),
+  altText: text("alt_text"),
+  tags: text("tags").array(),
+  category: text("category"), // logo, header, content, footer, signature
+  usage: jsonb("usage").$type<{
+    campaignIds: string[];
+    templateIds: string[];
+    lastUsed: string;
+  }>(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  uploadedBy: varchar("uploaded_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email Templates Table
+export const emailTemplates = pgTable("email_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // newsletter, announcement, promotion, alert, digest
+  platform: text("platform"), // sendgrid, mailchimp, exacttarget, brevo, universal
+  platformTemplateId: text("platform_template_id"), // ID in the email platform
+  structure: jsonb("structure").$type<{
+    header: {
+      type: string; // static, dynamic
+      content: string;
+      logoUrl?: string;
+    };
+    contentSections: Array<{
+      id: string;
+      type: string; // text, image, button, divider, social
+      editable: boolean;
+      defaultContent?: string;
+    }>;
+    footer: {
+      type: string;
+      content: string;
+      includeUnsubscribe: boolean;
+      includeSocial: boolean;
+    };
+  }>(),
+  htmlTemplate: text("html_template").notNull(),
+  textTemplate: text("text_template"),
+  styles: jsonb("styles").$type<{
+    primaryColor: string;
+    secondaryColor: string;
+    fontFamily: string;
+    fontSize: string;
+    customCss?: string;
+  }>(),
+  brandAssets: jsonb("brand_assets").$type<{
+    logoId: string;
+    headerImageId?: string;
+    footerImageId?: string;
+    socialIcons?: Record<string, string>;
+  }>(),
+  legalContent: jsonb("legal_content").$type<{
+    disclaimer?: string;
+    privacyPolicy?: string;
+    termsOfService?: string;
+    complianceText?: string;
+  }>(),
+  variables: jsonb("variables").$type<Array<{
+    name: string;
+    type: string; // text, image, link, date
+    defaultValue?: string;
+    required: boolean;
+  }>>(),
+  isActive: boolean("is_active").default(true),
+  version: integer("version").default(1),
+  parentTemplateId: varchar("parent_template_id"), // For template versioning
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Template Sections Table (for modular template building)
+export const templateSections = pgTable("template_sections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // header, hero, content, cta, footer, social
+  html: text("html").notNull(),
+  css: text("css"),
+  variables: jsonb("variables").$type<string[]>(),
+  isReusable: boolean("is_reusable").default(true),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Image CDN Cache Table
+export const imageCdnCache = pgTable("image_cdn_cache", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  imageAssetId: varchar("image_asset_id").notNull(),
+  platform: text("platform").notNull(),
+  cdnUrl: text("cdn_url").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  status: text("status").notNull().default("active"), // active, expired, error
+  errorMessage: text("error_message"),
+});
+
+// Schema validators for the new tables
+export const insertImageAssetSchema = createInsertSchema(imageAssets).pick({
+  publisherId: true,
+  fileName: true,
+  originalUrl: true,
+  cdnUrl: true,
+  platformUrls: true,
+  mimeType: true,
+  fileSize: true,
+  dimensions: true,
+  altText: true,
+  tags: true,
+  category: true,
+  usage: true,
+  metadata: true,
+  uploadedBy: true,
+});
+
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).pick({
+  publisherId: true,
+  name: true,
+  description: true,
+  category: true,
+  platform: true,
+  platformTemplateId: true,
+  structure: true,
+  htmlTemplate: true,
+  textTemplate: true,
+  styles: true,
+  brandAssets: true,
+  legalContent: true,
+  variables: true,
+  isActive: true,
+  version: true,
+  parentTemplateId: true,
+  createdBy: true,
+});
+
+export const insertTemplateSectionSchema = createInsertSchema(templateSections).pick({
+  publisherId: true,
+  name: true,
+  type: true,
+  html: true,
+  css: true,
+  variables: true,
+  isReusable: true,
+  tags: true,
+});
+
+export const insertImageCdnCacheSchema = createInsertSchema(imageCdnCache).pick({
+  imageAssetId: true,
+  platform: true,
+  cdnUrl: true,
+  expiresAt: true,
+  status: true,
+  errorMessage: true,
+});
+
+// Types for the new tables
+export type InsertImageAsset = z.infer<typeof insertImageAssetSchema>;
+export type ImageAsset = typeof imageAssets.$inferSelect;
+
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+
+export type InsertTemplateSection = z.infer<typeof insertTemplateSectionSchema>;
+export type TemplateSection = typeof templateSections.$inferSelect;
+
+export type InsertImageCdnCache = z.infer<typeof insertImageCdnCacheSchema>;
+export type ImageCdnCache = typeof imageCdnCache.$inferSelect;

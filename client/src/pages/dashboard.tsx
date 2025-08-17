@@ -9,6 +9,7 @@ import ABTestingTab from "@/components/dashboard/abtesting-tab";
 import RevenueTab from "@/components/dashboard/revenue-tab";
 import EmailIntegrationsTab from "@/components/dashboard/email-integrations-tab";
 import AdvancedTab from "@/components/dashboard/advanced-tab";
+import { ImageTemplateManager } from "@/components/ImageTemplateManager";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import '../styles/design-system.css';
@@ -21,6 +22,7 @@ const tabTitles = {
   abtesting: 'A/B Testing Lab',
   revenue: 'Revenue Impact',
   email: 'Email Integration',
+  assets: 'Assets & Templates',
   advanced: 'Advanced Features'
 };
 
@@ -32,6 +34,7 @@ const tabDescriptions = {
   abtesting: 'Optimize campaigns with automated testing',
   revenue: 'Calculate ROI and revenue projections',
   email: 'Connect and manage email platform integrations',
+  assets: 'Manage images and email templates for your campaigns',
   advanced: 'Advanced AI configuration and system monitoring'
 };
 
@@ -54,6 +57,8 @@ export default function Dashboard() {
         return <RevenueTab />;
       case 'email':
         return <EmailIntegrationsTab />;
+      case 'assets':
+        return <ImageTemplateManager />;
       case 'advanced':
         return <AdvancedTab />;
       default:

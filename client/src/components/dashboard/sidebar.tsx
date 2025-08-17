@@ -17,7 +17,8 @@ import {
   LogOut,
   CreditCard,
   UserCircle,
-  TrendingUp
+  TrendingUp,
+  Image
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -37,6 +38,7 @@ const navigationItems = [
   { id: 'abtesting', label: 'A/B Testing', icon: FlaskConical },
   { id: 'revenue', label: 'Revenue Impact', icon: DollarSign },
   { id: 'email', label: 'Email Integration', icon: Mail },
+  { id: 'assets', label: 'Assets & Templates', icon: Image },
   { id: 'advanced', label: 'Advanced Features', icon: Settings },
 ];
 
