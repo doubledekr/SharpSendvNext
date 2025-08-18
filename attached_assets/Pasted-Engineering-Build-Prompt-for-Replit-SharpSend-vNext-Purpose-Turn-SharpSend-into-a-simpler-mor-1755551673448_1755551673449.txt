@@ -1,0 +1,208 @@
+Engineering Build Prompt (for Replit) — SharpSend vNext
+
+Purpose: Turn SharpSend into a simpler, more visual, micro‑publisher‑friendly platform while preserving power features (pixels, segmentation, ROI, market/sentiment intelligence). Use the ideas in this doc as authoritative context.
+
+0) Read This First — Product Tenets
+
+Simple first‑run: connect email, detect publications, generate a usable master email in minutes.
+
+Proactive > reactive: North America–focused news + market sentiment drive topic suggestions automatically.
+
+Segment‑smart: write once (master), generate many (segment variants) with clear toggles.
+
+Trust & performance: unique pixels per variation, SOC2‑ready posture, 99.9% uptime target, clear ROI.
+
+1) Scope (vNext)
+
+Connections (ESP/Email + CDN on Azure)
+
+OAuth/connect flows for Mailchimp, HubSpot, Brevo (start with one provider behind a clean connector interface).
+
+World‑class CDN on Azure: Blob Storage as origin + Azure Front Door as CDN; brandable CNAMEs per publisher (cdn.publisher.com) with managed certs.
+
+Image optimization: on‑the‑fly resize/compress (WebP/AVIF + JPEG/PNG fallback), cache‑busting, and purge‑on‑replace.
+
+Affordability guardrails: usage metering + alerts; design for mid‑size publisher egress to remain < $50/mo at ~300 GB.
+
+Optional CDN connect/import to SharpSend CDN. Auto‑rewrite assets.
+
+Publication Detection (New Publisher Setup)
+
+Given a publisher root domain (e.g., investorsalley.com for demo), discover publications/series (RSS, sitemaps, nav, pattern heuristics).
+
+Create publication records with title, URL, cadence guess, topic tags.
+
+NA News & Sentiment Pipeline
+
+Daily refresh + on‑demand pull from North American sources only. Compute: sentiment score, top narratives, watchlist deltas.
+
+Surface Suggested Topics per publication and per segment.
+
+Master → Segment Email Flow
+
+Assign a master email to an owner (copywriter/editor) OR set to auto‑generate.
+
+Detect segments from connected ESP lists and allow user‑defined segments.
+
+Generate segment‑specific variants from the master; provide toggle matrix (which segment gets which variant/blocks).
+
+Pixels & Analytics
+
+Generate a unique pixel per send and per variant. Confirm before send.
+
+Pixel audit log + revenue attribution plumbing ready.
+
+Learning & Optimization
+
+Send‑time insights (basic model) per tenant + per segment.
+
+Lightweight A/B support for subject/hero.
+
+2) Non‑Goals (vNext)
+
+No heavy, custom attribution modeling UI (keep basic first/last‑touch + windows).
+
+No global market coverage beyond NA.
+
+No sprawling template builder—focus on import + small edits.
+
+3) UX Flow (high‑level)
+
+Onboarding wizard (4–6 steps): Connect ESP → Detect Publications → Connect CDN (optional) → Pick Watchlist/News Scope (NA only) → Define/Review Segments → First Master Email.
+
+Planner (Home): Market Pulse (NA), Suggested Topics, Publications, Drafts.
+
+Compose (Master): simple editor; assign owner or auto‑generate; insert dynamic blocks.
+
+Segment Matrix: list segments (detected + user‑defined), toggle delivery, preview diffs, estimate impact.
+
+Review & Send: pixel check (must‑pass), schedule/launch, quota status, expected reach; show compliance checklist.
+
+Results: opens/CTR/conversions, per‑segment performance, send‑time insights.
+
+4) Key Requirements & Constraints
+
+Simplicity: clicks to first value ≤ 10; default settings sane.
+
+Compliance: SOC2 posture, GDPR/CCPA toggles; consent‑aware pixels.
+
+Costs: token + API usage gates by tier; graceful degradation.
+
+Reliability: 99.9% target, retry/backoff on external calls; idempotent sends.
+
+5) Architecture Notes
+
+Keep adapters for ESP, CRM, News/Market behind interfaces; start with 1 provider each.
+
+Use existing data model sections in this doc (tenants, segments, master_prompts, pixels, …).
+
+Cache NA daily bundle (sentiment + headlines) per tenant; TTL 24h; manual refresh.
+
+6) APIs to Implement (minimal)
+
+POST /connect/esp → begin OAuth; GET /segments (detected + custom); POST /segments (create/update).
+
+POST /publications/detect (domain) → list publications; GET /news/na/bundle.
+
+POST /emails/master (create/assign/auto‑generate); POST /emails/:id/variants (by segments).
+
+POST /send/preview (pixel check) → must return pixel_ok=true or errors; POST /send/launch.
+
+POST /classify/email-type (optional, for testing) → returns email_type prediction + confidence; runtime classification should also occur automatically during compose/send.
+
+6.1) Email Types (FinPub) — Detection & Optimization
+
+Sharpsend must auto‑detect the type of email and apply specialized optimization/guardrails. Types and behaviors:
+
+Marketing
+
+Detection cues: urgency/scarcity phrasing; checkout/sales URLs; campaign burst patterns.
+
+Actions: enable conversion pixels/UTMs; aggressive subject A/B; send‑time optimization; ROI reporting by offer.
+
+Editorial (Free Newsletter)
+
+Detection cues: fixed cadence; informational tone; CMS/RSS linkage; few hard CTAs.
+
+Actions: inject NA news/sentiment topic chips; measure content resonance; suggest soft promo slots.
+
+Fulfillment (Paid Delivery)
+
+Detection cues: paid list only; portfolio/tickers; structured reports.
+
+Actions: entitlement check before send; mandatory pixel QA; on‑time delivery alarms; minimize promo overlays.
+
+Paid Fulfillment (Premium Alerts/Signals)
+
+Detection cues: “ALERT:”/time‑sensitive subjects; minimal HTML; cross‑channel (SMS/push) twins.
+
+Actions: priority queue; latency metrics; strict pixel+entitlement verification; disable heavy images.
+
+Engagement/Nurture
+
+Detection cues: autoresponder sequences; evergreen educational content.
+
+Actions: drop‑off detection; reactivation nudges; upgrade recommendations by engagement score.
+
+Operational/Transactional
+
+Detection cues: receipts, password resets, renewals; compliance‑heavy; no promos.
+
+Actions: mark transactional (no promo logic); delivery priority; limit pixels to open/click verification only.
+
+Acceptance Add‑ons
+
+System classifies each draft/variant with email_type (confidence ≥ 0.8) or requests manual confirm.
+
+Different default settings and QA gates are applied per type (e.g., Fulfillment requires entitlement check + pixel confirm).
+
+Reporting can filter and compare performance by email_type.
+
+7) UI/UX Enhancements
+
+Visual Segment Matrix: rows=segments, cols=blocks/variants, toggles + previews.
+
+Topic chips from NA sentiment with one‑click “insert as block”.
+
+Pixel status pill (green/orange/red) with tooltip (“unique ID attached”, “missing on variant 2”, …).
+
+Soft empty‑states with sample content for micro‑publishers.
+
+8) Acceptance Criteria (vNext)
+
+New tenant can: connect ESP → detect ≥1 publication from domain (e.g., investorsalley.com demo) → create master → auto‑generate ≥2 segment variants → pass pixel check → send.
+
+NA news bundle is visible and used in at least one suggested block.
+
+Segment toggles work; user‑defined segments appear alongside detected ones.
+
+Unique pixel per variant verified in pre‑send; pixel audit log entry created.
+
+Results page shows per‑segment opens/CTR; basic send‑time recommendation.
+
+9) Phased Delivery
+
+Phase A (2–3 wks): ESP connect, publication detection (demo domain), NA bundle cache, master compose, segment matrix (read‑only), pixel generator + pre‑send check.
+
+Phase B: variant generation, user‑defined segments CRUD, pixel audit log, results dashboard v1, send‑time insights.
+
+Phase C: automation toggles (auto‑generate without human), CDN import polish, A/B subject/hero.
+
+10) Pre‑Code “Talk‑Through” (DoR)
+
+Before coding, run a Definition‑of‑Ready workshop:
+
+Review UX flow with wireframes; sign off on the 6 screens above.
+
+Confirm NA news sources + licensing; pick the first ESP/CRM.
+
+Lock the Acceptance Criteria + Definition of Done for Phase A.
+
+Finalize safeguards for costs (token caps by tier) and privacy (consent modes).
+
+11) Demo Domain Configuration
+
+Use investorsalley.com as the demo input during setup to validate publication detection, topic mapping, and segment suggestions.
+
+Deliverable: A production‑grade, simplified SharpSend vNext per the criteria above. Submit a short README covering setup, environment variables, and how to run a demo against the investorsalley domain.
+
