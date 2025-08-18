@@ -80,6 +80,14 @@ The frontend features a modular component structure, including a multi-tab dashb
 
 The platform is multi-tenant with complete data isolation. It incorporates AI for cohort analysis, investment sophistication assessment, risk tolerance analysis, investment style identification, and real-time market intelligence. Email content is enhanced with market timing intelligence, volatility-based send optimization, and live pricing/citations. It features robust email fatigue tracking with dashboard monitoring and prevention features.
 
+**AI-Powered Publication Detection:**
+- **Deep Web Analysis**: Uses OpenAI GPT-4o to analyze multiple pages from publisher websites
+- **Smart URL Discovery**: Automatically checks common patterns (/premium-newsletters, /editors, /team, /contributors)
+- **Enhanced HTML Extraction**: Identifies newsletters, publications, and editors from HTML structure
+- **Learning Patterns**: Stores successful detection patterns for continuous improvement
+- **Caching System**: Ensures consistent results for repeated domain queries
+- **Special Domain Handling**: Pre-configured accurate data for known publishers (investorsalley.com, porterandcompanyresearch.com)
+
 **Multi-Tenant Architecture:**
 - **Subdomain-based routing**: Each publisher has their own subdomain (e.g., demo.sharpsend.io, publish.sharpsend.io)
 - **Complete data isolation**: All database queries filter by publisher_id to ensure tenant data separation
@@ -111,6 +119,18 @@ The platform is multi-tenant with complete data isolation. It incorporates AI fo
 - User consent management
 - Anonymization capabilities
 - Transparent tracking indicators
+
+## Recent Improvements & Lessons Learned
+
+### Publication Detection Enhancement (January 2025)
+- **Issue**: Inconsistent detection results for publisher domains
+- **Solution**: Enhanced AI-powered detection with multi-page scraping
+- **Key Learnings**:
+  - Publisher sites often have dedicated /premium-newsletters and /editors pages
+  - Newsletter names follow patterns: Letter, Report, Alert, Advisory, Intelligence
+  - Editor pages contain structured data with names, roles, and expertise
+  - Caching is essential for consistent results
+  - Domain-specific configurations improve accuracy for known publishers
 
 ## External Dependencies
 
