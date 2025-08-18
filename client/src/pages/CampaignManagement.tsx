@@ -259,6 +259,7 @@ export function CampaignManagement() {
               <FileText className="w-5 h-5" />
               Campaign Projects
             </CardTitle>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Click a project to view details</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {projectsLoading ? (
@@ -267,8 +268,10 @@ export function CampaignManagement() {
               projects.data.map((project: CampaignProject) => (
                 <Card 
                   key={project.id} 
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedProject === project.id ? 'ring-2 ring-blue-500' : ''
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] border-2 ${
+                    selectedProject === project.id 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md' 
+                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
                   }`}
                   onClick={() => setSelectedProject(project.id)}
                   data-testid={`card-project-${project.id}`}
@@ -276,8 +279,19 @@ export function CampaignManagement() {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-sm">{project.name}</h4>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className={`font-semibold text-sm ${
+                            selectedProject === project.id 
+                              ? 'text-blue-700 dark:text-blue-300' 
+                              : 'text-gray-900 dark:text-white'
+                          }`}>
+                            {project.name}
+                          </h4>
+                          {selectedProject === project.id && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                           {project.description}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
@@ -287,6 +301,11 @@ export function CampaignManagement() {
                           </span>
                         </div>
                       </div>
+                      {selectedProject === project.id && (
+                        <div className="text-blue-500 ml-2">
+                          <Eye className="w-4 h-4" />
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

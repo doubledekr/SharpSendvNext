@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { CampaignManagementService } from './services/campaign-management-simple';
+import { CampaignManagementService } from './services/campaign-management';
 import { AIAssignmentGenerator } from './services/ai-assignment-generator';
 import { z } from 'zod';
 
