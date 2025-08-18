@@ -13,6 +13,8 @@ import { registerEmailPlatformRoutes } from "./routes-email-platforms";
 import imageTemplateRoutes from "./routes-images-templates";
 import { registerSendQueueRoutes } from "./routes-send-queue";
 import assignmentRoutes from "./routes-assignments";
+import approvalsRoutes from "./routes-approvals";
+import segmentsRoutes from "./routes-segments";
 import emailGenerationRoutes from "./routes-email-generation";
 import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
@@ -816,6 +818,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register email generation routes for segment customization
   app.use(emailGenerationRoutes);
+  
+  // Register vNext routes (assignments, approvals, segments)
+  app.use(assignmentRoutes);
+  app.use(approvalsRoutes);
+  app.use(segmentsRoutes);
 
   // Error handling middleware
   app.use((err: any, req: any, res: any, next: any) => {

@@ -3,30 +3,13 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Dashboard from "@/pages/dashboard";
+import VNextDashboard from "@/pages/vnext-dashboard";
+import { VNextAssignmentDesk } from "@/pages/vnext-assignment-desk";
+import { VNextApprovals } from "@/pages/vnext-approvals";
+import { VNextSegments } from "@/pages/vnext-segments";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
-import Onboarding from "@/pages/onboarding";
-import EditorialDashboard from "@/pages/editorial-dashboard-enhanced";
-import SharpSendIntelligence from "@/pages/sharpsend-intelligence";
-import CopywriterPortal from "@/pages/copywriter-portal-enhanced";
-import CopywriterCollabPortal from "@/pages/CopywriterPortal";
-import EmailPreviewApproval from "@/pages/email-preview-approval-enhanced";
-import CohortAnalytics from "@/pages/cohort-analytics-enhanced";
 import NotFound from "@/pages/not-found";
-import { CampaignManagement } from "@/pages/CampaignManagement";
-import { AssignmentPortal } from "@/pages/AssignmentPortal";
-import EmailPlatformDashboard from "@/pages/email-platform-dashboard";
-import InternalDashboard from "@/pages/internal-dashboard";
-import Documentation from "@/pages/documentation";
-import Profile from "@/pages/profile";
-import ComparativeAnalytics from "@/pages/comparative-analytics";
-import AssignmentCopywriterFlow from "@/pages/AssignmentCopywriterFlow";
-import DemoAssignmentWorkflow from "@/pages/DemoAssignmentWorkflow";
-import VNextOnboarding from "@/pages/vnext-onboarding";
-import VNextOnboardingNew from "@/pages/vnext-onboarding-new";
-import VNextDashboard from "@/pages/vnext-dashboard";
-import VNextSegmentMatrix from "@/pages/vnext-segment-matrix";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -63,30 +46,17 @@ function PublicRoute({ component: Component }: { component: React.ComponentType 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={() => <PublicRoute component={Login} />} />
+      {/* vNext is now the main system */}
+      <Route path="/" component={() => <ProtectedRoute component={VNextDashboard} />} />
+      <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
+      <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
+      <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
+      <Route path="/campaigns" component={() => <ProtectedRoute component={VNextDashboard} />} />
+      
+      {/* Authentication routes */}
       <Route path="/register" component={() => <PublicRoute component={Register} />} />
       <Route path="/login" component={() => <PublicRoute component={Login} />} />
-      <Route path="/onboarding" component={() => <ProtectedRoute component={Onboarding} />} />
-      <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
-      <Route path="/editorial" component={() => <ProtectedRoute component={EditorialDashboard} />} />
-      <Route path="/copywriter" component={() => <ProtectedRoute component={CopywriterPortal} />} />
-      <Route path="/email-preview" component={() => <ProtectedRoute component={EmailPreviewApproval} />} />
-      <Route path="/analytics" component={() => <ProtectedRoute component={CohortAnalytics} />} />
-      <Route path="/intelligence" component={() => <ProtectedRoute component={SharpSendIntelligence} />} />
-      <Route path="/email-platforms" component={() => <ProtectedRoute component={EmailPlatformDashboard} />} />
-      <Route path="/internal" component={() => <ProtectedRoute component={InternalDashboard} />} />
-      <Route path="/documentation" component={() => <ProtectedRoute component={Documentation} />} />
-      <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
-      <Route path="/comparative-analytics" component={() => <ProtectedRoute component={ComparativeAnalytics} />} />
-      <Route path="/campaigns" component={() => <ProtectedRoute component={CampaignManagement} />} />
-      <Route path="/assignment/:token" component={AssignmentPortal} />
-      <Route path="/copywriter/:id" component={CopywriterCollabPortal} />
-      <Route path="/assignment-copywriter/:id" component={() => <ProtectedRoute component={AssignmentCopywriterFlow} />} />
-      <Route path="/demo-assignment-workflow" component={() => <ProtectedRoute component={DemoAssignmentWorkflow} />} />
-      <Route path="/vnext-onboarding-old" component={() => <ProtectedRoute component={VNextOnboarding} />} />
-      <Route path="/vnext-onboarding" component={() => <ProtectedRoute component={VNextOnboardingNew} />} />
-      <Route path="/vnext-dashboard" component={() => <ProtectedRoute component={VNextDashboard} />} />
-      <Route path="/vnext-segment-matrix" component={() => <ProtectedRoute component={VNextSegmentMatrix} />} />
+
       <Route component={NotFound} />
     </Switch>
   );

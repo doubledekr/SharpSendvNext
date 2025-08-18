@@ -3,10 +3,41 @@ import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb } f
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Publishers - Multi-tenant root entity
+export const publishers = pgTable("publishers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  subdomain: text("subdomain").notNull().unique(), // e.g., "demopublisher" for demopublisher.sharpsend.io
+  customDomain: text("custom_domain"), // optional custom domain
+  cdnUrl: text("cdn_url"), // CDN URL for assets (e.g., cdn.demopublisher.sharpsend.io)
+  tier: text("tier").notNull().default("starter"), // starter, growth, pro
+  settings: jsonb("settings").$type<{
+    pixelAutoAttach?: boolean;
+    fatigueDetection?: boolean;
+    segmentAutoDetect?: boolean;
+    marketSentiment?: boolean;
+    approvalWorkflow?: boolean;
+  }>().default({ 
+    pixelAutoAttach: true, 
+    fatigueDetection: true, 
+    segmentAutoDetect: true,
+    marketSentiment: false,
+    approvalWorkflow: false 
+  }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").notNull().default("editor"), // admin, editor, reviewer, copywriter
+  email: text("email"),
+  name: text("name"),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const subscribers = pgTable("subscribers", {
@@ -115,14 +146,58 @@ export const emailSegments = pgTable("email_segments", {
   name: text("name").notNull(),
   description: text("description"),
   isDetected: boolean("is_detected").default(false), // auto-detected from ESP
+  isDynamic: boolean("is_dynamic").default(false), // dynamically calculated from data
   criteria: jsonb("criteria").$type<{
     espListId?: string;
     tags?: string[];
     customFields?: Record<string, any>;
     behavioralTriggers?: string[];
+    dynamicRules?: {
+      engagement?: { min?: number; max?: number };
+      revenue?: { min?: number; max?: number };
+      activity?: { daysSinceLastOpen?: number };
+      cohort?: string;
+    };
   }>(),
   subscriberCount: integer("subscriber_count").default(0),
+  growth: decimal("growth", { precision: 5, scale: 2 }).default("0"), // % growth
+  lastCalculatedAt: timestamp("last_calculated_at"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Assignment Desk - Content planning and management
+export const assignments = pgTable("assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // newsletter, article, research, analysis
+  status: text("status").notNull().default("unassigned"), // unassigned, assigned, in_progress, review, approved, published
+  priority: text("priority").default("medium"), // low, medium, high, urgent
+  assignedTo: varchar("assigned_to"),
+  assignedBy: varchar("assigned_by"),
+  dueDate: timestamp("due_date"),
+  content: text("content"),
+  notes: text("notes"),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Approval Workflows
+export const approvals = pgTable("approvals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  entityType: text("entity_type").notNull(), // assignment, campaign, email_variant
+  entityId: varchar("entity_id").notNull(),
+  requestedBy: varchar("requested_by").notNull(),
+  status: text("status").notNull().default("pending"), // pending, approved, rejected, changes_requested
+  reviewedBy: varchar("reviewed_by"),
+  feedback: text("feedback"),
+  approvalLevel: integer("approval_level").default(1), // for multi-level approvals
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  requestedAt: timestamp("requested_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
 });
 
 // North American news and sentiment data
