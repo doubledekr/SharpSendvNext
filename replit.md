@@ -119,12 +119,64 @@ The platform is multi-tenant with complete data isolation. It incorporates AI fo
 - **Neon Database**: Serverless PostgreSQL hosting.
 - **Drizzle ORM**: Type-safe database ORM.
 
+### Platform Integration APIs
+
+#### Iterable API Integration
+- **Base URLs**: 
+  - US: `https://api.iterable.com/api`
+  - EU: `https://api.eu.iterable.com/api`
+- **Authentication**: API Key-based
+- **Rate Limits**: Standard REST API limits with token bucket
+- **Key Features**:
+  - Cross-channel messaging (email, SMS, push, in-app)
+  - Advanced template system with handlebars logic
+  - Real-time data feeds for personalization
+  - Campaign automation and triggered messages
+  - CDN asset management and optimization
+  - Message channel management
+  - Comprehensive analytics and reporting
+
+#### Customer.io API Integration
+- **Base URLs**:
+  - Track API: `https://track-{region}.customer.io/api/v1`
+  - App API: `https://api.customer.io/v1/send` (US) / `https://api-eu.customer.io/v1/send` (EU)
+  - CDP API: `https://cdp.customer.io/v1` (US) / `https://cdp-eu.customer.io/v1` (EU)
+- **Authentication**: Basic Auth (Track/CDP) and Bearer Token (App)
+- **Rate Limits**: 100/sec (Track), 10/sec (App), 1/10sec (Broadcasts)
+- **Key Features**:
+  - Three specialized APIs for different use cases
+  - In-app messaging with modals, banners, and inline content
+  - Behavioral trigger automation
+  - Journey and workflow management
+  - Real-time event tracking and segmentation
+  - Transactional and broadcast messaging
+  - Data pipeline integration
+
+#### Keap API Integration
+- **Base URL**: `https://api.infusionsoft.com/crm/rest/v1`
+- **Authentication**: OAuth 2.0 with token refresh (24-hour expiration)
+- **Rate Limits**: Token-based system (10,000 tokens, 1 per call, 500ms restoration)
+- **Key Features**:
+  - Complete CRM with contact and lead management
+  - Sales pipeline automation and opportunity tracking
+  - Marketing automation and email campaigns
+  - E-commerce integration with order processing
+  - Custom field management and tagging system
+  - Webhook support for real-time notifications
+  - Reporting and analytics dashboard integration
+
 ### Email Service Integrations
 
-- **Mailchimp**
-- **ConvertKit**
-- **Campaign Monitor**
-- **SendGrid**
+#### Traditional Email Platforms
+- **Mailchimp**: List management and basic automation
+- **ConvertKit**: Creator-focused email marketing
+- **Campaign Monitor**: Professional email campaigns
+- **SendGrid**: Transactional and marketing emails
+
+#### Advanced Cross-Channel Platforms
+- **Iterable**: AI-powered cross-channel communication platform with sophisticated templates, real-time data feeds, CDN integration, and omnichannel messaging (email, SMS, push, in-app)
+- **Customer.io**: Omnichannel messaging platform with behavioral triggers, in-app messaging, journey automation, and three specialized APIs (Pipelines, Track, App)
+- **Keap**: Comprehensive CRM/CMS platform with contact management, sales pipeline automation, e-commerce integration, and marketing automation workflows
 
 ### Development and Build Tools
 
@@ -146,3 +198,44 @@ The platform is multi-tenant with complete data isolation. It incorporates AI fo
 - **MarketAux**: For financial data.
 - **Polygon API**: For financial data.
 - **OpenAI GPT-4**: For AI-powered email personalization and intelligence.
+
+## Platform Integration Documentation
+
+### Comprehensive Integration Support
+The platform now includes full documentation and support for three advanced integration platforms:
+
+- **API Reference**: `platform-integrations-api-reference.md` - Complete API documentation with endpoints, authentication, and example requests
+- **FAQ Guide**: `platform-integrations-faq.md` - Frequently asked questions about platform capabilities, setup, and troubleshooting
+- **Help Documentation**: `platform-integrations-help.md` - Step-by-step setup guides, configuration instructions, and best practices
+
+### Platform Capability Matrix
+
+| Feature | Iterable | Customer.io | Keap |
+|---------|----------|-------------|------|
+| Cross-Channel Messaging | ✅ | ✅ | ❌ |
+| Advanced Templates | ✅ | ✅ | ✅ |
+| Marketing Automation | ✅ | ✅ | ✅ |
+| In-App Messaging | ✅ | ✅ | ❌ |
+| CRM Functionality | ❌ | ❌ | ✅ |
+| E-commerce Integration | ❌ | ❌ | ✅ |
+| Real-Time Data Feeds | ✅ | ✅ | ❌ |
+| Behavioral Triggers | ✅ | ✅ | ✅ |
+| Sales Pipeline | ❌ | ❌ | ✅ |
+| SMS/Push Notifications | ✅ | ✅ | ❌ |
+
+### Integration Benefits for Financial Publishers
+
+**Enhanced Personalization**: 
+- Real-time market data integration through Iterable data feeds
+- Behavioral triggers based on portfolio performance (Customer.io)
+- CRM integration for subscriber lifecycle management (Keap)
+
+**Cross-Channel Coordination**:
+- Send market alerts via email, SMS, and push simultaneously
+- In-app messages for real-time portfolio updates
+- Coordinated campaigns across all communication channels
+
+**Advanced Automation**:
+- Trigger campaigns based on market events and volatility
+- Automate follow-ups based on subscriber engagement patterns
+- Sales pipeline automation for premium subscription conversions
