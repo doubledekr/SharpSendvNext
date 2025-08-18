@@ -44,17 +44,46 @@ interface DetectedSegment {
   isDetected: boolean;
 }
 
+// Helper function to generate segment suggestions
+function generateSegmentSuggestions(publications: Publication[]): string[] {
+  const segments = new Set<string>();
+  
+  // Add cadence-based segments
+  publications.forEach(pub => {
+    if (pub.cadence === "daily") segments.add("Daily Readers");
+    if (pub.cadence === "weekly") segments.add("Weekly Digest Subscribers");
+    if (pub.cadence === "monthly") segments.add("Monthly Newsletter Group");
+  });
+  
+  // Add topic-based segments
+  const allTopics = publications.flatMap(pub => pub.topicTags);
+  if (allTopics.includes("stocks") || allTopics.includes("trading")) segments.add("Active Traders");
+  if (allTopics.includes("value-investing")) segments.add("Value Investors");
+  if (allTopics.includes("options")) segments.add("Options Traders");
+  if (allTopics.includes("cryptocurrency")) segments.add("Crypto Enthusiasts");
+  if (allTopics.includes("forex")) segments.add("Forex Traders");
+  if (allTopics.includes("precious-metals")) segments.add("Commodities Investors");
+  
+  // Add engagement-based segments
+  segments.add("High Engagement Readers");
+  segments.add("New Subscribers");
+  segments.add("VIP Premium Members");
+  
+  return Array.from(segments);
+}
+
 export default function VNextOnboardingNew() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState({
     emailType: "",
-    espPlatform: "",
+    espPlatforms: [] as string[],
     espCredentials: {},
     domain: "",
     publications: [] as Publication[],
     editors: [] as Editor[],
     segments: [] as DetectedSegment[],
+    suggestedSegments: [] as string[],
     testEmailAddress: "",
     selectedPlan: "",
     billingCycle: "monthly"
@@ -106,10 +135,14 @@ export default function VNextOnboardingNew() {
       return response.json();
     },
     onSuccess: (data) => {
+      // Generate automatic segment suggestions based on publications
+      const suggestedSegments = generateSegmentSuggestions(data.publications || []);
+      
       setOnboardingData(prev => ({
         ...prev,
         publications: data.publications || [],
-        editors: data.editors || []
+        editors: data.editors || [],
+        suggestedSegments: suggestedSegments
       }));
       if (data.publications?.length > 0) {
         toast({ 
@@ -198,10 +231,10 @@ export default function VNextOnboardingNew() {
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold">
-                Connect your platform
+                Connect your platforms
               </CardTitle>
               <CardDescription className="text-lg mt-2">
-                One click, many automations
+                Select all the email services you use (you can connect multiple)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -209,28 +242,60 @@ export default function VNextOnboardingNew() {
                 {["Mailchimp", "ActiveCampaign", "ConvertKit", "SendGrid", "Iterable", "Customer.io", "Keap", "Other"].map((platform) => (
                   <Button
                     key={platform}
-                    variant={onboardingData.espPlatform === platform.toLowerCase() ? "default" : "outline"}
-                    className="h-20 flex flex-col gap-2"
+                    variant={onboardingData.espPlatforms.includes(platform.toLowerCase()) ? "default" : "outline"}
+                    className="h-20 flex flex-col gap-2 relative"
                     onClick={() => {
-                      setOnboardingData(prev => ({ ...prev, espPlatform: platform.toLowerCase() }));
-                      // Simulate connection for demo
-                      if (platform !== "Other") {
-                        connectESPMutation.mutate({ 
-                          platform: platform.toLowerCase(),
-                          demo: true 
-                        });
-                      }
+                      setOnboardingData(prev => {
+                        const platforms = [...prev.espPlatforms];
+                        const platformLower = platform.toLowerCase();
+                        if (platforms.includes(platformLower)) {
+                          return { ...prev, espPlatforms: platforms.filter(p => p !== platformLower) };
+                        } else {
+                          return { ...prev, espPlatforms: [...platforms, platformLower] };
+                        }
+                      });
                     }}
                   >
+                    {onboardingData.espPlatforms.includes(platform.toLowerCase()) && (
+                      <CheckCircle className="absolute top-2 right-2 h-4 w-4 text-green-500" />
+                    )}
                     <Mail className="h-6 w-6" />
                     <span>{platform}</span>
                   </Button>
                 ))}
               </div>
               
-              <div className="flex items-center justify-center">
+              {onboardingData.espPlatforms.length > 0 && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm font-medium mb-2">Selected platforms:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {onboardingData.espPlatforms.map(platform => (
+                      <Badge key={platform} variant="secondary">
+                        {platform}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    if (onboardingData.espPlatforms.length > 0) {
+                      connectESPMutation.mutate({ 
+                        platforms: onboardingData.espPlatforms,
+                        demo: true 
+                      });
+                    }
+                  }}
+                  className="flex-1"
+                  disabled={onboardingData.espPlatforms.length === 0}
+                >
+                  Connect Selected Platforms
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
                 <Button variant="ghost" onClick={() => setCurrentStep(3)}>
-                  Skip for now → Try Demo Mode
+                  Skip → Demo Mode
                 </Button>
               </div>
             </CardContent>
@@ -342,56 +407,125 @@ export default function VNextOnboardingNew() {
 
       case 4:
         return (
-          <Card className="max-w-4xl mx-auto">
+          <Card className="max-w-5xl mx-auto">
             <CardHeader>
               <CardTitle className="text-2xl font-bold">
                 Here's what SharpSend can do for you
               </CardTitle>
               <CardDescription className="text-lg mt-2">
-                A sample campaign auto-generated using your brand
+                AI-generated campaign with automatic segmentation based on your publications
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="border rounded-lg p-6 bg-muted/30">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
+              {/* Automatic Segmentation Suggestions */}
+              {onboardingData.suggestedSegments.length > 0 && (
+                <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    Automatic Segment Suggestions
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Based on your publications, we recommend these segments:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {onboardingData.suggestedSegments.map((segment, idx) => (
+                      <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary hover:text-primary-foreground">
+                        <Users className="h-3 w-3 mr-1" />
+                        {segment}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Subject Lines Section */}
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <div className="flex items-center gap-2 mb-3">
                     <Badge className="bg-blue-500">AI Generated</Badge>
                     <Badge variant="outline">North American Markets</Badge>
                   </div>
                   
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">Sample Subject Lines:</h3>
-                    <ul className="space-y-1">
-                      <li className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-yellow-500" />
-                        <span>📈 Markets surge on Fed signals - Your portfolio's next move</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-yellow-500" />
-                        <span>Breaking: Tech rally continues - 3 stocks to watch today</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h3 className="font-semibold">Preview Content:</h3>
-                    <div className="p-4 bg-background rounded-lg">
-                      <p className="text-sm">
-                        Good morning [Subscriber Name],<br/><br/>
-                        The markets are showing strong momentum today with the S&P 500 up 1.2% 
-                        following positive economic data. Here's what you need to know...
-                      </p>
+                  <h3 className="font-semibold text-lg mb-3">Smart Subject Lines by Segment:</h3>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-background rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Active Traders</div>
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-3 w-3 text-yellow-500" />
+                        <span className="text-sm">📈 SPY breaks resistance - Entry points for today's session</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-background rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Value Investors</div>
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-3 w-3 text-yellow-500" />
+                        <span className="text-sm">🎯 Buffett-style opportunity: This blue-chip now 30% undervalued</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-background rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Options Traders</div>
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-3 w-3 text-yellow-500" />
+                        <span className="text-sm">⚡ Unusual options activity detected - 3 plays for next week</span>
+                      </div>
                     </div>
                   </div>
+                </div>
 
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-green-500" />
+                {/* Full Email Preview */}
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <h3 className="font-semibold text-lg mb-3">Full Email Preview:</h3>
+                  <div className="h-96 overflow-y-auto p-4 bg-background rounded-lg text-sm space-y-3">
+                    <p><strong>Good morning [Subscriber Name],</strong></p>
+                    
+                    <p>The markets are showing strong momentum today with the S&P 500 up 1.2% following positive economic data. Here's what you need to know for today's session:</p>
+                    
+                    <div className="border-l-4 border-blue-500 pl-3 my-3">
+                      <p className="font-semibold">🔥 Market Movers</p>
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>Tech sector leads gains (NASDAQ +1.8%)</li>
+                        <li>Fed minutes suggest pause in rate hikes</li>
+                        <li>Oil prices stabilize at $78/barrel</li>
+                      </ul>
+                    </div>
+                    
+                    <p><strong>For Active Traders:</strong></p>
+                    <p>Watch the 4,550 resistance level on SPX. A clean break above with volume could signal continuation to 4,600. Key support sits at 4,520.</p>
+                    
+                    <p><strong>For Value Investors:</strong></p>
+                    <p>Financial sector showing deep value opportunities. BAC trading at 0.8x book value with strong Q3 earnings expected. Consider accumulating on any weakness.</p>
+                    
+                    <p><strong>For Options Traders:</strong></p>
+                    <p>Elevated call volume in NVDA Nov 500C. IV rank at 35%, suggesting potential for volatility expansion. Consider bull call spreads for leveraged upside.</p>
+                    
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 p-3 rounded-lg my-3">
+                      <p className="font-semibold">💡 SharpSend AI Insight</p>
+                      <p className="text-sm mt-1">Market sentiment: BULLISH (7.2/10). Historical data shows 73% win rate for longs when sentiment exceeds 7.0.</p>
+                    </div>
+                    
+                    <p><strong>Action Items for Today:</strong></p>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Review your stop losses on existing positions</li>
+                      <li>Consider scaling into strength sectors (Tech, Healthcare)</li>
+                      <li>Watch for Fed speaker at 2 PM EST - potential volatility</li>
+                    </ol>
+                    
+                    <p className="mt-4">Best regards,<br/>
+                    Your SharpSend Team</p>
+                    
+                    <div className="text-xs text-muted-foreground mt-4 pt-3 border-t">
+                      <p>📊 Powered by SharpSend AI | Real-time market data | Personalized for your investment style</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-3">
+                    <Check className="h-3 w-3 text-green-500" />
                     SharpSend pixel automatically attached for tracking
                   </div>
                 </div>
               </div>
 
-              <div>
+              <div className="border-t pt-4">
                 <Label>Send test email to:</Label>
                 <div className="flex gap-2 mt-2">
                   <Input
@@ -408,7 +542,7 @@ export default function VNextOnboardingNew() {
               </div>
 
               <Button onClick={() => setCurrentStep(5)} className="w-full">
-                Continue to First Send
+                Continue to Guided Send
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </CardContent>
