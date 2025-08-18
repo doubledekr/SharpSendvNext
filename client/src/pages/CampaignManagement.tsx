@@ -73,6 +73,13 @@ export function CampaignManagement() {
     enabled: true,
   });
 
+  // Auto-select first project when projects load
+  useEffect(() => {
+    if (projects?.data && projects.data.length > 0 && !selectedProject) {
+      setSelectedProject(projects.data[0].id);
+    }
+  }, [projects, selectedProject]);
+
   // Fetch project details when selected
   const { data: projectDetails, isLoading: detailsLoading } = useQuery<{ data: ProjectWithDetails }>({
     queryKey: ['/api/campaigns/projects', selectedProject],
