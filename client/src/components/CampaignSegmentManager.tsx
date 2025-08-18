@@ -118,7 +118,7 @@ export default function CampaignSegmentManager({
   ];
 
   // Fetch email versions from the actual API
-  const { data: emailVersions, isLoading, refetch } = useQuery({
+  const { data: emailVersions, isLoading, refetch } = useQuery<{ success: boolean; versions: EmailVersion[] }>({
     queryKey: [`/api/campaigns/${campaignId}/versions`],
     enabled: !!campaignId,
     refetchOnMount: true,
@@ -322,8 +322,8 @@ export default function CampaignSegmentManager({
                   </div>
                   {version?.stats && (
                     <div className="flex gap-2 text-xs">
-                      <span>📧 {version.stats.estimatedOpenRate.toFixed(1)}%</span>
-                      <span>🔗 {version.stats.estimatedClickRate.toFixed(1)}%</span>
+                      <span>📧 {(Number(version.stats.estimatedOpenRate) || 0).toFixed(1)}%</span>
+                      <span>🔗 {(Number(version.stats.estimatedClickRate) || 0).toFixed(1)}%</span>
                     </div>
                   )}
                 </div>
