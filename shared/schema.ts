@@ -69,20 +69,66 @@ export const abTests = pgTable("ab_tests", {
 export const emailIntegrations = pgTable("email_integrations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   publisherId: varchar("publisher_id").notNull(),
-  platform: text("platform").notNull(),
+  platform: text("platform").notNull(), // mailchimp, convertkit, sendgrid, iterable, customerio, keap
   isConnected: boolean("is_connected").default(false),
   apiKey: text("api_key"),
   apiSecret: text("api_secret"),
+  accessToken: text("access_token"), // For OAuth integrations like Keap
+  refreshToken: text("refresh_token"), // For OAuth integrations like Keap
+  tokenExpiresAt: timestamp("token_expires_at"), // Token expiration for OAuth
   lastSync: timestamp("last_sync"),
   campaignsSent: integer("campaigns_sent").default(0),
   status: text("status").default("inactive"),
   config: jsonb("config").$type<{
+    // Common config
     webhookUrl?: string;
     listId?: string;
     fromEmail?: string;
     replyTo?: string;
     region?: string;
+    // Iterable specific
+    templateIds?: number[];
+    messageChannels?: string[];
+    dataFeeds?: Array<{ name: string; url: string; cacheTtl: number }>;
+    // Customer.io specific
+    siteId?: string;
+    trackingKey?: string;
+    appApiKey?: string;
+    cdpApiKey?: string;
+    journeyIds?: string[];
+    segmentIds?: string[];
+    // Keap specific
+    clientId?: string;
+    clientSecret?: string;
+    redirectUri?: string;
+    leadSourceId?: number;
+    campaignIds?: number[];
+    customFields?: Array<{ id: number; label: string }>;
   }>(),
+  capabilities: jsonb("capabilities").$type<{
+    crossChannel?: boolean;
+    templates?: boolean;
+    automation?: boolean;
+    analytics?: boolean;
+    inAppMessaging?: boolean;
+    sms?: boolean;
+    push?: boolean;
+    crm?: boolean;
+    ecommerce?: boolean;
+    webhooks?: boolean;
+    realTimeData?: boolean;
+    segmentation?: boolean;
+  }>(),
+  lastError: text("last_error"),
+  syncMetrics: jsonb("sync_metrics").$type<{
+    totalContacts?: number;
+    syncedContacts?: number;
+    failedContacts?: number;
+    lastSyncDuration?: number;
+    avgResponseTime?: number;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const analytics = pgTable("analytics", {

@@ -14,6 +14,7 @@ import imageTemplateRoutes from "./routes-images-templates";
 import { registerSendQueueRoutes } from "./routes-send-queue";
 import assignmentRoutes from "./routes-assignments";
 import emailGenerationRoutes from "./routes-email-generation";
+import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -680,6 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
   // registerMultiTenantRoutes(app);
   registerIntegrationRoutes(app);
+  platformIntegrationsRoutes(app);
   registerEmailRoutes(app);
   app.use("/api/ai", aiProcessingRoutes);
   app.use("/api/cohorts", cohortPersonalizationRoutes);
