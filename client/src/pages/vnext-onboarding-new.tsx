@@ -14,7 +14,8 @@ import {
   CheckCircle, Circle, ArrowRight, ArrowLeft, Globe, Mail, Newspaper, 
   TrendingUp, Users, Zap, DollarSign, AlertCircle, MessageSquare, 
   Heart, Sparkles, Send, Target, CreditCard, BarChart3, ChevronRight,
-  Loader2, Check, Brain, Eye, RocketIcon, Search
+  Loader2, Check, Brain, Eye, RocketIcon, Search, Copy, Shield, Lock,
+  CheckSquare, CloudUpload, Activity
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -75,6 +76,9 @@ function generateSegmentSuggestions(publications: Publication[]): string[] {
 export default function VNextOnboardingNew() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
+  const [copywriterLink, setCopywriterLink] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [enableCDN, setEnableCDN] = useState(false);
   const [onboardingData, setOnboardingData] = useState({
     emailType: "",
     espPlatforms: [] as string[],
@@ -550,6 +554,22 @@ export default function VNextOnboardingNew() {
         );
 
       case 5:
+        const generateCopywriterLink = () => {
+          const uniqueId = Math.random().toString(36).substring(2, 15);
+          const link = `${window.location.origin}/copywriter/${uniqueId}`;
+          setCopywriterLink(link);
+          return link;
+        };
+        
+        const copyToClipboard = async () => {
+          if (copywriterLink) {
+            await navigator.clipboard.writeText(copywriterLink);
+            setLinkCopied(true);
+            toast({ title: "Link copied!", description: "Share this link with your copywriter" });
+            setTimeout(() => setLinkCopied(false), 3000);
+          }
+        };
+        
         return (
           <Card className="max-w-4xl mx-auto">
             <CardHeader>
@@ -569,9 +589,53 @@ export default function VNextOnboardingNew() {
                   <div className="flex-1">
                     <h4 className="font-semibold">Assign a copywriter or let AI generate</h4>
                     <div className="flex gap-2 mt-2">
-                      <Button size="sm" variant="outline">Assign Writer</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          const link = generateCopywriterLink();
+                          toast({ 
+                            title: "Writer link generated!", 
+                            description: "Copy and share with your copywriter" 
+                          });
+                        }}
+                      >
+                        Generate Writer Link
+                      </Button>
                       <Button size="sm">Use AI</Button>
                     </div>
+                    {copywriterLink && (
+                      <div className="mt-3 p-3 bg-background rounded-lg">
+                        <Label className="text-xs">Unique Copywriter Link:</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input 
+                            value={copywriterLink} 
+                            readOnly 
+                            className="text-xs"
+                          />
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={copyToClipboard}
+                          >
+                            {linkCopied ? (
+                              <>
+                                <Check className="h-3 w-3 mr-1" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Share this secure link with your copywriter to allow them to input email content
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <CheckCircle className="h-5 w-5 text-green-500" />
                 </div>
@@ -673,18 +737,47 @@ export default function VNextOnboardingNew() {
         );
 
       case 7:
+        const subscriberCount = 45000; // Would come from actual data
+        const dailySends = Math.floor(subscriberCount * 0.3); // Estimate 30% daily active
+        
         return (
-          <Card className="max-w-4xl mx-auto">
+          <Card className="max-w-5xl mx-auto">
             <CardHeader>
               <CardTitle className="text-2xl font-bold">
-                Pick the plan that matches your list
+                Pick the plan that matches your needs
               </CardTitle>
               <CardDescription className="text-lg mt-2">
-                Based on your 45,000 subscribers and daily sends, we recommend Pro Tier 2
+                Based on your {subscriberCount.toLocaleString()} subscribers and ~{dailySends.toLocaleString()} daily sends
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex justify-center gap-2 mb-4">
+              {/* Security & Compliance Badge */}
+              <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950">
+                <div className="flex items-center gap-3 mb-2">
+                  <Shield className="h-5 w-5 text-green-600" />
+                  <h3 className="font-semibold">Enterprise Security & Compliance</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div className="flex items-center gap-1">
+                    <CheckSquare className="h-3 w-3 text-green-600" />
+                    <span>SOC 2 Type II</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Lock className="h-3 w-3 text-green-600" />
+                    <span>GDPR Compliant</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Shield className="h-3 w-3 text-green-600" />
+                    <span>CCPA Ready</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Lock className="h-3 w-3 text-green-600" />
+                    <span>256-bit Encryption</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-center gap-2">
                 <Button
                   variant={onboardingData.billingCycle === "monthly" ? "default" : "outline"}
                   onClick={() => setOnboardingData(prev => ({ ...prev, billingCycle: "monthly" }))}
@@ -706,19 +799,39 @@ export default function VNextOnboardingNew() {
                     <div className="text-2xl font-bold">
                       ${onboardingData.billingCycle === "monthly" ? "299" : "239"}/mo
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Up to 10K subscribers
+                    </p>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2 text-sm">
-                      <li>✓ 30K credits/month</li>
-                      <li>✓ Up to 10K subscribers</li>
-                      <li>✓ Basic analytics</li>
+                      <li className="flex items-start gap-1">
+                        <Activity className="h-3 w-3 mt-0.5 text-green-600" />
+                        <span><strong>1,000 sends/day</strong></span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Users className="h-3 w-3 mt-0.5" />
+                        <span>10,000 subscribers max</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Check className="h-3 w-3 mt-0.5" />
+                        <span>30K credits/month</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <BarChart3 className="h-3 w-3 mt-0.5" />
+                        <span>Basic analytics</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <CloudUpload className="h-3 w-3 mt-0.5 text-gray-400" />
+                        <span className="text-muted-foreground">CDN not included</span>
+                      </li>
                     </ul>
                     <Button 
                       className="w-full mt-4"
                       variant={onboardingData.selectedPlan === "starter" ? "default" : "outline"}
                       onClick={() => setOnboardingData(prev => ({ ...prev, selectedPlan: "starter" }))}
                     >
-                      Select
+                      Select Starter
                     </Button>
                   </CardContent>
                 </Card>
@@ -730,20 +843,43 @@ export default function VNextOnboardingNew() {
                     <div className="text-2xl font-bold">
                       ${onboardingData.billingCycle === "monthly" ? "599" : "479"}/mo
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Up to 50K subscribers
+                    </p>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2 text-sm">
-                      <li>✓ 120K credits/month</li>
-                      <li>✓ Up to 50K subscribers</li>
-                      <li>✓ Advanced analytics</li>
-                      <li>✓ Priority support</li>
+                      <li className="flex items-start gap-1">
+                        <Activity className="h-3 w-3 mt-0.5 text-green-600" />
+                        <span><strong>15,000 sends/day</strong></span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Users className="h-3 w-3 mt-0.5" />
+                        <span>50,000 subscribers max</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Check className="h-3 w-3 mt-0.5" />
+                        <span>120K credits/month</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <BarChart3 className="h-3 w-3 mt-0.5" />
+                        <span>Advanced analytics</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <CloudUpload className="h-3 w-3 mt-0.5 text-blue-600" />
+                        <span className="font-semibold">CDN included</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Heart className="h-3 w-3 mt-0.5" />
+                        <span>Priority support</span>
+                      </li>
                     </ul>
                     <Button 
                       className="w-full mt-4"
                       variant={onboardingData.selectedPlan === "pro" ? "default" : "outline"}
                       onClick={() => setOnboardingData(prev => ({ ...prev, selectedPlan: "pro" }))}
                     >
-                      Select
+                      Select Pro
                     </Button>
                   </CardContent>
                 </Card>
@@ -752,13 +888,36 @@ export default function VNextOnboardingNew() {
                   <CardHeader>
                     <CardTitle>Enterprise</CardTitle>
                     <div className="text-2xl font-bold">Custom</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      50K+ subscribers
+                    </p>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2 text-sm">
-                      <li>✓ Unlimited credits</li>
-                      <li>✓ Unlimited subscribers</li>
-                      <li>✓ Custom integrations</li>
-                      <li>✓ Dedicated support</li>
+                      <li className="flex items-start gap-1">
+                        <Activity className="h-3 w-3 mt-0.5 text-green-600" />
+                        <span><strong>Unlimited sends/day</strong></span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Users className="h-3 w-3 mt-0.5" />
+                        <span>Unlimited subscribers</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Check className="h-3 w-3 mt-0.5" />
+                        <span>Unlimited credits</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <CloudUpload className="h-3 w-3 mt-0.5 text-green-600" />
+                        <span className="font-semibold">Premium CDN</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Shield className="h-3 w-3 mt-0.5" />
+                        <span>Custom integrations</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <Heart className="h-3 w-3 mt-0.5" />
+                        <span>Dedicated support</span>
+                      </li>
                     </ul>
                     <Button 
                       className="w-full mt-4"
@@ -771,13 +930,44 @@ export default function VNextOnboardingNew() {
                 </Card>
               </div>
 
+              {/* CDN Add-on for Starter Plan */}
+              {onboardingData.selectedPlan === "starter" && (
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <CloudUpload className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-semibold">Add CDN for Email Content</p>
+                        <p className="text-sm text-muted-foreground">
+                          Faster email loads, image optimization, global delivery
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold">+$99/mo</span>
+                      <Checkbox 
+                        checked={enableCDN}
+                        onCheckedChange={(checked) => setEnableCDN(checked as boolean)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-2 p-4 border rounded-lg bg-muted/30">
                 <CreditCard className="h-5 w-5" />
                 <span className="text-sm">
                   <strong>Auto-Credit Top-Ups:</strong> Never run out of credits. 
-                  Automatically purchase additional credits when you're running low.
+                  Automatically purchase additional credits at $0.005 per credit.
                 </span>
                 <Checkbox />
+              </div>
+
+              {/* Pricing Formula Explanation */}
+              <div className="p-3 bg-muted rounded-lg text-xs text-muted-foreground">
+                <p className="font-semibold mb-1">How we calculate your tier:</p>
+                <p>Plans are based on subscriber count (revenue indicator) balanced with daily send volume. 
+                Publishers with more subscribers typically have higher revenue and can afford premium features while needing higher send limits.</p>
               </div>
 
               <Button 
