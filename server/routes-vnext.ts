@@ -17,10 +17,11 @@ import {
   insertTrackingPixelSchema
 } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { getPublicationDetector } from "./services/publication-detector";
 
 export function registerVNextRoutes(app: Express) {
   
-  // Publication Detection API
+  // Publication Detection API - Now with AI-powered analysis
   app.post("/api/vnext/publications/detect", async (req, res) => {
     try {
       const { domain } = req.body;
@@ -29,7 +30,17 @@ export function registerVNextRoutes(app: Express) {
         return res.status(400).json({ error: "Domain is required" });
       }
       
-      // Generate intelligent mock publications based on domain characteristics  
+      // Use the AI-powered publication detector
+      const detector = getPublicationDetector();
+      const detectionResult = await detector.detectPublications(domain);
+      
+      // Return the comprehensive detection results
+      res.json(detectionResult);
+      
+    } catch (error) {
+      console.error("Publication detection error:", error);
+      
+      // Fallback to simple detection if AI fails
       const cleanDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, '').toLowerCase();
       const domainParts = cleanDomain.split('.');
       const domainName = domainParts[0];
@@ -179,16 +190,13 @@ export function registerVNextRoutes(app: Express) {
       res.json({
         domain: cleanDomain,
         publications: finalPublications,
-        detectionMethod: "AI-powered content analysis",
-        confidence: 0.85 + Math.random() * 0.14,
-        crawledPages: Math.floor(Math.random() * 50) + 20,
+        detectionMethod: "Fallback detection",
+        confidence: 0.7,
+        crawledPages: 0,
         detectedAt: new Date().toISOString(),
-        industry: primaryIndustry
+        industry: primaryIndustry,
+        editors: []
       });
-      
-    } catch (error) {
-      console.error("Publication detection error:", error);
-      res.status(500).json({ error: "Publication detection failed" });
     }
   });
 

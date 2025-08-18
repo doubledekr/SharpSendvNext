@@ -52,6 +52,7 @@ export default function VNextOnboarding() {
 
   const [detectedPublications, setDetectedPublications] = useState<Publication[]>([]);
   const [detectedSegments, setDetectedSegments] = useState<DetectedSegment[]>([]);
+  const [detectionData, setDetectionData] = useState<any>(null);
 
   const steps = [
     { number: 1, title: "Connect Email Platform", description: "Link your ESP account", icon: Mail },
@@ -92,6 +93,7 @@ export default function VNextOnboarding() {
     },
     onSuccess: (data) => {
       setDetectedPublications(data.publications || []);
+      setDetectionData(data);
       if (data.publications?.length > 0) {
         toast({ 
           title: "Publications Found", 
@@ -216,9 +218,16 @@ export default function VNextOnboarding() {
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-3" data-testid="card-detected-publications">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold" data-testid="title-found-publications">Found Publications</h3>
-                    <Badge variant="secondary" className="animate-pulse">
-                      {detectedPublications.length} detected
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="animate-pulse">
+                        {detectedPublications.length} publications
+                      </Badge>
+                      {detectionData?.editors?.length > 0 && (
+                        <Badge variant="outline">
+                          {detectionData.editors.length} editors
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   {detectedPublications.map((pub, index) => (
                     <div key={index} className="flex items-center space-x-3 p-3 border rounded-lg" data-testid={`publication-item-${index}`}>
