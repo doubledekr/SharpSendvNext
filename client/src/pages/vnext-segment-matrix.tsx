@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import VNextFlowDiagram from "@/components/vnext-flow-diagram";
 import { 
   CheckCircle, 
   Circle, 
@@ -172,6 +173,15 @@ export default function VNextSegmentMatrix() {
             </Button>
           </div>
         </div>
+
+        {/* Visual Flow Diagram */}
+        {masterEmail && segments.length > 0 && (
+          <VNextFlowDiagram 
+            masterEmail={masterEmail}
+            segments={segments}
+            variants={variants}
+          />
+        )}
 
         {/* Master Email Info */}
         {masterEmail && (

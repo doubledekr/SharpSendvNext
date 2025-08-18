@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import VNextFlowDiagram from "@/components/vnext-flow-diagram";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -231,6 +232,15 @@ export default function VNextDashboard() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Visual Flow Diagram */}
+        {masterEmails.length > 0 && segments.length > 0 && (
+          <VNextFlowDiagram 
+            masterEmail={masterEmails[0]}
+            segments={segments}
+            variants={[]}
+          />
         )}
 
         {/* Main Content Tabs */}

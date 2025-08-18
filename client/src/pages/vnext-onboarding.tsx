@@ -212,9 +212,14 @@ export default function VNextOnboarding() {
                 </Button>
               </div>
 
-              {detectedPublications.length > 0 && (
-                <div className="space-y-3" data-testid="card-detected-publications">
-                  <h3 className="font-semibold" data-testid="title-found-publications">Found Publications</h3>
+              {detectPublicationsMutation.isSuccess && detectedPublications.length > 0 && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-3" data-testid="card-detected-publications">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold" data-testid="title-found-publications">Found Publications</h3>
+                    <Badge variant="secondary" className="animate-pulse">
+                      {detectedPublications.length} detected
+                    </Badge>
+                  </div>
                   {detectedPublications.map((pub, index) => (
                     <div key={index} className="flex items-center space-x-3 p-3 border rounded-lg" data-testid={`publication-item-${index}`}>
                       <Checkbox 
