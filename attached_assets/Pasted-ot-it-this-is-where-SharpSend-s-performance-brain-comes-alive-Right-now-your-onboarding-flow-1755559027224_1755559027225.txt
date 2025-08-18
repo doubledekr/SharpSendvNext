@@ -1,0 +1,46 @@
+ot it ✅ — this is where SharpSend’s “performance brain” comes alive. Right now, your onboarding flow and dashboard are clean, but we need to layer in the pixel + automation modules so that:
+Every email = auto-attached SharpSend Pixel (with confirmation).
+Dashboard surfaces Pixel Insights (open rates, device/location breakdown, engagement curves).
+Email Fatigue Detector shows if subscribers are burning out (too many touches).
+Auto-Segmentation Engine continuously suggests new list splits (based on behavior, sentiment, fatigue).
+Market Sentiment + News Feed drives proactive send opportunities (e.g., VIX spikes, Fed news).
+🔍 Updated Dashboard Modules
+1. Pixel Manager
+Auto Pixel Attachment → every send gets a unique SharpSend pixel.
+Pixel Confirmation UI → a small checkmark/tag per draft to show it’s attached.
+Advanced Pixel Customization (Pro Tier+):
+Name/tag pixels (e.g., Promo Campaign 7/18).
+Track by campaign, segment, or publication.
+Create rules: “If Pixel shows <15% open after 24h, resend variant B.”
+2. Performance & Fatigue
+Email Fatigue Detector:
+Alerts: “Segment A has dropped open rates by 30% in 2 weeks → reduce touch frequency.”
+Suggests “cool-off” automations.
+Engagement Heatmaps (pixel-driven):
+Time-of-day activity.
+Device usage.
+“Hot” and “cold” segments.
+3. Auto Segmentation Engine
+Looks at pixel + ESP data.
+Suggests micro-segments:
+“High CTR but low conversion”
+“Clicked on premium offers 3x but never converted”
+“Always opens bullish market sentiment headlines.”
+One-click: “Adopt Segment → Generate Targeted Campaign.”
+4. Market Sentiment & News Feed
+VIX Index Integration:
+Shows fear/greed sentiment meter.
+Suggests campaigns (e.g., “VIX up → bearish subject lines tested well in your sector”).
+Finance News API Pull (NA region only, for now):
+SharpSend proposes content hooks:
+“Fed raises rates today → Consider alert campaign to Premium subscribers.”
+“Tech stocks rally → Marketing email idea: Ride the wave with portfolio pitch.”
+5. Unified Dashboard Layout
+Instead of scattered tools, one clean dashboard view:
+📊 Dashboard Tabs:
+Performance (Pixel) → Open %, CTR, Conversion
+Fatigue Alerts → Health meter for each segment
+Opportunities (News + Sentiment) → Suggested campaigns
+Segments → Auto-detected + manual ones
+Pixel Library → Manage/edit/review all past pixels tied to campaigns
+👉 This keeps SharpSend from being “just another email AI” — it feels like a command center for publishers: proactive, data-backed, and visual.
