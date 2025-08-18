@@ -327,31 +327,31 @@ export default function CampaignSegmentManager({
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-1.5 mt-3">
                   <Button 
-                    size="default" 
+                    size="sm" 
                     variant="outline" 
-                    className="flex-1 h-9 text-sm font-medium transition-all duration-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:border-blue-400 dark:hover:text-blue-300"
+                    className="flex-1 px-2 py-1.5 h-7 text-xs font-medium min-w-0 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:border-blue-400 dark:hover:text-blue-300"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (version) setEditingVersion(version);
                     }}
                   >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Preview
+                    <Eye className="w-3 h-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">Preview</span>
                   </Button>
                   <Button 
-                    size="default" 
+                    size="sm" 
                     variant="outline" 
-                    className="flex-1 h-9 text-sm font-medium transition-all duration-200 hover:bg-green-50 hover:border-green-300 hover:text-green-700 dark:hover:bg-green-900/20 dark:hover:border-green-400 dark:hover:text-green-300"
+                    className="flex-1 px-2 py-1.5 h-7 text-xs font-medium min-w-0 transition-all duration-200 hover:bg-green-50 hover:border-green-300 hover:text-green-700 dark:hover:bg-green-900/20 dark:hover:border-green-400 dark:hover:text-green-300"
                     onClick={(e) => {
                       e.stopPropagation();
                       setRegenerateSegmentId(segment.id);
                       setShowRegenerateDialog(true);
                     }}
                   >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Regenerate
+                    <RefreshCw className="w-3 h-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">Regen</span>
                   </Button>
                 </div>
               </CardContent>
