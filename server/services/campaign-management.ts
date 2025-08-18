@@ -1,11 +1,15 @@
 import crypto from 'crypto';
-import { db } from '../database';
+import { db } from '../db';
 import { 
   campaignProjects, 
   emailAssignments,
+  assignmentLinks,
+  campaignCollaborators,
   type CampaignProject,
-  type EmailAssignment
-} from '../../shared/schema-multitenant';
+  type EmailAssignment,
+  type AssignmentLink,
+  type CampaignCollaborator
+} from '../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 export interface CampaignProjectInput {
@@ -98,7 +102,7 @@ export class CampaignManagementService {
     const assignments = await db
       .select()
       .from(emailAssignments)
-      .where(eq(emailAssignments.projectId, projectId))
+      .where(eq(emailAssignments.campaignProjectId, projectId))
       .orderBy(desc(emailAssignments.createdAt));
 
     return {

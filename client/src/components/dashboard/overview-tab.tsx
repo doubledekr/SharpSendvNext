@@ -958,7 +958,7 @@ Your SharpSend Team`,
                           }}
                           className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors cursor-pointer flex items-center gap-1"
                         >
-                          {campaign.campaignId}
+                          {campaign.campaignName || campaign.campaignId}
                           <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
                         <div className="flex items-center gap-2">

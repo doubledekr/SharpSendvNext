@@ -275,7 +275,7 @@ export class EmailTrackingPixel {
   /**
    * Get dashboard statistics
    */
-  public getDashboardStats() {
+  public async getDashboardStats() {
     const totalTracked = this.trackingData.size;
     const totalOpens = Array.from(this.trackingData.values())
       .reduce((sum, e) => sum + e.openCount, 0);
@@ -298,7 +298,7 @@ export class EmailTrackingPixel {
       uniqueOpeners,
       averageOpenRate: totalTracked > 0 ? ((uniqueOpeners / totalTracked) * 100).toFixed(1) : '0',
       opensLast24Hours: recentOpens,
-      topCampaigns: this.getTopCampaigns(3),
+      topCampaigns: await this.getTopCampaigns(3),
       emailOverrides: {
         total: emailsWithOverrides,
         disabled: overridesDisabled
@@ -692,7 +692,7 @@ export class EmailTrackingPixel {
   /**
    * Helper: Get top performing campaigns
    */
-  private getTopCampaigns(limit: number) {
+  private async getTopCampaigns(limit: number) {
     const campaigns = new Map<string, { opens: number; unique: number }>();
     
     this.campaignOpens.forEach((subscribers, campaignId) => {
@@ -707,13 +707,37 @@ export class EmailTrackingPixel {
       });
     });
     
-    return Array.from(campaigns.entries())
-      .map(([id, stats]) => ({
-        campaignId: id,
-        uniqueOpens: stats.unique,
-        totalOpens: stats.opens,
-        openRate: `${((stats.unique / 1000) * 100).toFixed(1)}%`
-      }))
+    // Get campaign names from campaign management service
+    const { CampaignManagementService } = await import('./campaign-management');
+    const campaignService = new CampaignManagementService();
+    
+    const campaignDetails = await Promise.all(
+      Array.from(campaigns.entries()).map(async ([id, stats]) => {
+        try {
+          const campaign = await campaignService.getCampaignProject(id);
+          const displayName = campaign?.name || `Campaign ${id.slice(-3).toUpperCase()}`;
+          
+          return {
+            campaignId: id,
+            campaignName: displayName,
+            uniqueOpens: stats.unique,
+            totalOpens: stats.opens,
+            openRate: `${((stats.unique / Math.max(1000, stats.unique)) * 100).toFixed(1)}%`
+          };
+        } catch (error) {
+          // Fallback to descriptive name if campaign not found
+          return {
+            campaignId: id,
+            campaignName: `Financial Newsletter ${id.slice(-3).toUpperCase()}`,
+            uniqueOpens: stats.unique,
+            totalOpens: stats.opens,
+            openRate: `${((stats.unique / Math.max(1000, stats.unique)) * 100).toFixed(1)}%`
+          };
+        }
+      })
+    );
+    
+    return campaignDetails
       .sort((a, b) => b.uniqueOpens - a.uniqueOpens)
       .slice(0, limit);
   }

@@ -239,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
       const tracker = EmailTrackingPixel.getInstance();
-      const stats = tracker.getDashboardStats();
+      const stats = await tracker.getDashboardStats();
       res.json(stats);
     } catch (error) {
       console.error("Error fetching tracking stats:", error);
