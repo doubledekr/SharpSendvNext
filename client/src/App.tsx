@@ -24,6 +24,7 @@ import ComparativeAnalytics from "@/pages/comparative-analytics";
 import AssignmentCopywriterFlow from "@/pages/AssignmentCopywriterFlow";
 import DemoAssignmentWorkflow from "@/pages/DemoAssignmentWorkflow";
 import VNextOnboarding from "@/pages/vnext-onboarding";
+import VNextOnboardingNew from "@/pages/vnext-onboarding-new";
 import VNextDashboard from "@/pages/vnext-dashboard";
 import VNextSegmentMatrix from "@/pages/vnext-segment-matrix";
 import { useEffect } from "react";
@@ -82,7 +83,8 @@ function Router() {
       <Route path="/copywriter/:id" component={CopywriterCollabPortal} />
       <Route path="/assignment-copywriter/:id" component={() => <ProtectedRoute component={AssignmentCopywriterFlow} />} />
       <Route path="/demo-assignment-workflow" component={() => <ProtectedRoute component={DemoAssignmentWorkflow} />} />
-      <Route path="/vnext-onboarding" component={() => <ProtectedRoute component={VNextOnboarding} />} />
+      <Route path="/vnext-onboarding-old" component={() => <ProtectedRoute component={VNextOnboarding} />} />
+      <Route path="/vnext-onboarding" component={() => <ProtectedRoute component={VNextOnboardingNew} />} />
       <Route path="/vnext-dashboard" component={() => <ProtectedRoute component={VNextDashboard} />} />
       <Route path="/vnext-segment-matrix" component={() => <ProtectedRoute component={VNextSegmentMatrix} />} />
       <Route component={NotFound} />

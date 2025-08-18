@@ -1,0 +1,74 @@
+Perfect — let’s sketch a step-by-step onboarding script that a new publisher client would experience when they sign up for SharpSend. Think of it like a guided flow that’s both simple and persuasive.
+🧭 SharpSend Onboarding Script
+Step 1: Welcome & Goal Setting
+Screen:
+Headline: “Welcome to SharpSend — Let’s cut through the noise together.”
+Quick survey with one-click answers:
+“What kind of emails do you send most often?”
+Marketing & Promotions
+Editorial / Newsletters
+Paid Fulfillment (stock picks, alerts)
+Premium Alerts (time-sensitive trades)
+Engagement/Nurture
+Purpose:
+Personalizes their dashboard right away.
+Reduces overwhelm.
+Step 2: Connect Your Email Platform
+Screen:
+Title: “Connect your platform — one click, many automations.”
+Buttons for ESP/CRM integrations: Mailchimp, ActiveCampaign, Sailthru, etc.
+Option to “Skip for now → Try Demo Mode.”
+Behind the scenes:
+SharpSend detects lists, segments, and existing templates.
+Publisher’s brand/logo is pulled automatically from their domain.
+Step 3: Detect Publications & Segments
+Screen:
+Title: “We found your publications.”
+SharpSend auto-detects newsletters/publications from their domain (e.g., Investor’s Alley → Daily Profit Engine).
+Shows segments imported from ESP.
+Options:
+Confirm → “Looks good.”
+Add manually → “+ New Publication / Segment.”
+Step 4: Preview Your First SharpSend Email
+Screen:
+Title: “Here’s what SharpSend can do for you.”
+A sample campaign is auto-generated using:
+Market news & sentiment (North American by default).
+Pulled-in brand/logo.
+Smart subject line suggestions.
+A unique SharpSend pixel already attached.
+Action:
+“Send this to me as a test email.”
+Step 5: Guided First Send
+Screen:
+Walkthrough with tooltips:
+Assign a copywriter or let AI generate.
+Approve the master email.
+SharpSend automatically generates segmented variations.
+Review → Approve → Send.
+Action Button:
+“Send Test Campaign.”
+Step 6: ROI Dashboard (Immediate Feedback)
+Screen:
+Even if the test send is internal, SharpSend shows a mock ROI report:
+Projected Open Rate: +23%
+Projected CTR: +18%
+Sentiment Impact: “Your audience is more bullish today — good timing for this message.”
+Purpose:
+Reinforces SharpSend’s value before they’ve done real work.
+Step 7: Tier & Credit Recommendation
+Screen:
+Title: “Pick the plan that matches your list.”
+SharpSend recommends a tier:
+“Based on your 45,000 subscribers and daily sends, we recommend Pro Tier 2 with 120K credits/month.”
+Clear toggle for: Monthly / Yearly.
+Option to add Auto-Credit Top-Ups.
+Step 8: Done! Your Dashboard Awaits
+Screen:
+Tabs ready in the master dashboard:
+Marketing Emails
+Editorial Emails
+Fulfillment
+Premium Alerts
+Engagement/Nurture
+One-click shortcuts: “Generate New Campaign” | “Assign to Writer” | “Review Performance.”
