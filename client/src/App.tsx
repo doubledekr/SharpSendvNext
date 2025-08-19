@@ -42,7 +42,7 @@ function PublicRoute({ component: Component }: { component: React.ComponentType 
 
 function Router() {
   const [location] = useLocation();
-  const isAuthPage = location === "/login" || location === "/register";
+  const isAuthPage = location === "/" || location === "/login" || location === "/register";
   const isDemoOnboarding = location === "/demo-onboarding";
   const isPublicAssignment = location.startsWith("/assignment/");
   const hideNavigation = isAuthPage || isDemoOnboarding || isPublicAssignment;
