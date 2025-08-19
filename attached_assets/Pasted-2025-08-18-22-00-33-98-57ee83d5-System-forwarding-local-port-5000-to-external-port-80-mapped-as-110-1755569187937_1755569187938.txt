@@ -1,0 +1,168 @@
+2025-08-18 22:00:33.98
+57ee83d5
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2025-08-18 22:00:37.40
+57ee83d5
+User
+> rest-express@1.0.0 start
+2025-08-18 22:00:37.40
+57ee83d5
+User
+> NODE_ENV=production node dist/index.js
+2025-08-18 22:00:40.17
+57ee83d5
+User
+🌱 Starting demo data seeding...
+2025-08-18 22:00:40.19
+57ee83d5
+User
+Seeding database...
+2025-08-18 22:00:43.91
+57ee83d5
+User
+routine: '_bt_check_unique'
+2025-08-18 22:00:43.91
+57ee83d5
+User
+}
+2025-08-18 22:00:44.00
+57ee83d5
+User
+npm notice
+2025-08-18 22:00:44.00
+57ee83d5
+User
+npm notice New major version of npm available! 10.8.2 -> 11.5.2
+2025-08-18 22:00:44.00
+57ee83d5
+User
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.5.2
+2025-08-18 22:00:44.00
+57ee83d5
+User
+npm notice To update run: npm install -g npm@11.5.2
+2025-08-18 22:00:44.00
+57ee83d5
+User
+npm notice
+2025-08-18 22:00:44.05
+57ee83d5
+System
+command finished with error [npm run start]: exit status 1
+2025-08-18 22:00:44.43
+57ee83d5
+User
+> rest-express@1.0.0 start
+2025-08-18 22:00:44.43
+57ee83d5
+User
+> NODE_ENV=production node dist/index.js
+2025-08-18 22:00:45.63
+57ee83d5
+User
+🌱 Starting demo data seeding...
+2025-08-18 22:00:45.64
+57ee83d5
+User
+Seeding database...
+2025-08-18 22:00:45.93
+57ee83d5
+User
+❌ Demo data seeding failed: PostgresError: duplicate key value violates unique constraint "publishers_subdomain_unique"
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2025-08-18 22:00:45.93
+57ee83d5
+User
+severity_local: 'ERROR',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+severity: 'ERROR',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+code: '23505',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+detail: 'Key (subdomain)=(demo) already exists.',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+schema_name: 'public',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+table_name: 'publishers',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+constraint_name: 'publishers_subdomain_unique',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+file: 'nbtinsert.c',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+line: '666',
+2025-08-18 22:00:45.93
+57ee83d5
+User
+routine: '_bt_check_unique'
+2025-08-18 22:00:45.93
+57ee83d5
+User
+}
+2025-08-18 22:00:45.93
+57ee83d5
+User
+Demo seeding failed: PostgresError: duplicate key value violates unique constraint "publishers_subdomain_unique"
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-18 22:00:45.93
+57ee83d5
+User
+at TLSSocket.emit (node:events:524:28)
