@@ -7,6 +7,25 @@ import { seedDatabase } from "./seed";
 import { initializeDemoEnvironment } from "./demo-environment";
 import { tenantMiddleware } from "./middleware/tenant";
 
+// CRITICAL DEBUG: Override process.exit to find what's trying to exit
+const originalExit = process.exit;
+(process as any).exit = function(code?: number) {
+  console.error('🚨🚨🚨 PROCESS.EXIT INTERCEPTED 🚨🚨🚨');
+  console.error('Exit code:', code);
+  console.trace('Exit called from:');
+  
+  // In production, only allow exits from explicit signals
+  if (process.env.NODE_ENV === 'production' && code === 0) {
+    console.error('🚫 BLOCKING process.exit(0) in production - server will continue running');
+    return;
+  }
+  
+  // For actual errors or development, allow exit
+  if (code !== 0 || process.env.NODE_ENV !== 'production') {
+    originalExit.call(process, code);
+  }
+};
+
 const app = express();
 
 // Optimize for fast responses - disable unnecessary features
@@ -19,6 +38,12 @@ process.on('exit', (code) => {
   if (code === 0) {
     console.log('🚨 Process attempting to exit normally - this should not happen in production!');
     console.trace('Exit stack trace');
+  }
+  
+  // Try to prevent exit in production
+  if (process.env.NODE_ENV === 'production' && code === 0) {
+    console.error('🚫 Attempting to prevent exit in production');
+    throw new Error('Preventing normal exit in production');
   }
 });
 
@@ -288,10 +313,15 @@ app.use((req, res, next) => {
   
   // CRITICAL FOR DEPLOYMENT: Never let the main function complete
   // Block forever to prevent process exit
+  console.log('⏳ Entering infinite wait - server will run until shutdown signal');
   await new Promise(() => {
     // This promise intentionally never resolves
     // This is the final blocker that prevents the process from exiting
+    console.log('♾️ Server is now in permanent running state');
   });
+  
+  // This code should NEVER be reached
+  console.error('❌❌❌ CRITICAL ERROR: Main function completed - this should never happen!');
   
 })().catch((startupError) => {
   console.error("💥 Fatal server startup error:", startupError);
@@ -340,7 +370,14 @@ async function initializeServicesAsync() {
 }
 
 // Graceful shutdown handling
+let isShuttingDown = false;
 const gracefulShutdown = (signal: string) => {
+  if (isShuttingDown) {
+    console.log(`⚠️ Already shutting down, ignoring ${signal}`);
+    return;
+  }
+  
+  isShuttingDown = true;
   console.log(`🛑 Received ${signal}, shutting down gracefully`);
   
   // Clean up resources
@@ -353,25 +390,35 @@ const gracefulShutdown = (signal: string) => {
     console.log('🧹 Cleaned up process keep-alive interval');
   }
   
-  // In production, only exit if we get an explicit shutdown signal
+  // In production, only exit if we get an explicit termination signal
   if (process.env.NODE_ENV === 'production') {
     console.log('🏭 Production environment - graceful shutdown initiated');
-    // Give a moment for cleanup, then exit
-    setTimeout(() => {
-      console.log('✅ Graceful shutdown completed');
-      process.exit(0);
-    }, 1000);
+    // Only exit on SIGTERM (deployment shutdown signal)
+    if (signal === 'SIGTERM') {
+      setTimeout(() => {
+        console.log('✅ Production shutdown completed via SIGTERM');
+        originalExit.call(process, 0);
+      }, 1000);
+    } else {
+      console.log('⚠️ Ignoring non-SIGTERM signal in production');
+      isShuttingDown = false;
+    }
   } else {
-    // In development, we can be more immediate about shutting down
+    // In development, allow normal shutdown
     console.log('✅ Development graceful shutdown initiated');
     setTimeout(() => {
-      process.exit(0);
+      originalExit.call(process, 0);
     }, 500);
   }
 };
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+// Only handle SIGTERM in production, both in development
+if (process.env.NODE_ENV === 'production') {
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+} else {
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+}
 
 // Additional safety for preventing unwanted exits
 process.on('SIGUSR1', () => {

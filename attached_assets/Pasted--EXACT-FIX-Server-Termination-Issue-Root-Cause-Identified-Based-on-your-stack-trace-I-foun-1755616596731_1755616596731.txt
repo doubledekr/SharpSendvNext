@@ -1,0 +1,244 @@
+# EXACT FIX: Server Termination Issue
+
+## Root Cause Identified ✅
+
+Based on your stack trace, I found the exact problem:
+
+```
+🚨 Process exiting with code: 0
+Trace: Exit stack trace
+    at process.exit (node:internal/process/per_thread:184:15)
+    at file:///home/runner/workspace/dist/index.js:4771:13
+```
+
+**The issue:** There's a `process.exit()` call in your source code that's being executed after initialization.
+
+## The Problem in Your Code
+
+Your logs show:
+1. ✅ Database connection works
+2. ✅ Demo seeding completes  
+3. ❌ **Then `process.exit()` is called at line 4771**
+4. ❌ Server terminates before it can handle requests
+
+## Immediate Fix
+
+### Step 1: Find and Remove the process.exit() Call
+
+Search your source code for `process.exit()` and remove it:
+
+```bash
+# Search for the problematic line
+grep -r "process.exit" server/
+grep -r "process.exit" src/
+```
+
+### Step 2: Common Locations to Check
+
+Look for `process.exit()` in these files:
+- `server/index.js` or `server/index.ts`
+- `src/index.js` or `src/index.ts`
+- Any initialization or setup files
+- Database connection files
+- Seeding scripts
+
+### Step 3: Replace process.exit() with Proper Flow
+
+```javascript
+// WRONG - This is what's killing your server
+async function main() {
+  await setupDatabase();
+  await seedData();
+  console.log("Demo seeding completed");
+  process.exit(0); // ❌ THIS IS THE PROBLEM
+}
+
+// CORRECT - Let the server stay alive
+async function main() {
+  await setupDatabase();
+  await seedData();
+  console.log("Demo seeding completed");
+  // ✅ NO process.exit() - let server continue running
+}
+```
+
+## Specific Fix for Your Code Structure
+
+Based on your logs, your code likely looks like this:
+
+```javascript
+// Your current problematic code (somewhere around line 4771 in source)
+async function startServer() {
+  console.log('🔗 Connecting to PRODUCTION database');
+  console.log('🚫 Production environment detected - skipping demo data seeding');
+  console.log('🚀 Starting server in production mode');
+  
+  // Database setup
+  await setupDatabase();
+  
+  // Server setup
+  const server = app.listen(PORT, () => {
+    console.log('Server started');
+  });
+  
+  console.log("Demo seeding completed");
+  process.exit(0); // ❌ REMOVE THIS LINE
+}
+
+startServer();
+```
+
+**Fix it to:**
+
+```javascript
+// Fixed version - server stays alive
+async function startServer() {
+  console.log('🔗 Connecting to PRODUCTION database');
+  console.log('🚫 Production environment detected - skipping demo data seeding');
+  console.log('🚀 Starting server in production mode');
+  
+  // Database setup
+  await setupDatabase();
+  
+  // Server setup
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log('✅ Server running and ready for requests');
+    console.log('🏥 Health check available at /');
+  });
+  
+  console.log("Demo seeding completed");
+  console.log("✅ Server initialization complete - staying alive");
+  // ✅ NO process.exit() - server stays running
+}
+
+startServer().catch(error => {
+  console.error('❌ Server startup failed:', error);
+  process.exit(1); // Only exit on actual errors
+});
+```
+
+## Complete Working Server Template
+
+Here's exactly what your server file should look like:
+
+```javascript
+// server/index.js (or wherever your main server file is)
+import express from 'express';
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// CRITICAL: Health check endpoint FIRST
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    service: 'SharpSend',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
+  });
+});
+
+// Your middleware and routes
+app.use(express.json());
+app.use(express.static('dist/public'));
+
+// Add your API routes here
+// app.use('/api', apiRoutes);
+
+async function startServer() {
+  try {
+    console.log('🔗 Connecting to PRODUCTION database');
+    
+    // Database setup
+    await setupDatabase();
+    console.log('✅ Database connected');
+    
+    // Only seed in development
+    if (process.env.NODE_ENV !== 'production') {
+      await seedDemoData();
+      console.log('✅ Demo data seeded');
+    } else {
+      console.log('🚫 Production environment - skipping demo seeding');
+    }
+    
+    // Start server
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🏥 Health check: http://localhost:${PORT}/`);
+      console.log(`✅ Server ready to accept requests`);
+    });
+    
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('🛑 SIGTERM received, shutting down');
+      server.close(() => process.exit(0));
+    });
+    
+    console.log('✅ Server initialization complete');
+    // ✅ NO process.exit() here - server stays alive
+    
+  } catch (error) {
+    console.error('❌ Server startup failed:', error);
+    process.exit(1); // Only exit on errors
+  }
+}
+
+// Start the server
+startServer();
+
+// Keep process alive (remove after fixing the main issue)
+setInterval(() => {
+  // This ensures the process doesn't exit
+}, 30000);
+```
+
+## Quick Debug Steps
+
+### 1. Search for process.exit()
+```bash
+# In your project directory
+find . -name "*.js" -o -name "*.ts" | xargs grep -n "process.exit"
+```
+
+### 2. Check Your Main Entry Point
+Look at the file specified in your `package.json` "main" field or the file you're running with `node dist/index.js`.
+
+### 3. Temporary Debug Fix
+Add this at the very beginning of your main file:
+
+```javascript
+// Temporary debug - add at the top of your main file
+process.exit = function(code) {
+  console.error('🚨 BLOCKED process.exit() call with code:', code);
+  console.trace('Exit called from:');
+  // Don't actually exit - just log
+  return undefined as never;
+};
+```
+
+## Deploy the Fix
+
+1. **Find the `process.exit()` call** in your source code
+2. **Remove or comment it out**
+3. **Ensure your server setup doesn't exit after initialization**
+4. **Redeploy to Replit**
+5. **Check logs** - you should see "Server ready" without "main done, exiting"
+
+Your server will then stay alive and pass health checks!
+
+## Expected Log Output After Fix
+
+```
+🔗 Connecting to PRODUCTION database
+🚫 Production environment detected - skipping demo data seeding
+🚀 Starting server in production mode
+✅ Database connected
+🚀 Server running on port 5000
+🏥 Health check: http://localhost:5000/
+✅ Server ready to accept requests
+✅ Server initialization complete
+[Server stays running - no exit messages]
+```
+
+The key is removing that `process.exit(0)` call that's terminating your server!
+
