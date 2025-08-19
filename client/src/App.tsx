@@ -3,10 +3,12 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MasterNavigation } from "@/components/master-navigation";
 import VNextDashboard from "@/pages/vnext-dashboard";
 import { VNextAssignmentDesk } from "@/pages/vnext-assignment-desk";
 import { VNextApprovals } from "@/pages/vnext-approvals";
 import { VNextSegments } from "@/pages/vnext-segments";
+import { ABTestingDashboard } from "@/pages/ab-testing";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
@@ -44,21 +46,31 @@ function PublicRoute({ component: Component }: { component: React.ComponentType 
 }
 
 function Router() {
+  const [location] = useLocation();
+  const isAuthPage = location === "/login" || location === "/register";
+  
   return (
-    <Switch>
-      {/* vNext is now the main system */}
-      <Route path="/" component={() => <ProtectedRoute component={VNextDashboard} />} />
-      <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
-      <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
-      <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
-      <Route path="/campaigns" component={() => <ProtectedRoute component={VNextDashboard} />} />
-      
-      {/* Authentication routes */}
-      <Route path="/register" component={() => <PublicRoute component={Register} />} />
-      <Route path="/login" component={() => <PublicRoute component={Login} />} />
+    <>
+      {!isAuthPage && <MasterNavigation />}
+      <div className={!isAuthPage ? "pt-16" : ""}>
+        <Switch>
+          {/* vNext is now the main system */}
+          <Route path="/" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
+          <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
+          <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
+          <Route path="/ab-testing" component={() => <ProtectedRoute component={ABTestingDashboard} />} />
+          <Route path="/campaigns" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          <Route path="/analytics" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          
+          {/* Authentication routes */}
+          <Route path="/register" component={() => <PublicRoute component={Register} />} />
+          <Route path="/login" component={() => <PublicRoute component={Login} />} />
 
-      <Route component={NotFound} />
-    </Switch>
+          <Route component={NotFound} />
+        </Switch>
+      </div>
+    </>
   );
 }
 

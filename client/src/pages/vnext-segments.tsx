@@ -8,6 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Sparkles, 
@@ -19,7 +24,10 @@ import {
   DollarSign,
   BarChart3,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Plus,
+  Settings,
+  Edit
 } from "lucide-react";
 
 interface Segment {
@@ -54,10 +62,51 @@ export function VNextSegments() {
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("all");
   const [isDetectingSegments, setIsDetectingSegments] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newSegment, setNewSegment] = useState({
+    name: "",
+    description: "",
+    isDynamic: false,
+    criteria: {
+      espListId: "",
+      tags: [],
+      customFields: {},
+      behavioralTriggers: [],
+      dynamicRules: {
+        engagement: { min: undefined, max: undefined },
+        revenue: { min: undefined, max: undefined },
+        activity: { daysSinceLastOpen: undefined },
+        cohort: ""
+      }
+    }
+  });
 
   // Fetch segments
   const { data: segments = [], isLoading } = useQuery<Segment[]>({
     queryKey: ["/api/segments"],
+  });
+
+  // Create manual segment mutation
+  const createSegmentMutation = useMutation({
+    mutationFn: async (segmentData: any) => {
+      return await apiRequest("/api/segments", "POST", segmentData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/segments"] });
+      toast({
+        title: "Segment Created",
+        description: "Your new segment has been created successfully.",
+      });
+      setIsCreateDialogOpen(false);
+      resetNewSegment();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create segment. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Detect new segments mutation
@@ -119,6 +168,26 @@ export function VNextSegments() {
     },
   });
 
+  const resetNewSegment = () => {
+    setNewSegment({
+      name: "",
+      description: "",
+      isDynamic: false,
+      criteria: {
+        espListId: "",
+        tags: [],
+        customFields: {},
+        behavioralTriggers: [],
+        dynamicRules: {
+          engagement: { min: undefined, max: undefined },
+          revenue: { min: undefined, max: undefined },
+          activity: { daysSinceLastOpen: undefined },
+          cohort: ""
+        }
+      }
+    });
+  };
+
   const getGrowthIcon = (growth: number) => {
     if (growth > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
     if (growth < 0) return <TrendingDown className="h-4 w-4 text-red-500" />;
@@ -169,16 +238,222 @@ export function VNextSegments() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dynamic Segments</h1>
-            <p className="text-gray-600 mt-1">AI-powered segment detection and management</p>
+            <p className="text-gray-600 mt-1">AI-powered segment detection and manual management</p>
           </div>
           
-          <Button
-            onClick={() => detectSegmentsMutation.mutate()}
-            disabled={isDetectingSegments || detectSegmentsMutation.isPending}
-          >
-            <Brain className="h-4 w-4 mr-2" />
-            {isDetectingSegments ? "Detecting..." : "Detect New Segments"}
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Segment
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Create Manual Segment</DialogTitle>
+                  <DialogDescription>
+                    Define a custom segment based on your criteria
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <Label>Segment Name</Label>
+                    <Input
+                      value={newSegment.name}
+                      onChange={(e) => setNewSegment({ ...newSegment, name: e.target.value })}
+                      placeholder="e.g., High-Value Tech Investors"
+                    />
+                  </div>
+                  <div>
+                    <Label>Description</Label>
+                    <Textarea
+                      value={newSegment.description}
+                      onChange={(e) => setNewSegment({ ...newSegment, description: e.target.value })}
+                      placeholder="Describe the characteristics of this segment"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label>Segment Type</Label>
+                    <Select 
+                      value={newSegment.isDynamic ? "dynamic" : "static"}
+                      onValueChange={(v) => setNewSegment({ ...newSegment, isDynamic: v === "dynamic" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="static">Static (Fixed List)</SelectItem>
+                        <SelectItem value="dynamic">Dynamic (Rule-Based)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {newSegment.isDynamic && (
+                    <div className="space-y-3 border-l-2 border-blue-200 pl-4">
+                      <h4 className="font-medium">Dynamic Rules</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Min Engagement (%)</Label>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={newSegment.criteria.dynamicRules.engagement.min || ""}
+                            onChange={(e) => setNewSegment({
+                              ...newSegment,
+                              criteria: {
+                                ...newSegment.criteria,
+                                dynamicRules: {
+                                  ...newSegment.criteria.dynamicRules,
+                                  engagement: {
+                                    ...newSegment.criteria.dynamicRules.engagement,
+                                    min: e.target.value ? parseInt(e.target.value) : undefined
+                                  }
+                                }
+                              }
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Max Engagement (%)</Label>
+                          <Input
+                            type="number"
+                            placeholder="100"
+                            value={newSegment.criteria.dynamicRules.engagement.max || ""}
+                            onChange={(e) => setNewSegment({
+                              ...newSegment,
+                              criteria: {
+                                ...newSegment.criteria,
+                                dynamicRules: {
+                                  ...newSegment.criteria.dynamicRules,
+                                  engagement: {
+                                    ...newSegment.criteria.dynamicRules.engagement,
+                                    max: e.target.value ? parseInt(e.target.value) : undefined
+                                  }
+                                }
+                              }
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Min Revenue ($)</Label>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={newSegment.criteria.dynamicRules.revenue.min || ""}
+                            onChange={(e) => setNewSegment({
+                              ...newSegment,
+                              criteria: {
+                                ...newSegment.criteria,
+                                dynamicRules: {
+                                  ...newSegment.criteria.dynamicRules,
+                                  revenue: {
+                                    ...newSegment.criteria.dynamicRules.revenue,
+                                    min: e.target.value ? parseInt(e.target.value) : undefined
+                                  }
+                                }
+                              }
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Max Revenue ($)</Label>
+                          <Input
+                            type="number"
+                            placeholder="∞"
+                            value={newSegment.criteria.dynamicRules.revenue.max || ""}
+                            onChange={(e) => setNewSegment({
+                              ...newSegment,
+                              criteria: {
+                                ...newSegment.criteria,
+                                dynamicRules: {
+                                  ...newSegment.criteria.dynamicRules,
+                                  revenue: {
+                                    ...newSegment.criteria.dynamicRules.revenue,
+                                    max: e.target.value ? parseInt(e.target.value) : undefined
+                                  }
+                                }
+                              }
+                            })}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Days Since Last Open</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 30"
+                          value={newSegment.criteria.dynamicRules.activity.daysSinceLastOpen || ""}
+                          onChange={(e) => setNewSegment({
+                            ...newSegment,
+                            criteria: {
+                              ...newSegment.criteria,
+                              dynamicRules: {
+                                ...newSegment.criteria.dynamicRules,
+                                activity: {
+                                  daysSinceLastOpen: e.target.value ? parseInt(e.target.value) : undefined
+                                }
+                              }
+                            }
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Cohort</Label>
+                        <Select
+                          value={newSegment.criteria.dynamicRules.cohort}
+                          onValueChange={(v) => setNewSegment({
+                            ...newSegment,
+                            criteria: {
+                              ...newSegment.criteria,
+                              dynamicRules: {
+                                ...newSegment.criteria.dynamicRules,
+                                cohort: v
+                              }
+                            }
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select cohort" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="growth_seekers">Growth Seekers</SelectItem>
+                            <SelectItem value="dividend_focused">Dividend Focused</SelectItem>
+                            <SelectItem value="risk_averse">Risk Averse</SelectItem>
+                            <SelectItem value="aggressive">Aggressive Traders</SelectItem>
+                            <SelectItem value="tech_savvy">Tech Savvy</SelectItem>
+                            <SelectItem value="value_investors">Value Investors</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={() => createSegmentMutation.mutate(newSegment)}
+                      disabled={!newSegment.name || createSegmentMutation.isPending}
+                    >
+                      Create Segment
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            <Button
+              onClick={() => detectSegmentsMutation.mutate()}
+              disabled={isDetectingSegments || detectSegmentsMutation.isPending}
+            >
+              <Brain className="h-4 w-4 mr-2" />
+              {isDetectingSegments ? "Detecting..." : "Detect Segments"}
+            </Button>
+          </div>
         </div>
 
         {/* Segment Intelligence Dashboard */}
