@@ -408,14 +408,14 @@ export function VNextAssignmentDesk() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl">
       {/* Header with View Toggle */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="order-2 sm:order-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">
             {activeView === "assignments" ? "Assignment Desk" : "Opportunities"}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             {activeView === "assignments" 
               ? "Manage content planning and assignments" 
               : "Track revenue and growth opportunities"}
@@ -423,45 +423,48 @@ export function VNextAssignmentDesk() {
         </div>
         
         {/* View Toggle */}
-        <div className="flex items-center gap-4">
-          <div className="flex bg-muted rounded-lg p-1">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 order-1 sm:order-2">
+          <div className="flex bg-muted rounded-lg p-1 flex-1 sm:flex-initial">
             <Button
               variant={activeView === "assignments" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveView("assignments")}
-              className="gap-2"
+              className="gap-1 sm:gap-2 flex-1 sm:flex-initial text-xs sm:text-sm"
             >
-              <FileText className="h-4 w-4" />
-              Assignments
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Assignments</span>
+              <span className="xs:hidden">Tasks</span>
             </Button>
             <Button
               variant={activeView === "opportunities" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveView("opportunities")}
-              className="gap-2"
+              className="gap-1 sm:gap-2 flex-1 sm:flex-initial text-xs sm:text-sm"
             >
-              <DollarSign className="h-4 w-4" />
-              Opportunities
+              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Opportunities</span>
+              <span className="xs:hidden">Opps</span>
             </Button>
           </div>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Assignment
+              <Button className="fixed bottom-4 right-4 sm:relative sm:bottom-auto sm:right-auto z-50 shadow-lg sm:shadow-none">
+                <Plus className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">New Assignment</span>
+                <span className="sm:hidden">New</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] sm:max-w-[625px] max-h-[90vh] overflow-y-auto mx-auto">
               <DialogHeader>
-                <DialogTitle>Create New Assignment</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-lg sm:text-xl">Create New Assignment</DialogTitle>
+                <DialogDescription className="text-sm">
                   Add a new assignment to the content planning desk.
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
                 {/* AI Prefill Section */}
                 <Collapsible open={isPrefillOpen} onOpenChange={setIsPrefillOpen}>
                   <CollapsibleTrigger asChild>
@@ -893,41 +896,41 @@ export function VNextAssignmentDesk() {
       {activeView === "assignments" ? (
         <>
         {/* Assignment Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Assignments</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Assignments</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{assignments.length}</div>
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-xl sm:text-2xl font-bold">{assignments.length}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Unassigned</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Unassigned</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-xl sm:text-2xl font-bold text-yellow-600">
                 {assignments.filter(a => a.status === "unassigned").length}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">In Progress</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">In Progress</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {assignments.filter(a => ["assigned", "in_progress"].includes(a.status)).length}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Completed</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {assignments.filter(a => ["approved", "published"].includes(a.status)).length}
               </div>
             </CardContent>
@@ -942,12 +945,12 @@ export function VNextAssignmentDesk() {
           </CardHeader>
           <CardContent>
             <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="unassigned">Unassigned</TabsTrigger>
-                <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-                <TabsTrigger value="review">Review</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
+              <TabsList className="mb-4 w-full flex-wrap h-auto p-1">
+                <TabsTrigger value="all" className="text-xs sm:text-sm">All</TabsTrigger>
+                <TabsTrigger value="unassigned" className="text-xs sm:text-sm">Unassigned</TabsTrigger>
+                <TabsTrigger value="in_progress" className="text-xs sm:text-sm">In Progress</TabsTrigger>
+                <TabsTrigger value="review" className="text-xs sm:text-sm">Review</TabsTrigger>
+                <TabsTrigger value="completed" className="text-xs sm:text-sm">Completed</TabsTrigger>
               </TabsList>
 
               <TabsContent value={selectedTab}>
@@ -958,34 +961,34 @@ export function VNextAssignmentDesk() {
                     No assignments found in this category
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {filteredAssignments.map((assignment) => (
                       <div
                         key={assignment.id}
-                        className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                        className="border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors"
                       >
-                        <div className="flex items-start justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                           <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
                               {getStatusIcon(assignment.status)}
-                              <h3 className="font-semibold text-lg">{assignment.title}</h3>
-                              <Badge className={getPriorityColor(assignment.priority)}>
+                              <h3 className="font-semibold text-base sm:text-lg break-words">{assignment.title}</h3>
+                              <Badge className={`${getPriorityColor(assignment.priority)} text-xs`}>
                                 {assignment.priority}
                               </Badge>
-                              <Badge variant="outline">{assignment.type}</Badge>
+                              <Badge variant="outline" className="text-xs">{assignment.type}</Badge>
                             </div>
                             {assignment.description && (
-                              <p className="text-muted-foreground mb-2">{assignment.description}</p>
+                              <p className="text-sm text-muted-foreground mb-2">{assignment.description}</p>
                             )}
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                               {assignment.dueDate && (
-                                <div className="flex items-center space-x-1">
+                                <div className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
                                   <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
                                 </div>
                               )}
                               {assignment.assignedTo && (
-                                <div className="flex items-center space-x-1">
+                                <div className="flex items-center gap-1">
                                   <User className="h-3 w-3" />
                                   <span>Assigned</span>
                                 </div>
@@ -993,13 +996,14 @@ export function VNextAssignmentDesk() {
                             </div>
                           </div>
                           
-                          <div className="flex items-center space-x-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             {/* Shareable link buttons */}
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => copyShareableLink(assignment)}
                               title="Copy shareable link"
+                              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                             >
                               <Link className="h-4 w-4" />
                             </Button>
@@ -1009,6 +1013,7 @@ export function VNextAssignmentDesk() {
                                 variant="ghost"
                                 onClick={() => window.open(assignment.shareableUrl, '_blank')}
                                 title="Open public view"
+                                className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                               >
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
@@ -1019,6 +1024,7 @@ export function VNextAssignmentDesk() {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                className="text-xs sm:text-sm"
                               >
                                 Edit
                               </Button>
@@ -1032,6 +1038,7 @@ export function VNextAssignmentDesk() {
                                   id: assignment.id,
                                   updates: { status: "assigned", assignedTo: "current-user" }
                                 })}
+                                className="text-xs sm:text-sm"
                               >
                                 Assign to Me
                               </Button>
@@ -1044,6 +1051,7 @@ export function VNextAssignmentDesk() {
                                   id: assignment.id,
                                   updates: { status: "in_progress" }
                                 })}
+                                className="text-xs sm:text-sm"
                               >
                                 Start Work
                               </Button>
@@ -1056,6 +1064,7 @@ export function VNextAssignmentDesk() {
                                   id: assignment.id,
                                   updates: { status: "review" }
                                 })}
+                                className="text-xs sm:text-sm"
                               >
                                 Submit for Review
                               </Button>
@@ -1074,41 +1083,41 @@ export function VNextAssignmentDesk() {
       ) : (
         <>
         {/* Opportunities View */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Opportunities</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Opportunities</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{opportunities.length}</div>
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-xl sm:text-2xl font-bold">{opportunities.length}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Pipeline Value</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Pipeline Value</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 ${opportunities.reduce((sum, opp) => sum + (opp.potentialValue || 0), 0).toLocaleString()}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Qualified</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Qualified</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {opportunities.filter(o => ["qualified", "proposal", "negotiation"].includes(o.status)).length}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Won This Month</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Won This Month</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-xl sm:text-2xl font-bold text-purple-600">
                 {opportunities.filter(o => o.status === "won").length}
               </div>
             </CardContent>
@@ -1118,37 +1127,40 @@ export function VNextAssignmentDesk() {
         {/* Opportunities List */}
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
               <div>
-                <CardTitle>Revenue Opportunities</CardTitle>
-                <CardDescription>AI-powered detection of sponsorships, partnerships, and growth opportunities</CardDescription>
+                <CardTitle className="text-lg sm:text-xl">Revenue Opportunities</CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-1">AI-powered detection of sponsorships, partnerships, and growth opportunities</CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleRunDetection()}
                   disabled={isRunningDetection}
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
                   {isRunningDetection ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    <div className="h-3 w-3 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   ) : (
-                    <Zap className="h-4 w-4" />
+                    <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
                   )}
-                  {isRunningDetection ? "Detecting..." : "Run Detection"}
+                  <span className="hidden sm:inline">{isRunningDetection ? "Detecting..." : "Run Detection"}</span>
+                  <span className="sm:hidden">{isRunningDetection ? "..." : "Detect"}</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Settings className="h-4 w-4" />
-                  Triggers
+                  <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Triggers</span>
+                  <span className="sm:hidden">Config</span>
                 </Button>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Opportunity
+                <Button size="sm" className="text-xs sm:text-sm">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">New Opportunity</span>
+                  <span className="sm:hidden">New</span>
                 </Button>
               </div>
             </div>
@@ -1184,60 +1196,63 @@ export function VNextAssignmentDesk() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {opportunities.map((opportunity) => (
                   <div
                     key={opportunity.id}
-                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                    className="border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-semibold text-lg">{opportunity.title}</h3>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-base sm:text-lg break-words">{opportunity.title}</h3>
                           <Badge variant={
                             opportunity.status === "won" ? "default" :
                             opportunity.status === "lost" ? "destructive" :
                             opportunity.status === "negotiation" ? "secondary" :
                             "outline"
-                          }>
+                          }
+                          className="text-xs"
+                          >
                             {opportunity.status}
                           </Badge>
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="text-xs">
                             {opportunity.type}
                           </Badge>
                           {/* Show AI badge if source is ai_detected or metadata contains aiGenerated */}
                           {(opportunity.source === "ai_detected" || 
                             (opportunity as any)?.metadata?.aiGenerated) && (
-                            <Badge variant="secondary" className="gap-1">
+                            <Badge variant="secondary" className="gap-1 text-xs">
                               <Sparkles className="h-3 w-3" />
-                              AI Generated
+                              <span className="hidden sm:inline">AI Generated</span>
+                              <span className="sm:hidden">AI</span>
                             </Badge>
                           )}
                         </div>
                         {opportunity.description && (
-                          <p className="text-muted-foreground mb-2">{opportunity.description}</p>
+                          <p className="text-sm text-muted-foreground mb-2">{opportunity.description}</p>
                         )}
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                           {opportunity.potentialValue && (
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center gap-1">
                               <DollarSign className="h-3 w-3" />
                               <span>${opportunity.potentialValue.toLocaleString()}</span>
                             </div>
                           )}
                           {opportunity.probability && (
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center gap-1">
                               <Target className="h-3 w-3" />
                               <span>{opportunity.probability}%</span>
                             </div>
                           )}
                           {opportunity.contactCompany && (
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center gap-1">
                               <Briefcase className="h-3 w-3" />
                               <span>{opportunity.contactCompany}</span>
                             </div>
                           )}
                           {opportunity.nextActionDate && (
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               <span>Next: {new Date(opportunity.nextActionDate).toLocaleDateString()}</span>
                             </div>
@@ -1245,10 +1260,11 @@ export function VNextAssignmentDesk() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <Button
                           size="sm"
                           variant="outline"
+                          className="text-xs sm:text-sm"
                         >
                           Edit
                         </Button>
