@@ -38,14 +38,20 @@ export async function seedDatabase() {
         }).returning();
         publisherId = demoPublisher[0].id;
         console.log("Created new demo publisher");
-      } catch (publisherError) {
-        console.warn("Failed to create demo publisher, checking if it exists:", publisherError);
-        // Try to find existing publisher again in case of race condition
-        const retryPublisher = await db.select().from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
-        if (retryPublisher.length > 0) {
-          publisherId = retryPublisher[0].id;
+      } catch (publisherError: any) {
+        // Handle PostgreSQL unique constraint violation (error code 23505)
+        if (publisherError.code === '23505') {
+          console.log("Demo publisher already exists (unique constraint), fetching existing one");
+          const retryPublisher = await db.select().from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
+          if (retryPublisher.length > 0) {
+            publisherId = retryPublisher[0].id;
+          } else {
+            console.error("Failed to find existing demo publisher after constraint violation");
+            return { success: false, error: "Publisher creation failed" };
+          }
         } else {
-          throw publisherError;
+          console.error("Unexpected error creating demo publisher:", publisherError);
+          return { success: false, error: publisherError.message };
         }
       }
     }
