@@ -104,14 +104,23 @@ export function CampaignsDashboard() {
     scheduledAt: "",
   });
 
-  // Fetch campaigns by type
-  const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery<Campaign[]>({
+  // Fetch campaigns by type with error handling
+  const { data: campaignsData, isLoading: loadingCampaigns, error: campaignsError } = useQuery({
     queryKey: ["/api/campaigns", selectedType],
     queryFn: async () => {
       const response = await fetch(`/api/campaigns?type=${selectedType}`);
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to fetch campaigns: ${response.status}`);
+      }
+      return data;
     },
+    retry: 2,
   });
+  
+  // Ensure campaigns is always an array
+  const campaigns = Array.isArray(campaignsData) ? campaignsData : 
+                    Array.isArray(campaignsData?.campaigns) ? campaignsData.campaigns : [];
 
   // Fetch sends for selected campaign
   const { data: sendsData, isLoading: loadingSends } = useQuery({
@@ -349,7 +358,7 @@ export function CampaignsDashboard() {
                         </CardContent>
                       </Card>
                     ) : (
-                      campaigns.map((campaign) => (
+                      campaigns.map((campaign: Campaign) => (
                         <Card
                           key={campaign.id}
                           className={`cursor-pointer transition-colors ${

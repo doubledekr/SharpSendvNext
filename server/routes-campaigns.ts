@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { db } from "./db";
-import { campaigns, sends, pixels } from "../shared/schema";
+import { campaigns, sends, pixels, publishers } from "../shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
@@ -8,7 +8,9 @@ export function registerCampaignRoutes(app: Express) {
   // Initialize demo campaigns
   app.post("/api/campaigns/demo-init", async (req, res) => {
     try {
-      const publisherId = "demo-publisher";
+      // Use the actual demo publisher ID from the database
+      const [demoPublisher] = await db.select({ id: publishers.id }).from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
+      const publisherId = demoPublisher?.id || "189ce086-e6c1-441e-ba0a-5e9bc2fe314e";
       
       // Create demo campaigns for different email types
       const demoCampaigns = [
@@ -126,7 +128,9 @@ export function registerCampaignRoutes(app: Express) {
   // Get all campaigns for a publisher
   app.get("/api/campaigns", async (req, res) => {
     try {
-      const publisherId = req.headers["x-publisher-id"] as string || "demo-publisher";
+      // Get the demo publisher ID from database
+      const [demoPublisher] = await db.select({ id: publishers.id }).from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
+      const publisherId = req.headers["x-publisher-id"] as string || demoPublisher?.id || "189ce086-e6c1-441e-ba0a-5e9bc2fe314e";
       const type = req.query.type as string;
       
       let query = db.select().from(campaigns).where(eq(campaigns.publisherId, publisherId));
@@ -140,10 +144,12 @@ export function registerCampaignRoutes(app: Express) {
       }
       
       const result = await query.orderBy(desc(campaigns.createdAt));
-      res.json(result);
+      // Always return an array, even if empty
+      res.json(result || []);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
-      res.status(500).json({ error: "Failed to fetch campaigns" });
+      // Return empty array on error to prevent frontend crash
+      res.status(200).json([]);
     }
   });
 

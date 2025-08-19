@@ -1,0 +1,120 @@
+Great test pass — thanks for the detailed notes. I added a **QA Findings & Fix Plan (Aug 18, 2025)** section to your canvas with concrete next steps. Here are the fast, surgical fixes you can drop into this iteration:
+
+# Hotfix cheat‑sheet
+
+## 1) Campaigns page crash (`campaigns.map is not a function`)
+
+**Root cause**: API isn’t always returning an array (could be `null`, `{items: ...}`, or a promise not resolved before render).
+
+**Patch (TypeScript/React):**
+
+```ts
+// types/campaign.ts
+export type EmailType = 'marketing'|'editorial'|'fulfillment'|'paid_fulfillment'|'engagement'|'transactional';
+
+export interface Pixel { id: string; sendId: string; createdAt: string; }
+export interface Send { id: string; campaignId: string; segmentKeys: string[]; status: 'draft'|'approved'|'scheduled'|'sent'; pixels: Pixel[]; sentAt?: string; }
+export interface Campaign { id: string; name: string; email_type: EmailType; startsAt?: string; endsAt?: string; sends: Send[]; }
+```
+
+```ts
+// lib/schemas.ts
+import { z } from 'zod';
+
+export const PixelZ = z.object({ id: z.string(), sendId: z.string(), createdAt: z.string() });
+export const SendZ = z.object({
+  id: z.string(),
+  campaignId: z.string(),
+  segmentKeys: z.array(z.string()).default([]),
+  status: z.enum(['draft','approved','scheduled','sent']),
+  pixels: z.array(PixelZ).default([]),
+  sentAt: z.string().optional()
+});
+export const CampaignZ = z.object({
+  id: z.string(),
+  name: z.string(),
+  email_type: z.enum(['marketing','editorial','fulfillment','paid_fulfillment','engagement','transactional']),
+  startsAt: z.string().optional(),
+  endsAt: z.string().optional(),
+  sends: z.array(SendZ).default([])
+});
+export const CampaignListZ = z.array(CampaignZ).catch([]); // ← coerce bad payloads to []
+```
+
+```tsx
+// pages/campaigns-dashboard.tsx (snippet)
+import { CampaignListZ } from '@/lib/schemas';
+
+const { data, error } = useSWR('/api/campaigns', fetcher);
+if (error) return <ErrorState retry={() => mutate('/api/campaigns')} />;
+if (!data) return <SkeletonCampaigns />;
+
+const campaigns = CampaignListZ.parse(data?.campaigns ?? data ?? []); // tolerant parse
+if (!campaigns.length) return <EmptyState title="No campaigns yet" ctaLabel="Create Campaign" onCta={openCreateModal} />;
+
+return (
+  <CampaignBoard campaigns={campaigns} />
+);
+```
+
+Add an **ErrorBoundary** around the page to avoid blank screens:
+
+```tsx
+<ErrorBoundary FallbackComponent={PageFallback}>
+  <CampaignsDashboard />
+</ErrorBoundary>
+```
+
+## 2) Analytics route shows dashboard
+
+Stand up a **real** `/analytics` with pixel‑driven KPIs (distinct from dashboard).
+
+**Skeleton page:**
+
+```tsx
+export default function AnalyticsPage() {
+  return (
+    <div className="space-y-6">
+      <Header title="Analytics" subtitle="Campaign → Send → Pixel insights" />
+      <DateRangePicker />
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="by-campaign">By Campaign</TabsTrigger>
+          <TabsTrigger value="by-type">By Email Type</TabsTrigger>
+          <TabsTrigger value="segments">Segments</TabsTrigger>
+          <TabsTrigger value="deliverability">Deliverability</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview"><KpiGrid /></TabsContent>
+        <TabsContent value="by-campaign"><CampaignTable /></TabsContent>
+        <TabsContent value="by-type"><TypeBreakdown /></TabsContent>
+        <TabsContent value="segments"><SegmentLift /></TabsContent>
+        <TabsContent value="deliverability"><DeliverabilityChart /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+```
+
+**Data contracts you can fake initially:**
+
+* `/api/analytics/overview?from=...&to=...` → `{ openRate, ctr, convRate, revenue, fatigueIndex }`
+* `/api/analytics/by-campaign` → `[{ campaignId, name, sends, openRate, ctr, conv, revenue }]`
+* `/api/analytics/by-type` → `[{ email_type, openRate, ctr, conv, revenue }]`
+
+## 3) Add skeletons + toasts + route guards
+
+* Add **skeleton loaders** for Campaigns and Analytics.
+* Global **fetch error toast** with retry action (SWR `onErrorRetry` or your fetch layer).
+* Route‑level **ErrorBoundary** to prevent blank pages.
+
+## 4) Quick test checklist (after patch)
+
+* Navigate to **Campaigns**: no crash with `null`/object payload; empty state renders; create modal works.
+* Navigate to **Analytics**: unique content (not dashboard), charts render with mocked endpoints.
+* Validate **Assignments, Approvals, Segments, A/B** still load.
+* Log out → test **Demo Tour** and **Forgot Password** links.
+
+---
+
+If you want, I can also package this into a **tight one‑off Replit prompt** (copy/paste) targeting these exact fixes plus minimal schemas so you can deploy right away.

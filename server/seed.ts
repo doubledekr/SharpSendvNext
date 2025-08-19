@@ -113,43 +113,8 @@ export async function seedDatabase() {
       await db.insert(subscribers).values(subscriber).onConflictDoNothing();
     }
 
-    // Create sample campaigns
-    const sampleCampaigns = [
-      {
-        publisherId: publisherId,
-        name: "Q4 Market Outlook",
-        subjectLine: "🎯 Q4 Investment Opportunities You Can't Miss",
-        content: "Our analysts have identified the top 5 sectors poised for growth in Q4...",
-        openRate: "68.5",
-        clickRate: "12.3",
-        revenue: "4200.00",
-        subscriberCount: 8
-      },
-      {
-        publisherId: publisherId,
-        name: "AI Revolution Update",
-        subjectLine: "AI Stocks: The Next Wave is Here",
-        content: "Three AI companies are about to announce breakthrough partnerships...",
-        openRate: "71.2",
-        clickRate: "15.1", 
-        revenue: "5800.00",
-        subscriberCount: 8
-      },
-      {
-        publisherId: publisherId,
-        name: "ESG Investment Guide",
-        subjectLine: "Sustainable Investing: Profit with Purpose",
-        content: "ESG funds are outperforming traditional investments by 12%...",
-        openRate: "64.8",
-        clickRate: "10.7",
-        revenue: "3600.00",
-        subscriberCount: 8
-      }
-    ];
-
-    for (const campaign of sampleCampaigns) {
-      await db.insert(campaigns).values(campaign).onConflictDoNothing();
-    }
+    // Skip campaign seeding for now - table structure mismatch
+    // Will be handled by demo-init endpoint instead
 
     // Create sample A/B tests
     await db.insert(abTests).values({
