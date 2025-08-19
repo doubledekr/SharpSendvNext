@@ -17,6 +17,7 @@ import approvalsRoutes from "./routes-approvals";
 import segmentsRoutes from "./routes-segments";
 import emailGenerationRoutes from "./routes-email-generation";
 import assetRoutes from "./routes-assets";
+import opportunityRoutes from "./routes-opportunities";
 import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
@@ -878,6 +879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(emailGenerationRoutes);
   app.use(imageTemplateRoutes);
   app.use(assetRoutes);
+  app.use(opportunityRoutes);
 
   // Legacy routes for backward compatibility (these will be deprecated)
   

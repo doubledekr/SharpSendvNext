@@ -286,6 +286,36 @@ export const assignments = pgTable("assignments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Opportunities - Revenue and growth opportunities
+export const opportunities = pgTable("opportunities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // sponsorship, affiliate, premium_content, partnership, event
+  status: text("status").notNull().default("identified"), // identified, qualified, proposal, negotiation, won, lost
+  potentialValue: decimal("potential_value", { precision: 10, scale: 2 }),
+  probability: integer("probability").default(50), // 0-100
+  source: text("source"), // manual, ai_detected, partner_referral
+  relatedAssignmentId: varchar("related_assignment_id"),
+  contactName: text("contact_name"),
+  contactEmail: text("contact_email"),
+  contactCompany: text("contact_company"),
+  nextAction: text("next_action"),
+  nextActionDate: timestamp("next_action_date"),
+  notes: text("notes"),
+  metadata: jsonb("metadata").$type<{
+    targetAudience?: string;
+    proposalUrl?: string;
+    contractUrl?: string;
+    competitors?: string[];
+    requirements?: string[];
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  closedAt: timestamp("closed_at"),
+});
+
 // Approval Workflows
 export const approvals = pgTable("approvals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

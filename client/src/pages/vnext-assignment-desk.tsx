@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles } from "lucide-react";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -36,8 +36,22 @@ interface Assignment {
   updatedAt: string;
 }
 
+interface Opportunity {
+  id: string;
+  title: string;
+  description?: string;
+  type: string;
+  status: string;
+  potentialValue?: number;
+  probability?: number;
+  contactCompany?: string;
+  nextActionDate?: string;
+  createdAt: string;
+}
+
 export function VNextAssignmentDesk() {
   const { toast } = useToast();
+  const [activeView, setActiveView] = useState<"assignments" | "opportunities">("assignments");
   const [newAssignment, setNewAssignment] = useState({
     title: "",
     objective: "",
@@ -66,6 +80,12 @@ export function VNextAssignmentDesk() {
   // Fetch assignments
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
     queryKey: ["/api/assignments"],
+  });
+
+  // Fetch opportunities
+  const { data: opportunities = [], isLoading: isLoadingOpportunities } = useQuery<Opportunity[]>({
+    queryKey: ["/api/opportunities"],
+    enabled: activeView === "opportunities",
   });
 
   // Validation functions
@@ -352,11 +372,41 @@ export function VNextAssignmentDesk() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
+      {/* Header with View Toggle */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Assignment Desk</h1>
-          <p className="text-muted-foreground">Manage content planning and assignments</p>
+          <h1 className="text-3xl font-bold">
+            {activeView === "assignments" ? "Assignment Desk" : "Opportunities"}
+          </h1>
+          <p className="text-muted-foreground">
+            {activeView === "assignments" 
+              ? "Manage content planning and assignments" 
+              : "Track revenue and growth opportunities"}
+          </p>
+        </div>
+        
+        {/* View Toggle */}
+        <div className="flex items-center gap-4">
+          <div className="flex bg-muted rounded-lg p-1">
+            <Button
+              variant={activeView === "assignments" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveView("assignments")}
+              className="gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Assignments
+            </Button>
+            <Button
+              variant={activeView === "opportunities" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveView("opportunities")}
+              className="gap-2"
+            >
+              <DollarSign className="h-4 w-4" />
+              Opportunities
+            </Button>
+          </div>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -662,6 +712,9 @@ export function VNextAssignmentDesk() {
           </Dialog>
         </div>
 
+      {/* Conditional Content based on View */}
+      {activeView === "assignments" ? (
+        <>
         {/* Assignment Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
@@ -840,6 +893,143 @@ export function VNextAssignmentDesk() {
             </Tabs>
           </CardContent>
         </Card>
+        </>
+      ) : (
+        <>
+        {/* Opportunities View */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Total Opportunities</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{opportunities.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Pipeline Value</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                ${opportunities.reduce((sum, opp) => sum + (opp.potentialValue || 0), 0).toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Qualified</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {opportunities.filter(o => ["qualified", "proposal", "negotiation"].includes(o.status)).length}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Won This Month</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {opportunities.filter(o => o.status === "won").length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Opportunities List */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Revenue Opportunities</CardTitle>
+                <CardDescription>Track sponsorships, partnerships, and growth opportunities</CardDescription>
+              </div>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Opportunity
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoadingOpportunities ? (
+              <div className="text-center py-8 text-gray-500">Loading opportunities...</div>
+            ) : opportunities.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No opportunities yet. Click "New Opportunity" to add one.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {opportunities.map((opportunity) => (
+                  <div
+                    key={opportunity.id}
+                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="font-semibold text-lg">{opportunity.title}</h3>
+                          <Badge variant={
+                            opportunity.status === "won" ? "default" :
+                            opportunity.status === "lost" ? "destructive" :
+                            opportunity.status === "negotiation" ? "secondary" :
+                            "outline"
+                          }>
+                            {opportunity.status}
+                          </Badge>
+                          <Badge variant="outline">
+                            {opportunity.type}
+                          </Badge>
+                        </div>
+                        {opportunity.description && (
+                          <p className="text-muted-foreground mb-2">{opportunity.description}</p>
+                        )}
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                          {opportunity.potentialValue && (
+                            <div className="flex items-center space-x-1">
+                              <DollarSign className="h-3 w-3" />
+                              <span>${opportunity.potentialValue.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {opportunity.probability && (
+                            <div className="flex items-center space-x-1">
+                              <Target className="h-3 w-3" />
+                              <span>{opportunity.probability}%</span>
+                            </div>
+                          )}
+                          {opportunity.contactCompany && (
+                            <div className="flex items-center space-x-1">
+                              <Briefcase className="h-3 w-3" />
+                              <span>{opportunity.contactCompany}</span>
+                            </div>
+                          )}
+                          {opportunity.nextActionDate && (
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>Next: {new Date(opportunity.nextActionDate).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        </>
+      )}
     </div>
   );
 }
