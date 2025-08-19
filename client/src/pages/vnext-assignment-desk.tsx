@@ -1167,14 +1167,17 @@ export function VNextAssignmentDesk() {
           </CardHeader>
           <CardContent>
             {isLoadingOpportunities ? (
-              <div className="text-center py-8 text-gray-500">Loading opportunities...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent mx-auto mb-3" />
+                <p>Loading opportunities...</p>
+              </div>
             ) : opportunities.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <div className="mb-4">
-                  <Zap className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <Zap className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">No opportunities detected</h3>
-                <p className="text-sm mb-4">
+                <h3 className="text-lg font-medium mb-2 text-foreground">No opportunities detected</h3>
+                <p className="text-sm mb-4 max-w-md mx-auto">
                   AI will automatically detect revenue opportunities based on market events, stock movements, and news sentiment.
                 </p>
                 <div className="flex gap-2 justify-center">
@@ -1200,59 +1203,65 @@ export function VNextAssignmentDesk() {
                 {opportunities.map((opportunity) => (
                   <div
                     key={opportunity.id}
-                    className="border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors"
+                    className="border rounded-lg p-4 sm:p-5 hover:bg-muted/50 transition-all hover:shadow-md"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                       <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-base sm:text-lg break-words">{opportunity.title}</h3>
-                          <Badge variant={
-                            opportunity.status === "won" ? "default" :
-                            opportunity.status === "lost" ? "destructive" :
-                            opportunity.status === "negotiation" ? "secondary" :
-                            "outline"
-                          }
-                          className="text-xs"
-                          >
-                            {opportunity.status}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {opportunity.type}
-                          </Badge>
-                          {/* Show AI badge if source is ai_detected or metadata contains aiGenerated */}
-                          {(opportunity.source === "ai_detected" || 
-                            (opportunity as any)?.metadata?.aiGenerated) && (
-                            <Badge variant="secondary" className="gap-1 text-xs">
-                              <Sparkles className="h-3 w-3" />
-                              <span className="hidden sm:inline">AI Generated</span>
-                              <span className="sm:hidden">AI</span>
+                        <div className="mb-3">
+                          <h3 className="font-semibold text-base sm:text-lg text-foreground leading-tight mb-2">
+                            {opportunity.title}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant={
+                              opportunity.status === "won" ? "default" :
+                              opportunity.status === "lost" ? "destructive" :
+                              opportunity.status === "negotiation" ? "secondary" :
+                              "outline"
+                            }
+                            className="text-xs"
+                            >
+                              {opportunity.status}
                             </Badge>
-                          )}
+                            <Badge variant="outline" className="text-xs">
+                              {opportunity.type}
+                            </Badge>
+                            {/* Show AI badge if source is ai_detected or metadata contains aiGenerated */}
+                            {(opportunity.source === "ai_detected" || 
+                              (opportunity as any)?.metadata?.aiGenerated) && (
+                              <Badge variant="secondary" className="gap-1 text-xs">
+                                <Sparkles className="h-3 w-3" />
+                                <span className="hidden sm:inline">AI Generated</span>
+                                <span className="sm:hidden">AI</span>
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         {opportunity.description && (
-                          <p className="text-sm text-muted-foreground mb-2">{opportunity.description}</p>
+                          <p className="text-sm leading-relaxed text-muted-foreground mb-3 line-clamp-3">
+                            {opportunity.description}
+                          </p>
                         )}
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
                           {opportunity.potentialValue && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
                               <DollarSign className="h-3 w-3" />
                               <span>${opportunity.potentialValue.toLocaleString()}</span>
                             </div>
                           )}
                           {opportunity.probability && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
                               <Target className="h-3 w-3" />
-                              <span>{opportunity.probability}%</span>
+                              <span>{opportunity.probability}% likely</span>
                             </div>
                           )}
                           {opportunity.contactCompany && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 text-muted-foreground">
                               <Briefcase className="h-3 w-3" />
                               <span>{opportunity.contactCompany}</span>
                             </div>
                           )}
                           {opportunity.nextActionDate && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                               <Calendar className="h-3 w-3" />
                               <span>Next: {new Date(opportunity.nextActionDate).toLocaleDateString()}</span>
                             </div>
