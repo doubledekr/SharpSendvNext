@@ -12,6 +12,7 @@ import { ABTestingDashboard } from "@/pages/ab-testing";
 import { CampaignsDashboard } from "@/pages/campaigns-dashboard";
 import DemoOnboarding from "@/pages/demo-onboarding";
 import PublicAssignment from "@/pages/public-assignment";
+import AssignmentEditorPage from "@/pages/assignment-editor-page";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
@@ -56,6 +57,7 @@ function Router() {
           <Route path="/" component={() => <PublicRoute component={Login} />} />
           <Route path="/dashboard" component={() => <ProtectedRoute component={VNextDashboard} />} />
           <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
+          <Route path="/assignments/:id/edit" component={() => <ProtectedRoute component={AssignmentEditorPage} />} />
           <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
           <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
           <Route path="/ab-testing" component={() => <ProtectedRoute component={ABTestingDashboard} />} />

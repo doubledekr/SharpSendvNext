@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
+import { Link as WouterLink } from "wouter";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -410,6 +411,16 @@ export function VNextAssignmentDesk() {
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
                             )}
+                            
+                            {/* Edit button */}
+                            <WouterLink href={`/assignments/${assignment.id}/edit`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                              >
+                                Edit
+                              </Button>
+                            </WouterLink>
                             
                             {/* Status action buttons */}
                             {assignment.status === "unassigned" && (

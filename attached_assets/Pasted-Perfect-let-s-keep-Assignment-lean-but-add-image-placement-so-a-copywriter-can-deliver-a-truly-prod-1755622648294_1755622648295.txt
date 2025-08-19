@@ -1,0 +1,100 @@
+Perfect—let’s keep Assignment lean but add image placement so a copywriter can deliver a truly “production-ready” master. Below is a minimal, email-safe design you can ship quickly, plus the exact fields, UI, and HTML you’ll need.
+1) What to add (minimal, copywriter-friendly)
+A) Image Block (insert anywhere in the draft)
+Each Image block has just 5 controls:
+Choose/Upload (from Asset Library or local upload)
+Alt text (required)
+Caption (optional; supports “Source/Credit”)
+Alignment: Left • Center • Right
+Size: Full (600px) • Half (288px) • Thumb (150px)
+That’s it. No filters, no complex editing. Cropping/compression happen server-side.
+B) Lightweight Asset Library
+Shows recently uploaded images for the assignment.
+Each asset stores: url, width/height, filesize_kb, credit, license.
+Prevent external hotlinking (host on your CDN), auto-convert unsupported types (e.g., WEBP → JPEG) for email.
+C) Editor Buttons
+/image slash command or “Insert Image” button (opens Asset Library / Upload).
+Replace, Edit alt, Align, Size, Remove (inline toolbar on selected image).
+Autosave every 10s; warn on unsaved changes before leaving.
+2) Email-safe output (so marketing can reuse without breakage)
+Most email clients still prefer table-based layouts. When a copywriter inserts an image, serialize to an email-safe block like this:
+<!-- IMAGE BLOCK: center, full width -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center" style="padding:16px 0;">
+      <img src="https://cdn.example.com/assets/abc123.jpg"
+           alt="A simple chart showing dividend yields by sector"
+           width="600"
+           style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;">
+      <!-- Optional caption -->
+      <p style="margin:8px 0 0 0;font:12px/1.4 Arial, sans-serif;color:#666;">
+        Dividend yields by sector — Source: Publisher Research
+      </p>
+    </td>
+  </tr>
+</table>
+Left/Right align just changes align="left|right" and applies a fixed width (e.g., 288) with padding on the opposite side.
+Half/Thumb change width and max-width to 288 or 150 respectively.
+Plain-text fallback (auto-generated):
+[Image: Dividend yields by sector — Source: Publisher Research]
+https://cdn.example.com/assets/abc123.jpg
+3) Minimal data model additions
+Assignment (add image placements to the master draft)
+{
+  "id": "uuid",
+  "title": "String",
+  "status": "draft|in_progress|review",
+  "assignee_id": "user_id",
+  "due_at": "ISO8601",
+  "brief": { "objective": "String", "angle": "String", "key_points": ["String"], "offer": {"label":"String","url":"String|null"}, "references": ["URL"] },
+  "assets": [
+    {"asset_id":"uuid","url":"https://cdn/.../abc123.jpg","credit":"String","license":"String","w":1200,"h":800,"filesize_kb":142}
+  ],
+  "master_draft": {
+    "blocks": [
+      {"type":"paragraph","md":"Intro paragraph …"},
+      {"type":"image","asset_id":"uuid","alt":"Dividend yields…","caption":"Dividend yields by sector — Source: Publisher Research","align":"center","size":"full"},
+      {"type":"paragraph","md":"Body text continues …"}
+    ]
+  }
+}
+Marketers/publishers will later promote this Assignment into a Draft. Your Drafts workspace can render these same blocks but with more controls (A/B, segmentation, schedule).
+4) Upload & transform pipeline (tiny but robust)
+POST /assets accepts JPG/PNG/GIF/WEBP.
+Server:
+Convert to JPG/PNG for email compatibility (keep quality).
+Generate sizes: 600 (full), 288 (half), 150 (thumb).
+Compress to keep < 200KB per image when possible.
+Store url, w, h, filesize_kb, credit, license.
+Return asset_id and the canonical email size URL (600px) for insertion.
+5) Validation & guardrails (copywriter-side)
+Alt text required for every Image block (can’t mark “Ready for Review” without it).
+Max image count (e.g., 6 per email) to keep weight down.
+Width presets only (600 / 288 / 150) — no arbitrary scaling (keeps emails tidy).
+Auto-caption pattern (optional): if credit exists, prefill caption = "… — Source: {credit}".
+Dark-mode safety toggle (optional): add a 1px light outline around very dark logos.
+6) Tiny UI spec (drop-in)
+Insert Image Modal
+Tabs: Upload | Library
+Asset card shows thumbnail + filename + credit; click to select
+Fields on select: Alt (required), Caption (optional), Alignment, Size → Insert
+Inline Image Toolbar (on select)
+Replace | Alt | Align | Size | Remove
+Checklist (right rail)
+ At least 1 key point
+ CTA URL present (or “none”)
+ No more than 6 images
+ All images have alt text ✅
+Buttons
+Save Draft (autosave on)
+Ready for Review (enforces checks)
+Promote to Draft (hands off to marketers)
+7) How this plays with AI (later, no extra UI today)
+Marketers in Drafts can run AI Variations; your serializer keeps <img> blocks intact.
+Optional: AI can suggest alt text or caption when missing—but Assignment still requires manual confirmation.
+8) Acceptance criteria (ship list)
+Can insert, align (L/C/R), and size (Full/Half/Thumb) an image in Assignment.
+Alt text is required before “Ready for Review”.
+Image renders in a table-based email-safe block with width attributes.
+Plain-text alternative includes [Image: …] line and the URL.
+Upload converts non-email-friendly formats and constrains file size.

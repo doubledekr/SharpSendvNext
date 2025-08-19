@@ -40,6 +40,42 @@ router.get("/api/assignments", async (req, res) => {
   }
 });
 
+// Get single assignment
+router.get("/api/assignments/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const publisherId = "demo-publisher";
+    
+    const [assignment] = await db
+      .select()
+      .from(assignments)
+      .where(and(
+        eq(assignments.id, id),
+        eq(assignments.publisherId, publisherId)
+      ))
+      .limit(1);
+    
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+    
+    // Add shareable URL
+    const host = req.get('host') || 'sharpsend.io';
+    const protocol = req.protocol || 'https';
+    const shareableUrl = assignment.shareableSlug 
+      ? `${protocol}://${host}/assignment/${assignment.shareableSlug}`
+      : null;
+    
+    res.json({
+      ...assignment,
+      shareableUrl
+    });
+  } catch (error) {
+    console.error("Error fetching assignment:", error);
+    res.status(500).json({ error: "Failed to fetch assignment" });
+  }
+});
+
 // Create a new assignment with unique shareable link
 router.post("/api/assignments", async (req, res) => {
   try {

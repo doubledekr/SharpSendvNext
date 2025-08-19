@@ -229,6 +229,24 @@ export const emailSegments = pgTable("email_segments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Assignment Assets - Images and media for assignments
+export const assignmentAssets = pgTable("assignment_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  assignmentId: varchar("assignment_id").notNull(),
+  url: text("url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  fileName: text("file_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  width: integer("width"),
+  height: integer("height"),
+  fileSizeKb: integer("file_size_kb"),
+  altText: text("alt_text"),
+  credit: text("credit"),
+  license: text("license"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Assignment Desk - Content planning and management
 export const assignments = pgTable("assignments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -242,6 +260,25 @@ export const assignments = pgTable("assignments", {
   assignedBy: varchar("assigned_by"),
   dueDate: timestamp("due_date"),
   content: text("content"),
+  brief: jsonb("brief").$type<{
+    objective?: string;
+    angle?: string;
+    keyPoints?: string[];
+    offer?: { label: string; url?: string };
+    references?: string[];
+  }>(),
+  masterDraft: jsonb("master_draft").$type<{
+    blocks: Array<{
+      type: "paragraph" | "image" | "heading";
+      md?: string;
+      assetId?: string;
+      alt?: string;
+      caption?: string;
+      align?: "left" | "center" | "right";
+      size?: "full" | "half" | "thumb";
+      level?: number;
+    }>;
+  }>(),
   notes: text("notes"),
   tags: text("tags").array(),
   shareableSlug: varchar("shareable_slug").unique(), // Unique slug for public sharing
