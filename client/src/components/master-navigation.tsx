@@ -16,7 +16,8 @@ import {
   HelpCircle,
   LogOut,
   ChevronDown,
-  Info
+  Info,
+  Zap
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,12 @@ export function MasterNavigation() {
       href: "/campaigns",
       icon: Mail,
       description: "Email Campaigns"
+    },
+    {
+      title: "Integrations",
+      href: "/integrations",
+      icon: Zap,
+      description: "Platform Connections"
     },
     {
       title: "Analytics",

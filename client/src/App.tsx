@@ -15,6 +15,7 @@ import PublicAssignment from "@/pages/public-assignment";
 import AssignmentEditorPage from "@/pages/assignment-editor-page";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
+import IntegrationsPage from "@/pages/integrations";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -62,6 +63,7 @@ function Router() {
           <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
           <Route path="/ab-testing" component={() => <ProtectedRoute component={ABTestingDashboard} />} />
           <Route path="/campaigns" component={() => <ProtectedRoute component={CampaignsDashboard} />} />
+          <Route path="/integrations" component={() => <ProtectedRoute component={IntegrationsPage} />} />
           <Route path="/analytics" component={() => <ProtectedRoute component={VNextDashboard} />} />
           
           {/* Demo Onboarding */}

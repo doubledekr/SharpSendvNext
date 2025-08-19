@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { registerMultiTenantRoutes } from "./routes-multitenant";
-import { registerIntegrationRoutes } from "./routes-integrations";
+
 import { registerEmailRoutes } from "./routes-email";
 import { aiProcessingRoutes } from "./routes-ai-processing";
 import { cohortPersonalizationRoutes } from "./routes-cohort-personalization";
@@ -19,6 +19,7 @@ import emailGenerationRoutes from "./routes-email-generation";
 import assetRoutes from "./routes-assets";
 import opportunityRoutes from "./routes-opportunities";
 import opportunityDetectorRoutes from "./routes-opportunity-detector";
+import integrationsRoutes from "./routes-integrations";
 import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
@@ -860,7 +861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
   // registerMultiTenantRoutes(app);
-  registerIntegrationRoutes(app);
+  // Integrations routes handled by middleware above
   platformIntegrationsRoutes(app);
   registerEmailRoutes(app);
   app.use("/api/ai", aiProcessingRoutes);
@@ -882,6 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(assetRoutes);
   app.use(opportunityRoutes);
   app.use(opportunityDetectorRoutes);
+  app.use(integrationsRoutes);
 
   // Legacy routes for backward compatibility (these will be deprecated)
   
