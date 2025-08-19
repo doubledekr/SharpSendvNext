@@ -107,7 +107,7 @@ export function MasterNavigation() {
     },
     {
       title: "Integrations",
-      href: "/settings/integrations",
+      href: "/integrations",
       icon: Settings
     },
     {
