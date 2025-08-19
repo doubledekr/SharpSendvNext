@@ -91,28 +91,36 @@ export default function Login() {
 
   const handleDemoLogin = async () => {
     setIsDemoLoading(true);
+    setErrors({}); // Clear any existing errors
+    
     try {
       const response = await fetch("/api/demo/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({}) // Explicitly send empty body
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to start demo");
-      }
 
       const data = await response.json();
       
-      // Store token and redirect to dashboard
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("publisher", JSON.stringify(data.publisher));
-      localStorage.setItem("user", JSON.stringify(data.user));
-      setLocation("/dashboard");
+      // Even if response is not ok, if we have token data, use it
+      if (data.token) {
+        // Store token and redirect to dashboard
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("publisher", JSON.stringify(data.publisher));
+        localStorage.setItem("user", JSON.stringify(data.user));
+        setLocation("/dashboard");
+        return;
+      }
+      
+      // Only throw error if we don't have a token
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to start demo");
+      }
     } catch (error) {
       console.error("Demo login error:", error);
-      setErrors({ general: "Failed to start demo. Please try again." });
+      setErrors({ general: "Demo temporarily unavailable. Please try again in a moment." });
     } finally {
       setIsDemoLoading(false);
     }
