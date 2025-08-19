@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import { sql } from "drizzle-orm";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
@@ -44,6 +45,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log(`🚀 Starting server in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`📍 Database URL configured: ${process.env.DATABASE_URL ? 'Yes' : 'No'}`);
+  
+  // Test database connection first
+  try {
+    console.log("🔌 Testing database connection...");
+    const { db } = await import("./db.js");
+    await db.execute(sql`SELECT 1 as test`);
+    console.log("✅ Database connection successful");
+  } catch (dbError) {
+    console.error("❌ Database connection failed:", dbError);
+    console.error("This will likely cause the server to fail. Check DATABASE_URL environment variable.");
+  }
+  
   // Only seed the database in development mode
   if (process.env.NODE_ENV === "development") {
     try {
@@ -83,9 +98,16 @@ app.use((req, res, next) => {
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    
+    console.error("Express error handler:", {
+      status,
+      message,
+      stack: err.stack,
+      url: _req.url,
+      method: _req.method
+    });
 
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after
@@ -102,11 +124,29 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  
+  try {
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`🎉 Server successfully started on port ${port}`);
+      log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+      log(`🚀 Server ready to accept connections`);
+    });
+  } catch (listenError) {
+    console.error("❌ Failed to start server on port", port, ":", listenError);
+    process.exit(1);
+  }
+  
+})().catch((startupError) => {
+  console.error("💥 Fatal server startup error:", startupError);
+  console.error("Stack trace:", startupError.stack);
+  console.error("Environment variables:", {
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? "configured" : "missing",
+    PORT: process.env.PORT
   });
-})();
+  process.exit(1);
+});
