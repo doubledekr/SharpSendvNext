@@ -16,6 +16,7 @@ import AssignmentEditorPage from "@/pages/assignment-editor-page";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
 import IntegrationsPage from "@/pages/integrations";
+import PublisherSettings from "@/pages/publisher-settings";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -65,6 +66,9 @@ function Router() {
           <Route path="/campaigns" component={() => <ProtectedRoute component={CampaignsDashboard} />} />
           <Route path="/integrations" component={() => <ProtectedRoute component={IntegrationsPage} />} />
           <Route path="/analytics" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          
+          {/* Settings Routes */}
+          <Route path="/settings/publisher" component={() => <ProtectedRoute component={PublisherSettings} />} />
           
           {/* Demo Onboarding */}
           <Route path="/demo-onboarding" component={DemoOnboarding} />
