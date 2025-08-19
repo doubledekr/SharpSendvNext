@@ -18,6 +18,7 @@ import segmentsRoutes from "./routes-segments";
 import emailGenerationRoutes from "./routes-email-generation";
 import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
+import { registerDemoRoutes } from "./routes-demo";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -695,7 +696,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerEmailPlatformRoutes(app);
   registerSendQueueRoutes(app);
   registerVNextRoutes(app);
+  registerDemoRoutes(app);
   app.use(assignmentRoutes);
+  app.use(approvalsRoutes);
+  app.use(segmentsRoutes);
+  app.use(emailGenerationRoutes);
   app.use(imageTemplateRoutes);
 
   // Legacy routes for backward compatibility (these will be deprecated)

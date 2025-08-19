@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, LogIn, Building } from "lucide-react";
+import { Loader2, LogIn, Building, Sparkles } from "lucide-react";
 
 interface LoginData {
   email: string;
@@ -203,19 +203,28 @@ export default function Login() {
             <p className="text-slate-300 text-sm mb-3">
               Try SharpSend with our demo account
             </p>
-            <Button
-              onClick={() => {
-                setFormData({
-                  email: "demo@sharpsend.com",
-                  password: "demo123",
-                  subdomain: "demo",
-                });
-              }}
-              variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-            >
-              Use Demo Account
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  setFormData({
+                    email: "demo@sharpsend.com",
+                    password: "demo123",
+                    subdomain: "demo",
+                  });
+                }}
+                variant="outline"
+                className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+              >
+                Use Demo Account
+              </Button>
+              <Button
+                onClick={() => setLocation("/demo-onboarding")}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Start Demo Tour
+              </Button>
+            </div>
           </div>
         </div>
       </div>

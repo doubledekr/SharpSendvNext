@@ -9,6 +9,7 @@ import { VNextAssignmentDesk } from "@/pages/vnext-assignment-desk";
 import { VNextApprovals } from "@/pages/vnext-approvals";
 import { VNextSegments } from "@/pages/vnext-segments";
 import { ABTestingDashboard } from "@/pages/ab-testing";
+import DemoOnboarding from "@/pages/demo-onboarding";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
@@ -48,11 +49,13 @@ function PublicRoute({ component: Component }: { component: React.ComponentType 
 function Router() {
   const [location] = useLocation();
   const isAuthPage = location === "/login" || location === "/register";
+  const isDemoOnboarding = location === "/demo-onboarding";
+  const hideNavigation = isAuthPage || isDemoOnboarding;
   
   return (
     <>
-      {!isAuthPage && <MasterNavigation />}
-      <div className={!isAuthPage ? "pt-16" : ""}>
+      {!hideNavigation && <MasterNavigation />}
+      <div className={!hideNavigation ? "pt-16" : ""}>
         <Switch>
           {/* vNext is now the main system */}
           <Route path="/" component={() => <ProtectedRoute component={VNextDashboard} />} />
@@ -62,6 +65,9 @@ function Router() {
           <Route path="/ab-testing" component={() => <ProtectedRoute component={ABTestingDashboard} />} />
           <Route path="/campaigns" component={() => <ProtectedRoute component={VNextDashboard} />} />
           <Route path="/analytics" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          
+          {/* Demo Onboarding */}
+          <Route path="/demo-onboarding" component={DemoOnboarding} />
           
           {/* Authentication routes */}
           <Route path="/register" component={() => <PublicRoute component={Register} />} />
