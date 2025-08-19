@@ -40,6 +40,12 @@ export function setDemoEnabled(enabled: boolean) {
 export async function initializeDemoEnvironment() {
   console.log("🚀 Initializing comprehensive demo environment...");
   
+  // Skip demo environment entirely in production
+  if (process.env.NODE_ENV === 'production') {
+    console.log("🏭 Production environment detected - skipping demo initialization");
+    return { success: false, error: "Demo environment disabled in production" };
+  }
+  
   // Check if database is available
   if (!db) {
     console.warn("⚠️ Database not configured, skipping demo environment setup");

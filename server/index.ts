@@ -240,12 +240,13 @@ async function initializeServicesAsync() {
         }
       } catch (seedError) {
         console.warn("⚠️ Database seeding failed but continuing:", seedError);
+        // Ensure server continues even if seeding fails
       }
     } else {
       console.log("🚀 Production mode - skipping database seeding");
     }
     
-    // Initialize demo environment in development only
+    // Skip demo environment initialization in production entirely
     const isProduction = process.env.NODE_ENV === 'production';
     if (!isProduction) {
       try {
@@ -259,23 +260,34 @@ async function initializeServicesAsync() {
         }
       } catch (demoError) {
         console.warn("⚠️ Demo environment initialization failed - server continuing normally:", demoError);
+        // Ensure server stays alive even if demo initialization fails
       }
+    } else {
+      console.log("🏭 Production mode - skipping demo environment initialization");
     }
     
     console.log("✅ Background service initialization completed");
   } catch (error) {
     console.error("❌ Background service initialization failed:", error);
     // Don't crash the server - health checks should still work
+    // Don't exit process - server should continue running
   }
 }
 
 // Graceful shutdown handling
 const gracefulShutdown = (signal: string) => {
   console.log(`🛑 Received ${signal}, shutting down gracefully`);
-  // Note: server is only available within the async function scope
-  // In production, we rely on the process manager to handle shutdown
-  console.log('✅ Graceful shutdown initiated');
-  process.exit(0);
+  
+  // In production, only exit if we get an explicit shutdown signal
+  if (process.env.NODE_ENV === 'production') {
+    console.log('🏭 Production environment - allowing process manager to handle shutdown');
+    console.log('✅ Graceful shutdown initiated');
+    process.exit(0);
+  } else {
+    // In development, we can be more aggressive about shutting down
+    console.log('✅ Graceful shutdown initiated');
+    process.exit(0);
+  }
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

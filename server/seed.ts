@@ -14,6 +14,12 @@ import bcrypt from "bcrypt";
 export async function seedDatabase() {
   console.log("Seeding database...");
   
+  // Skip seeding in production to prevent issues
+  if (process.env.NODE_ENV === 'production') {
+    console.log("🏭 Production environment detected - skipping database seeding");
+    return { success: false, error: "Database seeding disabled in production" };
+  }
+  
   // Check if database is available
   if (!db) {
     console.warn("⚠️ Database not configured, skipping seeding");
