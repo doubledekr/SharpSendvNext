@@ -36,21 +36,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Root health check endpoint for deployment health checks
+  // Root health check endpoint for deployment health checks - optimized for speed
   app.get("/", (req, res) => {
+    res.set('Cache-Control', 'no-cache');
     res.status(200).json({ 
       status: "healthy", 
       service: "SharpSend API",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
     });
   });
 
-  // Health check endpoint
+  // Detailed health check endpoint
   app.get("/api/health", (req, res) => {
+    res.set('Cache-Control', 'no-cache');
     res.json({ 
       status: "healthy", 
       timestamp: new Date().toISOString(),
       version: "2.0.0",
+      uptime: process.uptime(),
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB'
+      },
+      environment: process.env.NODE_ENV || 'development',
       features: {
         multiTenant: true,
         aiPersonalization: true,

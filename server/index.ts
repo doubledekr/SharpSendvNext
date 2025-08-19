@@ -8,7 +8,13 @@ import { initializeDemoEnvironment } from "./demo-environment";
 import { tenantMiddleware } from "./middleware/tenant";
 
 const app = express();
-app.use(express.json());
+
+// Optimize for fast responses - disable unnecessary features
+app.set('x-powered-by', false);
+app.set('etag', false);
+
+// Basic middleware setup
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
 
 // Add tenant middleware to identify publisher by subdomain
@@ -68,41 +74,8 @@ app.use((req, res, next) => {
     console.warn("⚠️ DATABASE_URL not configured - database features will be unavailable");
   }
   
-  // Only seed the database in development mode
-  if (process.env.NODE_ENV === "development") {
-    try {
-      const seedResult = await seedDatabase();
-      if (seedResult.success) {
-        console.log("Database seeding completed successfully");
-      } else {
-        console.warn("Database seeding failed but continuing startup:", seedResult.error);
-      }
-    } catch (seedError) {
-      console.warn("Database seeding failed but continuing startup:", seedError);
-    }
-  } else {
-    console.log("Production mode - skipping database seeding");
-  }
-  
-  // Skip demo environment initialization for production health checks
-  const isProduction = process.env.NODE_ENV === 'production';
-  if (!isProduction) {
-    // Initialize demo environment in development only (non-blocking)
-    setImmediate(async () => {
-      try {
-        console.log("🔧 Initializing demo environment...");
-        const demoResult = await initializeDemoEnvironment();
-        if (demoResult && demoResult.success) {
-          console.log("✅ Demo environment ready!");
-          console.log("📧 Demo login available at /login");
-        } else {
-          console.log("⚠️ Demo environment setup skipped or failed - server continuing normally");
-        }
-      } catch (demoError) {
-        console.warn("⚠️ Demo environment initialization failed - server continuing normally");
-      }
-    });
-  }
+  // Move expensive operations to run AFTER server starts
+  // This ensures health checks can be answered immediately
   
   const server = await registerRoutes(app);
 
@@ -203,6 +176,11 @@ app.use((req, res, next) => {
     // Keep the process alive
     console.log("✅ Server is running and will stay alive...");
     
+    // Initialize expensive operations AFTER server is responding to health checks
+    setImmediate(() => {
+      initializeServicesAsync();
+    });
+    
   } catch (listenError) {
     console.error("❌ Failed to start server on port", port, ":", listenError);
     process.exit(1);
@@ -218,3 +196,48 @@ app.use((req, res, next) => {
   });
   process.exit(1);
 });
+
+// Initialize services asynchronously after server is ready
+async function initializeServicesAsync() {
+  try {
+    console.log("🔧 Starting background service initialization...");
+    
+    // Only seed the database in development mode
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const seedResult = await seedDatabase();
+        if (seedResult.success) {
+          console.log("✅ Database seeding completed successfully");
+        } else {
+          console.warn("⚠️ Database seeding failed but continuing:", seedResult.error);
+        }
+      } catch (seedError) {
+        console.warn("⚠️ Database seeding failed but continuing:", seedError);
+      }
+    } else {
+      console.log("🚀 Production mode - skipping database seeding");
+    }
+    
+    // Initialize demo environment in development only
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (!isProduction) {
+      try {
+        console.log("🔧 Initializing demo environment...");
+        const demoResult = await initializeDemoEnvironment();
+        if (demoResult && demoResult.success) {
+          console.log("✅ Demo environment ready!");
+          console.log("📧 Demo login available at /login");
+        } else {
+          console.log("⚠️ Demo environment setup skipped or failed - server continuing normally");
+        }
+      } catch (demoError) {
+        console.warn("⚠️ Demo environment initialization failed - server continuing normally:", demoError);
+      }
+    }
+    
+    console.log("✅ Background service initialization completed");
+  } catch (error) {
+    console.error("❌ Background service initialization failed:", error);
+    // Don't crash the server - health checks should still work
+  }
+}
