@@ -14,6 +14,12 @@ import bcrypt from "bcrypt";
 export async function seedDatabase() {
   console.log("Seeding database...");
   
+  // Check if database is available
+  if (!db) {
+    console.warn("⚠️ Database not configured, skipping seeding");
+    return { success: false, error: "Database not configured" };
+  }
+  
   try {
     // Create demo publisher first
     const existingPublisher = await db.select().from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);

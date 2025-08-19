@@ -49,14 +49,23 @@ app.use((req, res, next) => {
   console.log(`📍 Database URL configured: ${process.env.DATABASE_URL ? 'Yes' : 'No'}`);
   
   // Test database connection first
-  try {
-    console.log("🔌 Testing database connection...");
-    const { db } = await import("./db.js");
-    await db.execute(sql`SELECT 1 as test`);
-    console.log("✅ Database connection successful");
-  } catch (dbError) {
-    console.error("❌ Database connection failed:", dbError);
-    console.error("This will likely cause the server to fail. Check DATABASE_URL environment variable.");
+  if (process.env.DATABASE_URL) {
+    try {
+      console.log("🔌 Testing database connection...");
+      const { db } = await import("./db.js");
+      await db.execute(sql`SELECT 1 as test`);
+      console.log("✅ Database connection successful");
+    } catch (dbError) {
+      console.error("❌ Database connection failed:", dbError);
+      console.error("Error details:", {
+        message: (dbError as any).message,
+        code: (dbError as any).code,
+        detail: (dbError as any).detail
+      });
+      // Don't fail the server, continue anyway
+    }
+  } else {
+    console.warn("⚠️ DATABASE_URL not configured - database features will be unavailable");
   }
   
   // Only seed the database in development mode

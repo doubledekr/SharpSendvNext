@@ -40,6 +40,12 @@ export function setDemoEnabled(enabled: boolean) {
 export async function initializeDemoEnvironment() {
   console.log("🚀 Initializing comprehensive demo environment...");
   
+  // Check if database is available
+  if (!db) {
+    console.warn("⚠️ Database not configured, skipping demo environment setup");
+    return { success: false, error: "Database not configured" };
+  }
+  
   try {
     // Check database connection first
     await db.select().from(publishers).limit(1);

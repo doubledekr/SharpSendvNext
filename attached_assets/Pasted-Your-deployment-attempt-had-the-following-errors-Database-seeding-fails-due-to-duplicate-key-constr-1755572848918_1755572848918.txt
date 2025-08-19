@@ -1,0 +1,63 @@
+Your deployment attempt had the following errors:
+Database seeding fails due to duplicate key constraint violation on 'publishers_subdomain_unique' when trying to create demo publisher with subdomain 'demo'
+Application enters crash loop because seeding process throws unhandled PostgresError and exits
+Demo environment initialization fails repeatedly causing deployment to be marked as unhealthy
+Agent suggestions
+const demoPublisher = await db.insert(publishers).values({
+  name: "Demo Publisher",
+  email: "admin@demo.com",
+  subdomain: "demo",
+  plan: "premium"
+}).returning();
+publisherId = demoPublisher[0].id;
+console.log("Created new demo publisher");
+try {
+  const demoPublisher = await db.insert(publishers).values({
+    name: "Demo Publisher",
+    email: "admin@demo.com",
+    subdomain: "demo",
+    plan: "premium"
+  }).returning();
+  publisherId = demoPublisher[0].id;
+  console.log("Created new demo publisher");
+} catch (error) {
+  if (error.code === '23505') {
+    console.log("Demo publisher already exists, using existing one");
+    const existing = await db.select().from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
+    publisherId = existing[0].id;
+  } else {
+    throw error;
+  }
+}
+export async function seedDatabase() {
+  console.log("Seeding database...");
+  
+  try {
+    // Create demo publisher first
+    const existingPublisher = await db.select().from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
+export async function seedDatabase() {
+  console.log("Seeding database...");
+  
+  try {
+    // Create demo publisher first
+    const existingPublisher = await db.select().from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
+} catch (error) {
+    console.error("Error seeding database:", error);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+} catch (error) {
+    console.error("Error seeding database:", error);
+    // Don't throw - just log and continue with app startup
+    console.log("Continuing with application startup despite seeding failure");
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+await db.insert(publishers).values({
+  name: "Demo Publisher",
+  email: "admin@demo.com",
+  subdomain: "demo",
+  plan: "premium"
+}).returning();
+await db.insert(publishers).values({
+  name: "Demo Publisher",
+  email: "admin@demo.com",
+  subdomain: "demo",
+  plan: "premium"
+}).onConflictDoNothing().returning();
