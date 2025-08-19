@@ -79,18 +79,19 @@ export default function IntegrationsPage() {
   // Fetch available platforms
   const { data: platformsData } = useQuery({
     queryKey: ["/api/integrations/platforms"],
-    queryFn: () => apiRequest("/api/integrations/platforms") as Promise<{
-      platforms: Platform[];
-      categories: string[];
-    }>
+    queryFn: async () => {
+      const response = await apiRequest("/api/integrations/platforms", "GET");
+      return response as { success: boolean; platforms: Platform[]; categories: string[] };
+    }
   });
 
   // Fetch connected integrations
   const { data: connectionsData, isLoading: isLoadingConnections } = useQuery({
     queryKey: ["/api/integrations/connected"],
-    queryFn: () => apiRequest("/api/integrations/connected") as Promise<{
-      integrations: Integration[];
-    }>
+    queryFn: async () => {
+      const response = await apiRequest("/api/integrations/connected", "GET");
+      return response as { success: boolean; integrations: Integration[] };
+    }
   });
 
   const platforms = platformsData?.platforms || [];

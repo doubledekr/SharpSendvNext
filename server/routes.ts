@@ -19,7 +19,7 @@ import emailGenerationRoutes from "./routes-email-generation";
 import assetRoutes from "./routes-assets";
 import opportunityRoutes from "./routes-opportunities";
 import opportunityDetectorRoutes from "./routes-opportunity-detector";
-import integrationsRoutes from "./routes-integrations";
+import integrationsRoutes from "./routes-integrations-simple";
 import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
@@ -862,7 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
   // registerMultiTenantRoutes(app);
   // Integrations routes handled by middleware above
-  platformIntegrationsRoutes(app);
+  // platformIntegrationsRoutes(app); // Commented out to avoid conflicts
   registerEmailRoutes(app);
   app.use("/api/ai", aiProcessingRoutes);
   app.use("/api/cohorts", cohortPersonalizationRoutes);

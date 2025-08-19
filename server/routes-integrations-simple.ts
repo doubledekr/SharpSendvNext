@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { z } from "zod";
 
 const router = Router();
 
@@ -76,48 +75,48 @@ const EMAIL_PLATFORMS = [
   {
     id: "campaign_monitor",
     name: "Campaign Monitor",
-    description: "Professional email campaigns with drag-drop editor",
+    description: "Professional email campaigns with elegant design tools",
     category: "Email Marketing",
-    logo: "https://www.campaignmonitor.com/assets/images/cm-logo.svg",
+    logo: "https://www.campaignmonitor.com/assets/images/brand-assets/campaign-monitor-logo.svg",
     authType: "api_key",
     fields: [
       { name: "api_key", label: "API Key", type: "password", required: true }
     ],
     status: "available",
-    features: ["Drag-drop editor", "Personalization", "A/B testing", "Analytics"]
+    features: ["Professional designs", "Automation", "Analytics", "Personalization"]
   },
   {
     id: "activecampaign",
     name: "ActiveCampaign",
-    description: "Marketing automation with CRM features",
+    description: "Customer experience automation with advanced segmentation",
     category: "Marketing Automation",
-    logo: "https://www.activecampaign.com/images/activecampaign-logo.svg",
+    logo: "https://www.activecampaign.com/site/assets/activecampaign-logo.svg",
     authType: "api_key",
     fields: [
-      { name: "api_url", label: "API URL", type: "text", required: true },
-      { name: "api_key", label: "API Key", type: "password", required: true }
+      { name: "api_key", label: "API Key", type: "password", required: true },
+      { name: "account_url", label: "Account URL", type: "text", required: true }
     ],
     status: "available",
-    features: ["Marketing automation", "CRM", "Sales automation", "Messaging"]
+    features: ["CX Automation", "Segmentation", "Machine learning", "Attribution"]
   },
   {
     id: "constant_contact",
     name: "Constant Contact",
-    description: "Easy-to-use email marketing for small businesses",
+    description: "Easy-to-use email marketing with social media integration",
     category: "Email Marketing",
-    logo: "https://www.constantcontact.com/images/cc-logo.svg",
+    logo: "https://www.constantcontact.com/images/header/ctct-logo.svg",
     authType: "oauth",
     fields: [
       { name: "client_id", label: "Client ID", type: "text", required: true },
       { name: "client_secret", label: "Client Secret", type: "password", required: true }
     ],
     status: "available",
-    features: ["Email marketing", "Event marketing", "Social media", "Surveys"]
+    features: ["Social integration", "Event marketing", "E-commerce", "Surveys"]
   },
   {
     id: "mailerlite",
     name: "MailerLite",
-    description: "Simple yet powerful email marketing platform",
+    description: "Simple email marketing with powerful automation",
     category: "Email Marketing",
     logo: "https://www.mailerlite.com/images/mailerlite-logo.svg",
     authType: "api_key",
@@ -125,80 +124,79 @@ const EMAIL_PLATFORMS = [
       { name: "api_key", label: "API Key", type: "password", required: true }
     ],
     status: "available",
-    features: ["Email campaigns", "Landing pages", "Pop-ups", "Automation"]
+    features: ["Drag & drop editor", "Automation", "Landing pages", "Pop-ups"]
   },
   {
     id: "brevo",
     name: "Brevo (Sendinblue)",
-    description: "All-in-one marketing platform with email, SMS, and chat",
-    category: "Marketing Platform",
+    description: "Complete digital marketing platform with SMS",
+    category: "Multi-channel",
     logo: "https://www.brevo.com/images/brevo-logo.svg",
     authType: "api_key",
     fields: [
       { name: "api_key", label: "API Key", type: "password", required: true }
     ],
     status: "available",
-    features: ["Email", "SMS", "Chat", "Marketing automation"]
+    features: ["Email & SMS", "Chat", "CRM", "Marketing automation"]
   },
   {
     id: "sailthru",
     name: "Sailthru",
-    description: "Personalization engine for ecommerce",
+    description: "Personalization-focused email marketing with predictive analytics",
     category: "Personalization",
-    logo: "https://www.sailthru.com/images/sailthru-logo.svg",
+    logo: "https://www.sailthru.com/wp-content/uploads/2020/06/sailthru-logo.svg",
     authType: "api_key",
     fields: [
       { name: "api_key", label: "API Key", type: "password", required: true },
       { name: "api_secret", label: "API Secret", type: "password", required: true }
     ],
     status: "available",
-    features: ["Personalization", "Predictive analytics", "Behavioral triggers"]
+    features: ["Predictive analytics", "Personalization", "Behavioral targeting", "Lifecycle optimization"]
   },
   {
     id: "braze",
     name: "Braze",
-    description: "Customer engagement platform for mobile and web",
+    description: "Comprehensive customer engagement platform",
     category: "Customer Engagement",
     logo: "https://www.braze.com/images/braze-logo.svg",
     authType: "api_key",
     fields: [
       { name: "api_key", label: "API Key", type: "password", required: true },
-      { name: "rest_endpoint", label: "REST Endpoint", type: "text", required: true }
+      { name: "endpoint", label: "REST Endpoint", type: "text", required: true }
     ],
     status: "available",
-    features: ["Multi-channel", "Real-time", "Canvas journeys", "Intelligence Suite"]
+    features: ["Multi-channel", "Real-time", "Canvas journey", "Advanced analytics"]
   },
   {
     id: "substack",
     name: "Substack",
-    description: "Newsletter platform for writers and publishers",
-    category: "Publishing",
-    logo: "https://substackcdn.com/images/substack-logo.svg",
-    authType: "custom",
+    description: "Newsletter publishing platform with built-in payments",
+    category: "Newsletter Platform",
+    logo: "https://substackapi.com/images/substack-logo.svg",
+    authType: "oauth",
     fields: [
-      { name: "publication_url", label: "Publication URL", type: "text", required: true },
-      { name: "api_token", label: "API Token", type: "password", required: true }
+      { name: "publication_url", label: "Publication URL", type: "text", required: true }
     ],
     status: "beta",
-    features: ["Newsletter publishing", "Paid subscriptions", "Comments", "Podcasts"]
+    features: ["Publishing", "Subscriptions", "Payments", "Analytics"]
   },
   {
     id: "beehiiv",
     name: "beehiiv",
-    description: "Modern newsletter platform with monetization tools",
-    category: "Publishing",
+    description: "Newsletter platform with monetization and growth tools",
+    category: "Newsletter Platform",
     logo: "https://www.beehiiv.com/images/beehiiv-logo.svg",
     authType: "api_key",
     fields: [
       { name: "api_key", label: "API Key", type: "password", required: true }
     ],
     status: "beta",
-    features: ["Newsletter tools", "Monetization", "Analytics", "Growth tools"]
+    features: ["Newsletter creation", "Monetization", "Growth tools", "Analytics"]
   },
   {
     id: "convertkit",
     name: "ConvertKit",
-    description: "Email marketing for creators and bloggers",
+    description: "Creator-focused email marketing with powerful automation",
     category: "Creator Tools",
     logo: "https://convertkit.com/images/convertkit-logo.svg",
     authType: "api_key",
@@ -207,21 +205,21 @@ const EMAIL_PLATFORMS = [
       { name: "api_secret", label: "API Secret", type: "password", required: true }
     ],
     status: "available",
-    features: ["Email sequences", "Landing pages", "Forms", "Tagging"]
+    features: ["Creator tools", "Visual automation", "Tagging", "Commerce integration"]
   },
   {
-    id: "ghost",
+    id: "ghost_email",
     name: "Ghost Email",
-    description: "Built-in email for Ghost publishing platform",
-    category: "Publishing",
-    logo: "https://ghost.org/images/ghost-logo.svg",
+    description: "Newsletter feature of Ghost publishing platform",
+    category: "Publishing Platform",
+    logo: "https://ghost.org/images/logos/ghost-logo.svg",
     authType: "api_key",
     fields: [
       { name: "admin_api_key", label: "Admin API Key", type: "password", required: true },
       { name: "api_url", label: "API URL", type: "text", required: true }
     ],
-    status: "available",
-    features: ["Newsletter", "Membership", "Publishing", "Analytics"]
+    status: "beta",
+    features: ["Publishing", "Membership", "Newsletters", "SEO optimization"]
   }
 ];
 
@@ -232,12 +230,13 @@ let connectedIntegrations: any[] = [];
 router.get("/api/integrations/platforms", (req, res) => {
   try {
     res.json({
+      success: true,
       platforms: EMAIL_PLATFORMS,
       categories: Array.from(new Set(EMAIL_PLATFORMS.map(p => p.category)))
     });
   } catch (error) {
     console.error("Error fetching platforms:", error);
-    res.status(500).json({ error: "Failed to fetch platforms" });
+    res.status(500).json({ success: false, error: "Failed to fetch platforms" });
   }
 });
 
@@ -245,171 +244,182 @@ router.get("/api/integrations/platforms", (req, res) => {
 router.get("/api/integrations/connected", (req, res) => {
   try {
     res.json({
+      success: true,
       integrations: connectedIntegrations
     });
   } catch (error) {
     console.error("Error fetching connected integrations:", error);
-    res.status(500).json({ error: "Failed to fetch connected integrations" });
+    res.status(500).json({ success: false, error: "Failed to fetch connected integrations" });
   }
 });
 
 // Connect to a platform
-router.post("/api/integrations/connect", async (req, res) => {
+router.post("/api/integrations/connect", (req, res) => {
   try {
-    const { platformId, credentials, name } = req.body;
+    const { platformId, credentials, config } = req.body;
     
     if (!platformId || !credentials) {
-      return res.status(400).json({ error: "Platform ID and credentials are required" });
+      return res.status(400).json({
+        success: false,
+        error: "Platform ID and credentials are required"
+      });
     }
 
     const platform = EMAIL_PLATFORMS.find(p => p.id === platformId);
     if (!platform) {
-      return res.status(404).json({ error: "Platform not found" });
-    }
-
-    // Validate required fields
-    const missingFields = platform.fields
-      .filter(field => field.required && !credentials[field.name])
-      .map(field => field.label);
-
-    if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        error: `Missing required fields: ${missingFields.join(", ")}` 
+      return res.status(404).json({
+        success: false,
+        error: "Platform not found"
       });
     }
 
-    // In a real app, you would validate the credentials here
-    // For demo, we'll simulate a connection
-    const connection = {
-      id: `conn_${Date.now()}`,
+    // Simulate connection
+    const newIntegration = {
+      id: `integration-${Date.now()}`,
       platformId,
-      name: name || platform.name,
-      platform: platform.name,
-      status: "connected",
+      platformName: platform.name,
+      isConnected: true,
+      status: "active",
       connectedAt: new Date().toISOString(),
       lastSync: new Date().toISOString(),
-      stats: {
-        subscribers: Math.floor(Math.random() * 50000) + 1000,
-        campaigns: Math.floor(Math.random() * 100) + 10,
-        openRate: (Math.random() * 0.3 + 0.15).toFixed(3), // 15-45%
-        clickRate: (Math.random() * 0.1 + 0.02).toFixed(3)  // 2-12%
-      }
+      config: config || {}
     };
 
-    connectedIntegrations.push(connection);
+    connectedIntegrations.push(newIntegration);
 
     res.json({
       success: true,
-      connection,
+      integration: newIntegration,
       message: `Successfully connected to ${platform.name}`
     });
   } catch (error) {
-    console.error("Error connecting integration:", error);
-    res.status(500).json({ error: "Failed to connect integration" });
-  }
-});
-
-// Disconnect from a platform
-router.delete("/api/integrations/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const index = connectedIntegrations.findIndex(conn => conn.id === id);
-    
-    if (index === -1) {
-      return res.status(404).json({ error: "Integration not found" });
-    }
-
-    const connection = connectedIntegrations[index];
-    connectedIntegrations.splice(index, 1);
-
-    res.json({
-      success: true,
-      message: `Disconnected from ${connection.platform}`
+    console.error("Error connecting platform:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to connect platform"
     });
-  } catch (error) {
-    console.error("Error disconnecting integration:", error);
-    res.status(500).json({ error: "Failed to disconnect integration" });
   }
 });
 
 // Test connection
-router.post("/api/integrations/:id/test", async (req, res) => {
+router.post("/api/integrations/test", (req, res) => {
   try {
-    const { id } = req.params;
-    const connection = connectedIntegrations.find(conn => conn.id === id);
+    const { platformId, credentials } = req.body;
     
-    if (!connection) {
-      return res.status(404).json({ error: "Integration not found" });
+    if (!platformId || !credentials) {
+      return res.status(400).json({
+        success: false,
+        error: "Platform ID and credentials are required"
+      });
     }
 
-    // Simulate connection test
-    const isSuccess = Math.random() > 0.1; // 90% success rate for demo
-    
-    if (isSuccess) {
-      connection.lastSync = new Date().toISOString();
-      res.json({
-        success: true,
-        message: "Connection test successful",
-        lastSync: connection.lastSync
-      });
-    } else {
-      res.status(400).json({
+    const platform = EMAIL_PLATFORMS.find(p => p.id === platformId);
+    if (!platform) {
+      return res.status(404).json({
         success: false,
-        error: "Connection test failed - please check your credentials"
+        error: "Platform not found"
       });
     }
+
+    // Simulate test
+    res.json({
+      success: true,
+      message: `Connection test successful for ${platform.name}`,
+      capabilities: platform.features
+    });
   } catch (error) {
     console.error("Error testing connection:", error);
-    res.status(500).json({ error: "Failed to test connection" });
+    res.status(500).json({
+      success: false,
+      error: "Failed to test connection"
+    });
   }
 });
 
-// Sync data from platform
-router.post("/api/integrations/:id/sync", async (req, res) => {
+// Disconnect from a platform
+router.delete("/api/integrations/:id", (req, res) => {
   try {
     const { id } = req.params;
-    const connection = connectedIntegrations.find(conn => conn.id === id);
     
-    if (!connection) {
-      return res.status(404).json({ error: "Integration not found" });
+    const integrationIndex = connectedIntegrations.findIndex(i => i.id === id);
+    if (integrationIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: "Integration not found"
+      });
     }
 
-    // Simulate sync with random updates
-    connection.lastSync = new Date().toISOString();
-    connection.stats.subscribers += Math.floor(Math.random() * 100);
-    connection.stats.campaigns += Math.floor(Math.random() * 2);
+    const integration = connectedIntegrations[integrationIndex];
+    connectedIntegrations.splice(integrationIndex, 1);
 
     res.json({
       success: true,
-      message: "Data sync completed",
-      stats: connection.stats,
-      lastSync: connection.lastSync
+      message: `Successfully disconnected from ${integration.platformName}`
     });
   } catch (error) {
-    console.error("Error syncing integration:", error);
-    res.status(500).json({ error: "Failed to sync data" });
+    console.error("Error disconnecting platform:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to disconnect platform"
+    });
+  }
+});
+
+// Sync data from a platform
+router.post("/api/integrations/:id/sync", (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const integration = connectedIntegrations.find(i => i.id === id);
+    if (!integration) {
+      return res.status(404).json({
+        success: false,
+        error: "Integration not found"
+      });
+    }
+
+    // Update last sync time
+    integration.lastSync = new Date().toISOString();
+
+    res.json({
+      success: true,
+      message: `Successfully synced data from ${integration.platformName}`,
+      lastSync: integration.lastSync
+    });
+  } catch (error) {
+    console.error("Error syncing platform data:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to sync platform data"
+    });
   }
 });
 
 // Request custom integration
-router.post("/api/integrations/request", async (req, res) => {
+router.post("/api/integrations/request-custom", (req, res) => {
   try {
-    const { platform, description, email, useCase } = req.body;
+    const { platformName, contactEmail, requirements } = req.body;
     
-    if (!platform || !email) {
-      return res.status(400).json({ error: "Platform name and email are required" });
+    if (!platformName || !contactEmail) {
+      return res.status(400).json({
+        success: false,
+        error: "Platform name and contact email are required"
+      });
     }
 
-    // In a real app, you'd store this request and notify your team
-    console.log("Custom integration request:", { platform, description, email, useCase });
+    // In a real app, this would create a support ticket or send an email
+    console.log("Custom integration request:", { platformName, contactEmail, requirements });
 
     res.json({
       success: true,
-      message: "Integration request submitted successfully. Our team will review and contact you within 2-3 business days."
+      message: "Custom integration request submitted successfully. Our team will contact you within 2 business days."
     });
   } catch (error) {
-    console.error("Error submitting integration request:", error);
-    res.status(500).json({ error: "Failed to submit request" });
+    console.error("Error requesting custom integration:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to submit custom integration request"
+    });
   }
 });
 
