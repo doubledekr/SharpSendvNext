@@ -1,0 +1,61 @@
+Your deployment attempt had the following errors:
+The application starts successfully but exits immediately with 'main done, exiting' after initialization
+Health checks are failing because the server is no longer running when the health check hits the / endpoint
+The server terminates after completing database connection testing and demo environment setup
+Agent suggestions
+console.log("Demo seeding completed");
+
+// Remove any process.exit() calls or early returns that terminate the server
+console.log("Demo seeding completed");
+
+// Keep the server running by removing any premature exits
+})().catch((startupError) => {
+  console.error("💥 Fatal server startup error:", startupError);
+  console.error("Stack trace:", startupError.stack);
+  console.error("Environment variables:", {
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? "configured" : "missing",
+    PORT: process.env.PORT
+  });
+  process.exit(1);
+});
+})().catch((startupError) => {
+  console.error("💥 Fatal server startup error:", startupError);
+  console.error("Stack trace:", startupError.stack);
+  console.error("Environment variables:", {
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? "configured" : "missing",
+    PORT: process.env.PORT
+  });
+  process.exit(1);
+});
+// Check demo-environment.ts and seed.ts files for any process.exit() calls
+// Ensure demo-environment.ts and seed.ts don't call process.exit() and return properly
+if (process.env.NODE_ENV === "development") {
+    try {
+      const seedResult = await seedDatabase();
+      if (seedResult.success) {
+        console.log("Database seeding completed successfully");
+      } else {
+        console.warn("Database seeding failed but continuing startup:", seedResult.error);
+      }
+    } catch (seedError) {
+      console.warn("Database seeding failed but continuing startup:", seedError);
+    }
+  } else {
+    console.log("Production mode - skipping database seeding");
+  }
+if (process.env.NODE_ENV === "development") {
+    try {
+      const seedResult = await seedDatabase();
+      if (seedResult.success) {
+        console.log("Database seeding completed successfully");
+      } else {
+        console.warn("Database seeding failed but continuing startup:", seedResult.error);
+      }
+    } catch (seedError) {
+      console.warn("Database seeding failed but continuing startup:", seedError);
+    }
+  } else {
+    console.log("🚫 Production environment detected - skipping demo data seeding");
+  }
