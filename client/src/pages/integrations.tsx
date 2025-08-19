@@ -80,8 +80,8 @@ export default function IntegrationsPage() {
   const { data: platformsData } = useQuery({
     queryKey: ["/api/integrations/platforms"],
     queryFn: async () => {
-      const response = await apiRequest("/api/integrations/platforms", "GET");
-      return response as { success: boolean; platforms: Platform[]; categories: string[] };
+      const response = await apiRequest("GET", "/api/integrations/platforms");
+      return await response.json() as { success: boolean; platforms: Platform[]; categories: string[] };
     }
   });
 
@@ -89,8 +89,8 @@ export default function IntegrationsPage() {
   const { data: connectionsData, isLoading: isLoadingConnections } = useQuery({
     queryKey: ["/api/integrations/connected"],
     queryFn: async () => {
-      const response = await apiRequest("/api/integrations/connected", "GET");
-      return response as { success: boolean; integrations: Integration[] };
+      const response = await apiRequest("GET", "/api/integrations/connected");
+      return await response.json() as { success: boolean; integrations: Integration[] };
     }
   });
 
@@ -105,7 +105,8 @@ export default function IntegrationsPage() {
   // Connect to platform mutation
   const connectMutation = useMutation({
     mutationFn: async (data: { platformId: string; credentials: Record<string, string>; name?: string }) => {
-      return apiRequest("/api/integrations/connect", "POST", data);
+      const response = await apiRequest("POST", "/api/integrations/connect", data);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -130,7 +131,8 @@ export default function IntegrationsPage() {
   // Disconnect mutation
   const disconnectMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/integrations/${id}`, "DELETE", {});
+      const response = await apiRequest("DELETE", `/api/integrations/${id}`);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -144,7 +146,8 @@ export default function IntegrationsPage() {
   // Test connection mutation
   const testMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/integrations/${id}/test`, "POST", {});
+      const response = await apiRequest("POST", `/api/integrations/${id}/test`, {});
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -165,7 +168,8 @@ export default function IntegrationsPage() {
   // Sync data mutation
   const syncMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/integrations/${id}/sync`, "POST", {});
+      const response = await apiRequest("POST", `/api/integrations/${id}/sync`, {});
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -179,7 +183,8 @@ export default function IntegrationsPage() {
   // Request custom integration mutation
   const requestMutation = useMutation({
     mutationFn: async (data: typeof customRequest) => {
-      return apiRequest("/api/integrations/request", "POST", data);
+      const response = await apiRequest("POST", "/api/integrations/request-custom", data);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
