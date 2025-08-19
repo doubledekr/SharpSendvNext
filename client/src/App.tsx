@@ -10,6 +10,7 @@ import { VNextApprovals } from "@/pages/vnext-approvals";
 import { VNextSegments } from "@/pages/vnext-segments";
 import { ABTestingDashboard } from "@/pages/ab-testing";
 import DemoOnboarding from "@/pages/demo-onboarding";
+import PublicAssignment from "@/pages/public-assignment";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
@@ -50,7 +51,8 @@ function Router() {
   const [location] = useLocation();
   const isAuthPage = location === "/login" || location === "/register";
   const isDemoOnboarding = location === "/demo-onboarding";
-  const hideNavigation = isAuthPage || isDemoOnboarding;
+  const isPublicAssignment = location.startsWith("/assignment/");
+  const hideNavigation = isAuthPage || isDemoOnboarding || isPublicAssignment;
   
   return (
     <>
@@ -59,6 +61,7 @@ function Router() {
         <Switch>
           {/* vNext is now the main system */}
           <Route path="/" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          <Route path="/dashboard" component={() => <ProtectedRoute component={VNextDashboard} />} />
           <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
           <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
           <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
@@ -68,6 +71,9 @@ function Router() {
           
           {/* Demo Onboarding */}
           <Route path="/demo-onboarding" component={DemoOnboarding} />
+          
+          {/* Public Assignment View */}
+          <Route path="/assignment/:slug" component={PublicAssignment} />
           
           {/* Authentication routes */}
           <Route path="/register" component={() => <PublicRoute component={Register} />} />

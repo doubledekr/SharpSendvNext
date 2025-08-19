@@ -1,8 +1,13 @@
 import type { Express } from "express";
 import { db } from "./db";
-import { users, subscribers, campaigns, emailSegments } from "../shared/schema";
+import { users, subscribers, campaigns, emailSegments, assignments } from "../shared/schema";
 import { eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
+
+// Generate unique shareable slug for assignments
+function generateShareableSlug(): string {
+  return randomBytes(8).toString("hex");
+}
 
 export function registerDemoRoutes(app: Express) {
   // Demo onboarding endpoint
@@ -164,7 +169,59 @@ export function registerDemoRoutes(app: Express) {
         }
       ];
 
-      await db.insert(email_segments).values(detectedSegments);
+      await db.insert(emailSegments).values(detectedSegments);
+      
+      // Create demo assignments with shareable links
+      const demoAssignments = [
+        {
+          publisherId: "demo-publisher",
+          title: "Q1 Market Analysis Report",
+          description: "Comprehensive analysis of Q1 market performance and trends for premium subscribers",
+          type: "research",
+          status: "in_progress",
+          priority: "high",
+          assignedTo: "analyst-1",
+          content: "Market analysis covering tech sector performance, emerging trends, and investment opportunities.",
+          shareableSlug: generateShareableSlug(),
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        },
+        {
+          publisherId: "demo-publisher",
+          title: "Weekly Portfolio Newsletter",
+          description: "Regular weekly update on portfolio performance and recommended trades",
+          type: "newsletter",
+          status: "unassigned",
+          priority: "urgent",
+          shareableSlug: generateShareableSlug(),
+          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+        },
+        {
+          publisherId: "demo-publisher",
+          title: "AI Sector Deep Dive",
+          description: "In-depth analysis of artificial intelligence companies and investment opportunities",
+          type: "analysis",
+          status: "review",
+          priority: "medium",
+          assignedTo: "writer-1",
+          shareableSlug: generateShareableSlug(),
+          content: "Detailed examination of leading AI companies, including financial metrics and growth projections.",
+          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
+        },
+        {
+          publisherId: "demo-publisher",
+          title: "Breaking: Fed Rate Decision",
+          description: "Urgent article on Federal Reserve interest rate decision and market impact",
+          type: "article",
+          status: "approved",
+          priority: "urgent",
+          assignedTo: "editor-1",
+          shareableSlug: generateShareableSlug(),
+          content: "Federal Reserve announces rate decision. Analysis of market reaction and investment implications.",
+          dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // 1 day from now
+        },
+      ];
+      
+      await db.insert(assignments).values(demoAssignments).onConflictDoNothing();
 
       res.json({
         success: true,
@@ -174,7 +231,8 @@ export function registerDemoRoutes(app: Express) {
         stats: {
           subscribers: sampleSubscribers.length,
           campaigns: sampleCampaigns.length,
-          segments: detectedSegments.length
+          segments: detectedSegments.length,
+          assignments: demoAssignments.length
         }
       });
     } catch (error) {

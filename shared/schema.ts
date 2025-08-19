@@ -180,6 +180,7 @@ export const assignments = pgTable("assignments", {
   content: text("content"),
   notes: text("notes"),
   tags: text("tags").array(),
+  shareableSlug: varchar("shareable_slug").unique(), // Unique slug for public sharing
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

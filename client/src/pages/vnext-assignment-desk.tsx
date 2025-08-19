@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users } from "lucide-react";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -28,6 +28,8 @@ interface Assignment {
   content?: string;
   notes?: string;
   tags?: string[];
+  shareableSlug?: string;
+  shareableUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,6 +97,35 @@ export function VNextAssignmentDesk() {
       });
     },
   });
+
+  // Generate shareable link mutation
+  const generateShareableLinkMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/assignments/${id}/share`, "POST", {});
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+      navigator.clipboard.writeText(data.shareableUrl);
+      toast({
+        title: "Link Copied!",
+        description: "Shareable link has been copied to clipboard.",
+      });
+    },
+  });
+
+  // Copy shareable link function
+  const copyShareableLink = (assignment: Assignment) => {
+    if (assignment.shareableUrl) {
+      navigator.clipboard.writeText(assignment.shareableUrl);
+      toast({
+        title: "Link Copied!",
+        description: "Shareable link has been copied to clipboard.",
+      });
+    } else {
+      // Generate new shareable link if doesn't exist
+      generateShareableLinkMutation.mutate(assignment.id);
+    }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -358,6 +389,27 @@ export function VNextAssignmentDesk() {
                           </div>
                           
                           <div className="flex items-center space-x-2">
+                            {/* Shareable link buttons */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyShareableLink(assignment)}
+                              title="Copy shareable link"
+                            >
+                              <Link className="h-4 w-4" />
+                            </Button>
+                            {assignment.shareableUrl && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => window.open(assignment.shareableUrl, '_blank')}
+                                title="Open public view"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            )}
+                            
+                            {/* Status action buttons */}
                             {assignment.status === "unassigned" && (
                               <Button
                                 size="sm"
