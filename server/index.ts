@@ -43,16 +43,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Seed the database on startup (optional - don't fail if seeding fails)
-  try {
-    const seedResult = await seedDatabase();
-    if (seedResult.success) {
-      console.log("Database seeding completed successfully");
-    } else {
-      console.warn("Database seeding failed but continuing startup:", seedResult.error);
+  // Only seed the database in development mode
+  if (process.env.NODE_ENV === "development") {
+    try {
+      const seedResult = await seedDatabase();
+      if (seedResult.success) {
+        console.log("Database seeding completed successfully");
+      } else {
+        console.warn("Database seeding failed but continuing startup:", seedResult.error);
+      }
+    } catch (seedError) {
+      console.warn("Database seeding failed but continuing startup:", seedError);
     }
-  } catch (seedError) {
-    console.warn("Database seeding failed but continuing startup:", seedError);
   }
   
   const server = await registerRoutes(app);

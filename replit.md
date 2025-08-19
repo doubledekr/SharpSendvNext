@@ -122,6 +122,13 @@ The platform is multi-tenant with complete data isolation. It incorporates AI fo
 
 ## Recent Improvements & Lessons Learned
 
+### Deployment Database Seeding Fix (August 2025)
+- **Issue**: Production deployment failing with duplicate key error for demo data
+- **Root Cause**: Database seeding was running on every startup, including production
+- **Solution**: Added NODE_ENV check to only seed database in development mode
+- **Implementation**: Modified server/index.ts to check `process.env.NODE_ENV === "development"` before seeding
+- **Key Learning**: Demo data seeding should never run in production environments
+
 ### Publication Detection Enhancement (January 2025)
 - **Issue**: Inconsistent detection results for publisher domains
 - **Solution**: Enhanced AI-powered detection with multi-page scraping
