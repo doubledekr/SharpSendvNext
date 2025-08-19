@@ -15,10 +15,16 @@ import {
   CreditCard,
   HelpCircle,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Info
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -157,32 +163,21 @@ export function MasterNavigation() {
 
           {/* Platform Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Publisher Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                  <Building2 className="w-4 h-4" />
-                  <span>Demo Publisher</span>
-                  <ChevronDown className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Switch Publisher</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Demo Publisher
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Financial Times
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Market Watch Pro
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Demo Environment Badge */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg cursor-help">
+                  <Building2 className="w-4 h-4 text-purple-500" />
+                  <span className="text-sm font-medium text-purple-500">Demo Environment</span>
+                  <Info className="w-3 h-3 text-purple-400" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="text-sm">
+                  You're in the demo environment with sample data. Perfect for exploring SharpSend's features without affecting real data.
+                </p>
+              </TooltipContent>
+            </Tooltip>
 
             {/* Settings Menu */}
             <DropdownMenu>
