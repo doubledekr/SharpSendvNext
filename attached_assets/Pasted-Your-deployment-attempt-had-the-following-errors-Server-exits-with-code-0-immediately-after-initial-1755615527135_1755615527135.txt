@@ -1,0 +1,103 @@
+Your deployment attempt had the following errors:
+Server exits with code 0 immediately after initialization completing all startup tasks including database seeding in server/index.ts
+Process completes the async IIFE function and terminates normally instead of staying alive to handle requests
+Health check endpoint becomes unavailable after server exits, causing deployment health check failures
+An error occurred while loading AI generated suggestions. Please try deploying again or follow the common debugging steps. Common issues for promote stage errors can be an error occurring while trying to run your run command, your application exiting unexpectedly, an error on your app server or a provisioning issue.
+
+Ways to debug:
+Make sure your repl runs in the Workspace.
+View our troubleshooting tips.
+Look for errors in your deploy logs.
+Agent suggestions
+  // Only seed the database in development mode
+  if (process.env.NODE_ENV === "development") {
+    try {
+      const seedResult = await seedDatabase();
+      if (seedResult.success) {
+        console.log("✅ Database seeding completed successfully");
+      } else {
+        console.warn("⚠️ Database seeding failed but continuing:", seedResult.error);
+      }
+    } catch (seedError) {
+      console.warn("⚠️ Database seeding failed but continuing:", seedError);
+      // Ensure server continues even if seeding fails
+    }
+  } else {
+    console.log("🚀 Production mode - skipping database seeding");
+  }
+  
+  // Demo environment is now only initialized when explicitly requested via API
+  console.log("🔧 Demo environment will be initialized on demand via /api/demo/initialize endpoint");
+  
+  console.log("✅ Background service initialization completed");
+  console.log("🚀 Production mode - background services will be initialized on demand");
+  console.log("✅ Background service initialization completed");
+    // 3. Create an infinite promise that never resolves
+    await new Promise<void>(() => {
+      // This promise never resolves, keeping the async function alive
+      // The only way the process will exit is through signal handlers (SIGTERM, SIGINT)
+      // or through process.exit() calls in error conditions
+      
+      // Store the interval reference to prevent cleanup
+      (process as any).keepAliveInterval = keepAliveInterval;
+    });
+    // Keep process alive with proper event loop management
+    console.log('Server will continue running until shutdown signal received');
+async function initializeServicesAsync() {
+  try {
+    console.log("🔧 Starting background service initialization...");
+    
+    // Only seed the database in development mode
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const seedResult = await seedDatabase();
+        if (seedResult.success) {
+          console.log("✅ Database seeding completed successfully");
+        } else {
+          console.warn("⚠️ Database seeding failed but continuing:", seedResult.error);
+        }
+      } catch (seedError) {
+        console.warn("⚠️ Database seeding failed but continuing:", seedError);
+        // Ensure server continues even if seeding fails
+      }
+    } else {
+      console.log("🚫 Production environment detected - skipping demo data seeding");
+    }
+    
+    console.log("Demo seeding completed");
+    
+    // Demo environment is now only initialized when explicitly requested via API
+    console.log("🔧 Demo environment will be initialized on demand via /api/demo/initialize endpoint");
+    
+    console.log("✅ Background service initialization completed");
+async function initializeServicesAsync() {
+  try {
+    console.log("🔧 Starting background service initialization...");
+    
+    console.log("🚀 Production mode - services ready for on-demand initialization");
+    console.log("✅ Background service initialization completed");
+    console.log("main done, exiting");
+  try {
+    // Ensure the server starts and stays running
+    await new Promise<void>((resolve, reject) => {
+      server.listen({
+        port,
+        host: "0.0.0.0",
+        reusePort: true,
+      }, (error?: Error) => {
+        if (error) {
+          reject(error);
+        } else {
+          log(`🎉 Server successfully started on port ${port}`);
+          log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+          log(`🚀 Server ready to accept connections`);
+          resolve();
+        }
+      });
+    });
+  try {
+    server.listen(port, "0.0.0.0", () => {
+      log(`🎉 Server successfully started on port ${port}`);
+      log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+      log(`🚀 Server ready to accept connections`);
+    });

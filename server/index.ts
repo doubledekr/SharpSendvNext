@@ -94,7 +94,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Explicitly log the environment for debugging
+  const isProduction = process.env.NODE_ENV === 'production';
   console.log(`🚀 Starting server in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`🏭 Production mode detected: ${isProduction}`);
   console.log(`📍 Database URL configured: ${process.env.DATABASE_URL ? 'Yes' : 'No'}`);
   
   // Test database connection first
@@ -239,28 +242,56 @@ app.use((req, res, next) => {
     
     // Multiple mechanisms to keep the process alive
     // 1. Prevent stdin from closing (keeps event loop active)
+    if (process.stdin.setRawMode) {
+      process.stdin.setRawMode(true);
+    }
     process.stdin.resume();
     
     // 2. Keep a reference to prevent garbage collection
     const keepAliveInterval = setInterval(() => {
       // This empty interval keeps the event loop active
-      // Check every hour to ensure minimal resource usage
-    }, 1000 * 60 * 60);
+      // Log periodically in production to show server is alive
+      if (process.env.NODE_ENV === 'production') {
+        const memUsage = process.memoryUsage();
+        console.log(`[Keep-Alive] Server healthy - Memory: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB, Uptime: ${Math.round(process.uptime())}s`);
+      }
+    }, 30000); // Check every 30 seconds in production
     
-    // 3. Create an infinite promise that never resolves
-    await new Promise<void>(() => {
-      // This promise never resolves, keeping the async function alive
-      // The only way the process will exit is through signal handlers (SIGTERM, SIGINT)
-      // or through process.exit() calls in error conditions
-      
-      // Store the interval reference to prevent cleanup
-      (process as any).keepAliveInterval = keepAliveInterval;
+    // Store the interval reference globally
+    (global as any).keepAliveInterval = keepAliveInterval;
+    
+    // 3. Keep the main thread alive - DON'T use await on infinite promise
+    // Instead, set up the promise but don't await it
+    const keepAlivePromise = new Promise<void>(() => {
+      // This promise never resolves, keeping a reference in memory
+      console.log('🔒 Server locked in running state - will continue until explicit shutdown');
     });
+    
+    // 4. For production deployment, add explicit server running confirmation
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🏭 PRODUCTION MODE: Server successfully started and will remain running');
+      console.log('🏭 Health endpoints available at /health and /api/health-check');
+      
+      // Set up a production heartbeat
+      setInterval(() => {
+        // Just keeping the event loop busy
+      }, 1000);
+    }
+    
+    // DO NOT await the keep-alive promise - let the event loop handle it
+    // The server will stay alive due to active handles (server, intervals, stdin)
     
   } catch (listenError) {
     console.error("❌ Failed to start server on port", port, ":", listenError);
     process.exit(1);
   }
+  
+  // CRITICAL FOR DEPLOYMENT: Never let the main function complete
+  // Block forever to prevent process exit
+  await new Promise(() => {
+    // This promise intentionally never resolves
+    // This is the final blocker that prevents the process from exiting
+  });
   
 })().catch((startupError) => {
   console.error("💥 Fatal server startup error:", startupError);
@@ -279,7 +310,8 @@ async function initializeServicesAsync() {
     console.log("🔧 Starting background service initialization...");
     
     // Only seed the database in development mode
-    if (process.env.NODE_ENV === "development") {
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (!isProduction && process.env.NODE_ENV === "development") {
       try {
         const seedResult = await seedDatabase();
         if (seedResult.success) {
@@ -292,7 +324,8 @@ async function initializeServicesAsync() {
         // Ensure server continues even if seeding fails
       }
     } else {
-      console.log("🚀 Production mode - skipping database seeding");
+      console.log("🚀 Production mode - skipping all database seeding and demo data");
+      console.log("🏭 Running in clean production state");
     }
     
     // Demo environment is now only initialized when explicitly requested via API
@@ -311,9 +344,13 @@ const gracefulShutdown = (signal: string) => {
   console.log(`🛑 Received ${signal}, shutting down gracefully`);
   
   // Clean up resources
+  if ((global as any).keepAliveInterval) {
+    clearInterval((global as any).keepAliveInterval);
+    console.log('🧹 Cleaned up keep-alive interval');
+  }
   if ((process as any).keepAliveInterval) {
     clearInterval((process as any).keepAliveInterval);
-    console.log('🧹 Cleaned up keep-alive interval');
+    console.log('🧹 Cleaned up process keep-alive interval');
   }
   
   // In production, only exit if we get an explicit shutdown signal
