@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
-import { VNextNavigation } from "@/components/vnext-navigation";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -232,8 +232,6 @@ export function VNextSegments() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <VNextNavigation />
-      
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -529,7 +527,7 @@ export function VNextSegments() {
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold">{segment.name}</h4>
                       <Badge className="bg-green-100 text-green-800">
-                        +{segment.growth.toFixed(1)}%
+                        +{(Number(segment.growth) || 0).toFixed(1)}%
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{segment.description}</p>
@@ -605,12 +603,12 @@ export function VNextSegments() {
                                   Dynamic
                                 </Badge>
                               )}
-                              {getGrowthIcon(segment.growth)}
+                              {getGrowthIcon(Number(segment.growth) || 0)}
                               <span className={`text-sm font-medium ${
-                                segment.growth > 0 ? "text-green-600" : 
-                                segment.growth < 0 ? "text-red-600" : "text-gray-600"
+                                (Number(segment.growth) || 0) > 0 ? "text-green-600" : 
+                                (Number(segment.growth) || 0) < 0 ? "text-red-600" : "text-gray-600"
                               }`}>
-                                {segment.growth > 0 ? "+" : ""}{segment.growth.toFixed(1)}%
+                                {(Number(segment.growth) || 0) > 0 ? "+" : ""}{(Number(segment.growth) || 0).toFixed(1)}%
                               </span>
                             </div>
                             
