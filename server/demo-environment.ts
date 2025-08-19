@@ -41,62 +41,75 @@ export async function initializeDemoEnvironment() {
   console.log("🚀 Initializing comprehensive demo environment...");
   
   try {
+    // Check database connection first
+    await db.select().from(publishers).limit(1);
+  } catch (dbError) {
+    console.warn("⚠️ Database connection failed, skipping demo environment setup:", dbError);
+    return { success: false, error: "Database connection failed" };
+  }
+  
+  try {
     // 1. Create or get demo publisher
-    const existingPublisher = await db.select().from(publishers)
-      .where(eq(publishers.subdomain, "demo"))
-      .limit(1);
-    
     let publisherId: string;
     let demoPublisher;
     
-    if (existingPublisher.length > 0) {
-      demoPublisher = existingPublisher[0];
-      publisherId = demoPublisher.id;
-      console.log("✓ Using existing demo publisher");
-    } else {
-      const [newPublisher] = await db.insert(publishers).values({
-        name: "Demo Financial Publisher",
-        email: "admin@demo.sharpsend.io",
-        subdomain: "demo",
-        plan: "premium",
-        settings: {
-          aiEnabled: true,
-          marketIntelligence: true,
-          cohortPersonalization: true,
-          emailOptimization: true
-        }
-      }).returning();
+    try {
+      const existingPublisher = await db.select().from(publishers)
+        .where(eq(publishers.subdomain, "demo"))
+        .limit(1);
       
-      demoPublisher = newPublisher;
-      publisherId = newPublisher.id;
-      console.log("✓ Created demo publisher");
+      if (existingPublisher.length > 0) {
+        demoPublisher = existingPublisher[0];
+        publisherId = demoPublisher.id;
+        console.log("✓ Using existing demo publisher");
+      } else {
+        const [newPublisher] = await db.insert(publishers).values({
+          name: "Demo Financial Publisher",
+          email: "admin@demo.sharpsend.io",
+          subdomain: "demo",
+          plan: "premium"
+        }).returning();
+        
+        demoPublisher = newPublisher;
+        publisherId = newPublisher.id;
+        console.log("✓ Created demo publisher");
+      }
+    } catch (publisherError) {
+      console.warn("⚠️ Publisher creation failed, using fallback:", publisherError);
+      // Fallback: use a default publisher ID or skip demo setup
+      return { success: false, error: "Publisher creation failed" };
     }
     
     // 2. Create or get demo user
-    const existingUser = await db.select().from(users)
-      .where(eq(users.email, "demo@sharpsend.io"))
-      .limit(1);
-    
     let userId: string;
     let demoUser;
     
-    if (existingUser.length > 0) {
-      demoUser = existingUser[0];
-      userId = demoUser.id;
-      console.log("✓ Using existing demo user");
-    } else {
-      const hashedPassword = await bcrypt.hash("demo123", 10);
-      const [newUser] = await db.insert(users).values({
-        publisherId,
-        username: "demo",
-        email: "demo@sharpsend.io",
-        password: hashedPassword,
-        role: "admin"
-      }).returning();
+    try {
+      const existingUser = await db.select().from(users)
+        .where(eq(users.email, "demo@sharpsend.io"))
+        .limit(1);
       
-      demoUser = newUser;
-      userId = newUser.id;
-      console.log("✓ Created demo user");
+      if (existingUser.length > 0) {
+        demoUser = existingUser[0];
+        userId = demoUser.id;
+        console.log("✓ Using existing demo user");
+      } else {
+        const hashedPassword = await bcrypt.hash("demo123", 10);
+        const [newUser] = await db.insert(users).values({
+          publisherId,
+          username: "demo",
+          email: "demo@sharpsend.io",
+          password: hashedPassword,
+          role: "admin"
+        }).returning();
+        
+        demoUser = newUser;
+        userId = newUser.id;
+        console.log("✓ Created demo user");
+      }
+    } catch (userError) {
+      console.warn("⚠️ User creation failed:", userError);
+      return { success: false, error: "User creation failed" };
     }
     
     // Note: Segments table removed - using hardcoded segments in sends instead
@@ -205,21 +218,26 @@ export async function initializeDemoEnvironment() {
     }
     
     // 9. Create demo analytics
-    const existingAnalytics = await db.select().from(analytics)
-      .where(eq(analytics.publisherId, publisherId))
-      .limit(1);
-    
-    if (existingAnalytics.length === 0) {
-      await db.insert(analytics).values({
-        publisherId,
-        totalSubscribers: 12847,
-        engagementRate: 74.2,
-        monthlyRevenue: 89450,
-        churnRate: 2.8,
-        conversionRate: 4.3,
-        revenuePerSubscriber: 6.97
-      }).catch(() => {});
-      console.log("✓ Created demo analytics");
+    try {
+      const existingAnalytics = await db.select().from(analytics)
+        .where(eq(analytics.publisherId, publisherId))
+        .limit(1);
+      
+      if (existingAnalytics.length === 0) {
+        await db.insert(analytics).values({
+          publisherId,
+          totalSubscribers: 12847,
+          engagementRate: "74.20",
+          monthlyRevenue: "89450.00",
+          churnRate: "2.80",
+          openRate: "31.50",
+          clickRate: "6.20",
+          unsubscribeRate: "0.85"
+        });
+        console.log("✓ Created demo analytics");
+      }
+    } catch (analyticsError) {
+      console.warn("⚠️ Analytics creation failed:", analyticsError);
     }
     
     // Generate demo token
