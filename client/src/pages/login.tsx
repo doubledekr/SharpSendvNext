@@ -22,6 +22,7 @@ export default function Login() {
     subdomain: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
@@ -85,6 +86,35 @@ export default function Login() {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setIsDemoLoading(true);
+    try {
+      const response = await fetch("/api/demo/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start demo");
+      }
+
+      const data = await response.json();
+      
+      // Store token and redirect to dashboard
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("publisher", JSON.stringify(data.publisher));
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setLocation("/dashboard");
+    } catch (error) {
+      console.error("Demo login error:", error);
+      setErrors({ general: "Failed to start demo. Please try again." });
+    } finally {
+      setIsDemoLoading(false);
     }
   };
 
@@ -198,33 +228,31 @@ export default function Login() {
           <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
             <h3 className="text-white font-semibold mb-2 flex items-center justify-center gap-2">
               <Building className="h-4 w-4" />
-              Demo Account
+              Demo Environment
             </h3>
             <p className="text-slate-300 text-sm mb-3">
-              Try SharpSend with our demo account
+              Experience SharpSend with full demo data
             </p>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => {
-                  setFormData({
-                    email: "demo@sharpsend.com",
-                    password: "demo123",
-                    subdomain: "demo",
-                  });
-                }}
-                variant="outline"
-                className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
-              >
-                Use Demo Account
-              </Button>
-              <Button
-                onClick={() => setLocation("/demo-onboarding")}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                Start Demo Tour
-              </Button>
-            </div>
+            <Button
+              onClick={handleDemoLogin}
+              disabled={isDemoLoading}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+            >
+              {isDemoLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Setting up demo...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Launch Demo Environment
+                </>
+              )}
+            </Button>
+            <p className="text-slate-400 text-xs mt-2">
+              No signup required • Full feature access • Pre-populated data
+            </p>
           </div>
         </div>
       </div>

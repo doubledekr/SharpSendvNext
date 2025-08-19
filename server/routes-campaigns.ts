@@ -371,7 +371,34 @@ export function registerCampaignRoutes(app: Express) {
   // Get pixel dashboard data (aggregated performance)
   app.get("/api/pixels/dashboard", async (req, res) => {
     try {
-      const publisherId = req.headers["x-publisher-id"] as string || "demo-publisher";
+      // First try to get the publisher ID from the request context
+      let publisherId = req.headers["x-publisher-id"] as string;
+      
+      // If no publisher ID in headers, try to get demo publisher
+      if (!publisherId) {
+        const [demoPublisher] = await db.select({ id: publishers.id })
+          .from(publishers)
+          .where(eq(publishers.subdomain, "demo"))
+          .limit(1);
+        
+        publisherId = demoPublisher?.id;
+      }
+      
+      // If still no publisher ID, return empty data
+      if (!publisherId) {
+        return res.json({
+          pixels: [],
+          aggregates: {
+            totalOpens: 0,
+            totalClicks: 0,
+            totalConversions: 0,
+            totalUnsubscribes: 0,
+            avgOpenRate: 0,
+            conversionRate: 0
+          },
+          fatigueAlerts: []
+        });
+      }
       
       const pixelData = await db.select().from(pixels)
         .where(eq(pixels.publisherId, publisherId))

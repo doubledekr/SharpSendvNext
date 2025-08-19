@@ -20,6 +20,7 @@ import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
 import { registerCampaignRoutes } from "./routes-campaigns";
+import { initializeDemoEnvironment, cleanupDemoData, getDemoConfig } from "./demo-environment";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -67,6 +68,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       settings: req.tenant.settings,
       url: `${req.tenant.subdomain}.sharpsend.io`
     });
+  });
+
+  // Demo environment endpoints
+  app.post('/api/demo/initialize', async (req, res) => {
+    try {
+      const result = await initializeDemoEnvironment();
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("Error initializing demo environment:", error);
+      res.status(500).json({ error: "Failed to initialize demo environment" });
+    }
+  });
+
+  app.get('/api/demo/status', (req, res) => {
+    const config = getDemoConfig();
+    res.json({
+      enabled: config.enabled,
+      ready: !!config.publisherId,
+      publisherId: config.publisherId
+    });
+  });
+
+  app.post('/api/demo/cleanup', async (req, res) => {
+    try {
+      const result = await cleanupDemoData();
+      res.json(result);
+    } catch (error) {
+      console.error("Error cleaning up demo data:", error);
+      res.status(500).json({ error: "Failed to cleanup demo data" });
+    }
+  });
+
+  // Demo login endpoint - bypasses normal authentication
+  app.post('/api/demo/login', async (req, res) => {
+    try {
+      const result = await initializeDemoEnvironment();
+      if (result.success) {
+        res.json({
+          token: result.token,
+          publisher: {
+            id: result.publisherId,
+            name: "Demo Financial Publisher",
+            subdomain: "demo",
+            plan: "premium"
+          },
+          user: {
+            id: result.userId,
+            email: "demo@sharpsend.io",
+            username: "demo",
+            role: "admin"
+          }
+        });
+      } else {
+        res.status(500).json({ error: "Failed to initialize demo environment" });
+      }
+    } catch (error) {
+      console.error("Error with demo login:", error);
+      res.status(500).json({ error: "Demo login failed" });
+    }
   });
 
   // Market sentiment endpoint for dashboard

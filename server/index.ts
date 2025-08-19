@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import { initializeDemoEnvironment } from "./demo-environment";
 import { tenantMiddleware } from "./middleware/tenant";
 
 const app = express();
@@ -54,6 +55,18 @@ app.use((req, res, next) => {
       }
     } catch (seedError) {
       console.warn("Database seeding failed but continuing startup:", seedError);
+    }
+    
+    // Initialize demo environment
+    try {
+      console.log("🔧 Initializing demo environment...");
+      const demoResult = await initializeDemoEnvironment();
+      if (demoResult.success) {
+        console.log("✅ Demo environment ready!");
+        console.log("📧 Demo login available at /login");
+      }
+    } catch (demoError) {
+      console.warn("Demo environment initialization failed:", demoError);
     }
   }
   
