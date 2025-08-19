@@ -76,11 +76,11 @@ const emailTypes = [
 ];
 
 const pipelineStages = [
-  { id: "suggested", label: "Suggested Sends", color: "bg-gray-100" },
-  { id: "drafts", label: "Drafts", color: "bg-blue-100" },
-  { id: "approved", label: "Approved", color: "bg-green-100" },
-  { id: "scheduled", label: "Scheduled", color: "bg-yellow-100" },
-  { id: "sent", label: "Sent", color: "bg-purple-100" },
+  { id: "suggested", label: "Suggested Sends", color: "bg-gray-100 dark:bg-gray-900" },
+  { id: "drafts", label: "Drafts", color: "bg-blue-100 dark:bg-blue-900" },
+  { id: "approved", label: "Approved", color: "bg-green-100 dark:bg-green-900" },
+  { id: "scheduled", label: "Scheduled", color: "bg-yellow-100 dark:bg-yellow-900" },
+  { id: "sent", label: "Sent", color: "bg-purple-100 dark:bg-purple-900" },
 ];
 
 export function CampaignsDashboard() {
@@ -145,7 +145,8 @@ export function CampaignsDashboard() {
   // Create campaign mutation
   const createCampaignMutation = useMutation({
     mutationFn: async (data: typeof newCampaign) => {
-      return await apiRequest("/api/campaigns", "POST", data);
+      const response = await apiRequest("POST", "/api/campaigns", data);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
@@ -168,7 +169,8 @@ export function CampaignsDashboard() {
   const createSendMutation = useMutation({
     mutationFn: async (data: typeof newSend) => {
       if (!selectedCampaign) return;
-      return await apiRequest(`/api/campaigns/${selectedCampaign.id}/sends`, "POST", data);
+      const response = await apiRequest("POST", `/api/campaigns/${selectedCampaign.id}/sends`, data);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", selectedCampaign?.id, "sends"] });
@@ -190,7 +192,8 @@ export function CampaignsDashboard() {
   // Update send pipeline stage
   const updatePipelineMutation = useMutation({
     mutationFn: async ({ sendId, pipelineStage }: { sendId: string; pipelineStage: string }) => {
-      return await apiRequest(`/api/sends/${sendId}/pipeline`, "PATCH", { pipelineStage });
+      const response = await apiRequest("PATCH", `/api/sends/${sendId}/pipeline`, { pipelineStage });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", selectedCampaign?.id, "sends"] });
@@ -480,33 +483,38 @@ export function CampaignsDashboard() {
                     </div>
 
                     {/* Pipeline Stages */}
-                    <div className="grid grid-cols-5 gap-4">
+                    <div className="grid grid-cols-5 gap-3">
                       {pipelineStages.map((stage) => (
                         <div
                           key={stage.id}
-                          className={`${stage.color} rounded-lg p-4 min-h-[400px]`}
+                          className={`${stage.color} dark:bg-opacity-20 border border-border rounded-lg p-3 min-h-[500px]`}
                           onDragOver={handleDragOver}
                           onDrop={(e) => handleDrop(e, stage.id)}
                         >
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold text-sm">{stage.label}</h3>
-                            <Badge variant="secondary">
+                          <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/50">
+                            <h3 className="font-semibold text-sm text-foreground">{stage.label}</h3>
+                            <Badge variant="secondary" className="text-xs">
                               {sendsData?.pipeline?.[stage.id]?.length || 0}
                             </Badge>
                           </div>
                           
-                          <div className="space-y-2">
-                            {loadingSends ? (
-                              <p className="text-xs text-muted-foreground">Loading...</p>
-                            ) : (
-                              sendsData?.pipeline?.[stage.id]?.map((send: SendItem) => (
-                                <Card
-                                  key={send.id}
-                                  className="cursor-move"
-                                  draggable
-                                  onDragStart={(e) => handleDragStart(e, send)}
-                                >
-                                  <CardContent className="p-3">
+                          <ScrollArea className="h-[420px]">
+                            <div className="space-y-2 pr-2">
+                              {loadingSends ? (
+                                <p className="text-xs text-muted-foreground text-center py-4">Loading...</p>
+                              ) : !sendsData?.pipeline?.[stage.id]?.length ? (
+                                <p className="text-xs text-muted-foreground text-center py-8">
+                                  No items in {stage.label.toLowerCase()}
+                                </p>
+                              ) : (
+                                sendsData?.pipeline?.[stage.id]?.map((send: SendItem) => (
+                                  <Card
+                                    key={send.id}
+                                    className="cursor-move hover:shadow-md transition-shadow"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, send)}
+                                  >
+                                    <CardContent className="p-3">
                                     <div className="space-y-2">
                                       <div className="flex items-start justify-between">
                                         <p className="text-xs font-medium line-clamp-1">
@@ -574,8 +582,9 @@ export function CampaignsDashboard() {
                               ))
                             )}
                           </div>
-                        </div>
-                      ))}
+                        </ScrollArea>
+                      </div>
+                    ))}
                     </div>
 
                     {/* Fatigue Alerts */}
