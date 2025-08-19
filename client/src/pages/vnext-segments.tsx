@@ -231,13 +231,13 @@ export function VNextSegments() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dynamic Segments</h1>
-            <p className="text-gray-600 mt-1">AI-powered segment detection and manual management</p>
-          </div>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Dynamic Segments</h1>
+          <p className="text-muted-foreground">AI-powered segment detection and manual management</p>
+        </div>
           
           <div className="flex gap-2">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -722,7 +722,6 @@ export function VNextSegments() {
             </Tabs>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }

@@ -165,18 +165,26 @@ export function VNextApprovals() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Approval Workflows</h1>
-          <p className="text-gray-600 mt-1">Review and approve content before publication</p>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Approval Workflows</h1>
+          <p className="text-muted-foreground">Review and approve content before publication</p>
         </div>
+        <div className="flex gap-2">
+          <Badge variant="outline" className="gap-1">
+            <Clock className="h-3 w-3" />
+            {approvals.filter(a => a.status === "pending").length} Pending
+          </Badge>
+        </div>
+      </div>
 
-        {/* Approval Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* Approval Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Pending Review</CardTitle>
+              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-yellow-600">
@@ -186,7 +194,7 @@ export function VNextApprovals() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Approved</CardTitle>
+              <CardTitle className="text-sm font-medium">Approved</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
@@ -196,7 +204,7 @@ export function VNextApprovals() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
+              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
@@ -206,7 +214,7 @@ export function VNextApprovals() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Changes Requested</CardTitle>
+              <CardTitle className="text-sm font-medium">Changes Requested</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">
@@ -422,7 +430,6 @@ export function VNextApprovals() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
     </div>
   );
 }

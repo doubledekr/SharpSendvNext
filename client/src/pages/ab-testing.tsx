@@ -212,15 +212,12 @@ export function ABTestingDashboard() {
   const testsToDisplay = activeTests.length > 0 ? activeTests : mockTests;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <FlaskConical className="w-8 h-8 text-purple-600" />
-            A/B Testing Center
-          </h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold">A/B Testing Center</h1>
+          <p className="text-muted-foreground">
             Run multi-variant tests across your entire subscriber population
           </p>
         </div>

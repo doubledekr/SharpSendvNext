@@ -179,15 +179,15 @@ export function VNextAssignmentDesk() {
   const filteredAssignments = filterAssignments(assignments);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Assignment Desk</h1>
-            <p className="text-gray-600 mt-1">Manage content planning and assignments</p>
-          </div>
-          
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Assignment Desk</h1>
+          <p className="text-muted-foreground">Manage content planning and assignments</p>
+        </div>
+        
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
@@ -455,7 +455,6 @@ export function VNextAssignmentDesk() {
             </Tabs>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }
