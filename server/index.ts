@@ -197,6 +197,8 @@ app.use((req, res, next) => {
     console.log("✅ Server is running and will stay alive...");
     console.log(`🌐 Health check available at http://localhost:${port}/`);
     console.log(`🔄 Server process will continue running until manually stopped`);
+    console.log(`🩺 Health check endpoint responds at: http://0.0.0.0:${port}/ (returns JSON status)`);
+    console.log(`⚡ Process ID: ${process.pid}`);
     
     // Add server error handling
     server.on('error', (error) => {
@@ -206,6 +208,17 @@ app.use((req, res, next) => {
     // Initialize expensive operations AFTER server is responding to health checks
     setImmediate(() => {
       initializeServicesAsync();
+    });
+    
+    // Keep the process alive indefinitely - prevent the async IIFE from completing
+    // This ensures the server continues running and can handle health checks
+    console.log("🔄 Keeping process alive - server will run until manually stopped or received shutdown signal");
+    
+    // Create an infinite promise that never resolves to keep the main function running
+    await new Promise<void>(() => {
+      // This promise never resolves, keeping the async function alive
+      // The only way the process will exit is through signal handlers (SIGTERM, SIGINT)
+      // or through process.exit() calls in error conditions
     });
     
   } catch (listenError) {

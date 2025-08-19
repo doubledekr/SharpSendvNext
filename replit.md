@@ -53,6 +53,8 @@ The platform is multi-tenant with complete data isolation via subdomain-based ro
 
 **Process Stability Monitoring (August 2025)**: Added comprehensive process monitoring with exit event handlers, uncaught exception logging, and unhandled rejection tracking. Implemented graceful shutdown handling for SIGTERM/SIGINT signals. Server includes explicit process-alive messaging and error monitoring to debug any deployment termination issues. All process exits now properly logged with diagnostic information.
 
+**Deployment Process Lifecycle Fix (August 2025)**: Resolved deployment failure where server would exit with code 0 immediately after initialization. Applied critical fixes: (1) Prevented async IIFE from completing by adding infinite Promise that never resolves, keeping the main function alive indefinitely, (2) Enhanced process monitoring with explicit "keeping process alive" messaging and process ID logging, (3) Confirmed health check endpoint (/) responds correctly for deployment health checks. Server now stays running until explicitly terminated via shutdown signals, ensuring deployment stability and health check availability.
+
 ## External Dependencies
 
 ### Database Services

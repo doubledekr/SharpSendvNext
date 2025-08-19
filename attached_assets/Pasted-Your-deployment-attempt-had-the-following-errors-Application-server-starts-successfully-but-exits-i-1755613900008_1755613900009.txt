@@ -1,0 +1,104 @@
+Your deployment attempt had the following errors:
+Application server starts successfully but exits immediately with code 0 after completing initialization, preventing health checks from working in server/index.ts
+Health check endpoint (/) is not responding because the server process terminates before it can handle requests
+Server exits with 'main done, exiting' message indicating the async IIFE completed and allowed the process to end naturally
+Agent suggestions
+console.log("✅ Server is running and will stay alive...");
+    console.log(`🌐 Health check available at http://localhost:${port}/`);
+    console.log(`🔄 Server process will continue running until manually stopped`);
+    
+    // Add server error handling
+    server.on('error', (error) => {
+      console.error('❌ Server error:', error);
+    });
+    
+    // Initialize expensive operations AFTER server is responding to health checks
+    setImmediate(() => {
+      initializeServicesAsync();
+    });
+console.log("✅ Server is running and will stay alive...");
+    console.log(`🌐 Health check available at http://localhost:${port}/`);
+    console.log(`🔄 Server process will continue running until manually stopped`);
+    
+    // Add server error handling
+    server.on('error', (error) => {
+      console.error('❌ Server error:', error);
+    });
+    
+    // Initialize expensive operations AFTER server is responding to health checks
+    setImmediate(() => {
+      initializeServicesAsync();
+    });
+    
+    // Keep the process alive indefinitely
+    process.stdin.resume(); // prevents node from exiting
+})().catch((startupError) => {
+  console.error("💥 Fatal server startup error:", startupError);
+  console.error("Stack trace:", startupError.stack);
+  console.error("Environment variables:", {
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? "configured" : "missing",
+    PORT: process.env.PORT
+  });
+  process.exit(1);
+});
+})().catch((startupError) => {
+  console.error("💥 Fatal server startup error:", startupError);
+  console.error("Stack trace:", startupError.stack);
+  console.error("Environment variables:", {
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? "configured" : "missing",
+    PORT: process.env.PORT
+  });
+  process.exit(1);
+});
+
+// Prevent the process from exiting
+process.on('exit', (code) => {
+  if (code === 0) {
+    console.log('🚨 Process attempting to exit normally - this should not happen in production');
+  }
+});
+
+// Keep process alive
+setInterval(() => {
+  // This empty interval keeps the event loop active
+}, 1000 * 60 * 60); // Check every hour
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    
+    console.error("Express error handler:", {
+      status,
+      message,
+      stack: err.stack,
+      url: _req.url,
+      method: _req.method
+    });
+
+    res.status(status).json({ message });
+  });
+// Add explicit health check endpoint before other routes
+  app.get('/', (req, res) => {
+    res.status(200).json({ 
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime()
+    });
+  });
+
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    
+    console.error("Express error handler:", {
+      status,
+      message,
+      stack: err.stack,
+      url: _req.url,
+      method: _req.method
+    });
+
+    res.status(status).json({ message });
+  });
