@@ -36,6 +36,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Root health check endpoint for deployment health checks
+  app.get("/", (req, res) => {
+    res.status(200).json({ 
+      status: "healthy", 
+      service: "SharpSend API",
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ 

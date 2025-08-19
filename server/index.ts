@@ -84,23 +84,25 @@ app.use((req, res, next) => {
     console.log("Production mode - skipping database seeding");
   }
   
-  // Initialize demo environment in all environments (non-blocking)
-  // This should never prevent server startup
-  setImmediate(async () => {
-    try {
-      console.log("🔧 Initializing demo environment...");
-      const demoResult = await initializeDemoEnvironment();
-      if (demoResult && demoResult.success) {
-        console.log("✅ Demo environment ready!");
-        console.log("📧 Demo login available at /login");
-      } else {
-        console.log("⚠️ Demo environment setup skipped or failed - server continuing normally");
+  // Skip demo environment initialization for production health checks
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (!isProduction) {
+    // Initialize demo environment in development only (non-blocking)
+    setImmediate(async () => {
+      try {
+        console.log("🔧 Initializing demo environment...");
+        const demoResult = await initializeDemoEnvironment();
+        if (demoResult && demoResult.success) {
+          console.log("✅ Demo environment ready!");
+          console.log("📧 Demo login available at /login");
+        } else {
+          console.log("⚠️ Demo environment setup skipped or failed - server continuing normally");
+        }
+      } catch (demoError) {
+        console.warn("⚠️ Demo environment initialization failed - server continuing normally");
       }
-    } catch (demoError) {
-      console.warn("⚠️ Demo environment initialization failed - server continuing normally");
-      console.warn("Error details:", demoError);
-    }
-  });
+    });
+  }
   
   const server = await registerRoutes(app);
 
