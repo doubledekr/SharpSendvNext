@@ -16,21 +16,44 @@ app.set('etag', false);
 // Add process monitoring for debugging deployment issues
 process.on('exit', (code) => {
   console.log(`🚨 Process exiting with code: ${code}`);
+  if (code === 0) {
+    console.log('🚨 Process attempting to exit normally - this should not happen in production!');
+    console.trace('Exit stack trace');
+  }
 });
 
 process.on('beforeExit', (code) => {
   console.log(`🚨 Process about to exit with code: ${code}`);
+  console.log('🚨 Active handles:', (process as any)._getActiveHandles?.()?.length || 'unknown');
+  console.log('🚨 Active requests:', (process as any)._getActiveRequests?.()?.length || 'unknown');
+  
+  // In production, prevent normal exits
+  if (process.env.NODE_ENV === 'production' && code === 0) {
+    console.log('🚨 Preventing normal exit in production - keeping server alive');
+    // Keep the event loop alive
+    setImmediate(() => {
+      console.log('🔄 Restarted event loop to prevent exit');
+    });
+  }
 });
 
 process.on('uncaughtException', (error) => {
   console.error('🚨 Uncaught Exception:', error);
   console.error('Stack trace:', error.stack);
   // Don't exit immediately - log the error but continue serving
+  // In production, we want to be more resilient
+  if (process.env.NODE_ENV === 'production') {
+    console.error('🏭 Production mode: continuing to serve despite uncaught exception');
+  }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
   // Don't exit on unhandled rejections - log and continue
+  // In production, log but keep serving
+  if (process.env.NODE_ENV === 'production') {
+    console.error('🏭 Production mode: continuing to serve despite unhandled rejection');
+  }
 });
 
 // Basic middleware setup
@@ -214,11 +237,24 @@ app.use((req, res, next) => {
     // This ensures the server continues running and can handle health checks
     console.log("🔄 Keeping process alive - server will run until manually stopped or received shutdown signal");
     
-    // Create an infinite promise that never resolves to keep the main function running
+    // Multiple mechanisms to keep the process alive
+    // 1. Prevent stdin from closing (keeps event loop active)
+    process.stdin.resume();
+    
+    // 2. Keep a reference to prevent garbage collection
+    const keepAliveInterval = setInterval(() => {
+      // This empty interval keeps the event loop active
+      // Check every hour to ensure minimal resource usage
+    }, 1000 * 60 * 60);
+    
+    // 3. Create an infinite promise that never resolves
     await new Promise<void>(() => {
       // This promise never resolves, keeping the async function alive
       // The only way the process will exit is through signal handlers (SIGTERM, SIGINT)
       // or through process.exit() calls in error conditions
+      
+      // Store the interval reference to prevent cleanup
+      (process as any).keepAliveInterval = keepAliveInterval;
     });
     
   } catch (listenError) {
@@ -274,17 +310,37 @@ async function initializeServicesAsync() {
 const gracefulShutdown = (signal: string) => {
   console.log(`🛑 Received ${signal}, shutting down gracefully`);
   
+  // Clean up resources
+  if ((process as any).keepAliveInterval) {
+    clearInterval((process as any).keepAliveInterval);
+    console.log('🧹 Cleaned up keep-alive interval');
+  }
+  
   // In production, only exit if we get an explicit shutdown signal
   if (process.env.NODE_ENV === 'production') {
-    console.log('🏭 Production environment - allowing process manager to handle shutdown');
-    console.log('✅ Graceful shutdown initiated');
-    process.exit(0);
+    console.log('🏭 Production environment - graceful shutdown initiated');
+    // Give a moment for cleanup, then exit
+    setTimeout(() => {
+      console.log('✅ Graceful shutdown completed');
+      process.exit(0);
+    }, 1000);
   } else {
-    // In development, we can be more aggressive about shutting down
-    console.log('✅ Graceful shutdown initiated');
-    process.exit(0);
+    // In development, we can be more immediate about shutting down
+    console.log('✅ Development graceful shutdown initiated');
+    setTimeout(() => {
+      process.exit(0);
+    }, 500);
   }
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Additional safety for preventing unwanted exits
+process.on('SIGUSR1', () => {
+  console.log('📡 Received SIGUSR1 (typically used by PM2/nodemon for restarts)');
+});
+
+process.on('SIGUSR2', () => {
+  console.log('📡 Received SIGUSR2 (typically used by PM2/nodemon for restarts)');
+});
