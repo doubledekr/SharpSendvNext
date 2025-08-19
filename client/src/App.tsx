@@ -36,15 +36,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 function PublicRoute({ component: Component }: { component: React.ComponentType }) {
-  const [, setLocation] = useLocation();
-  
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setLocation("/dashboard");
-    }
-  }, [setLocation]);
-
+  // Remove auto-redirect logic - let users stay on auth pages
   return <Component />;
 }
 

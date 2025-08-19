@@ -56,18 +56,18 @@ app.use((req, res, next) => {
     } catch (seedError) {
       console.warn("Database seeding failed but continuing startup:", seedError);
     }
-    
-    // Initialize demo environment
-    try {
-      console.log("🔧 Initializing demo environment...");
-      const demoResult = await initializeDemoEnvironment();
-      if (demoResult.success) {
-        console.log("✅ Demo environment ready!");
-        console.log("📧 Demo login available at /login");
-      }
-    } catch (demoError) {
-      console.warn("Demo environment initialization failed:", demoError);
+  }
+  
+  // Initialize demo environment in all environments
+  try {
+    console.log("🔧 Initializing demo environment...");
+    const demoResult = await initializeDemoEnvironment();
+    if (demoResult.success) {
+      console.log("✅ Demo environment ready!");
+      console.log("📧 Demo login available at /login");
     }
+  } catch (demoError) {
+    console.warn("Demo environment initialization failed:", demoError);
   }
   
   const server = await registerRoutes(app);
