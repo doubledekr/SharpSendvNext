@@ -60,8 +60,8 @@ function Router() {
       {!hideNavigation && <MasterNavigation />}
       <div className={!hideNavigation ? "pt-16" : ""}>
         <Switch>
-          {/* vNext is now the main system */}
-          <Route path="/" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          {/* Always start on login page */}
+          <Route path="/" component={() => <PublicRoute component={Login} />} />
           <Route path="/dashboard" component={() => <ProtectedRoute component={VNextDashboard} />} />
           <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
           <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
