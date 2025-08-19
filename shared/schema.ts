@@ -55,21 +55,85 @@ export const subscribers = pgTable("subscribers", {
   tags: text("tags").array(),
 });
 
+// Campaign hierarchy - top level container for multiple sends
 export const campaigns = pgTable("campaigns", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   publisherId: varchar("publisher_id").notNull(),
   name: text("name").notNull(),
-  subjectLine: text("subject_line").notNull(),
-  content: text("content").notNull(),
-  status: text("status").notNull().default("draft"),
-  scheduledAt: timestamp("scheduled_at"),
-  sentAt: timestamp("sent_at"),
-  openRate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
-  clickRate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
-  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
-  subscriberCount: integer("subscriber_count").default(0),
+  type: text("type").notNull(), // marketing, editorial, fulfillment, paid_fulfillment, engagement, transactional
+  description: text("description"),
+  owner: varchar("owner"), // user id of campaign owner
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  status: text("status").notNull().default("active"), // active, paused, completed, archived
+  // Summary stats (rolled up from sends)
+  totalSends: integer("total_sends").default(0),
+  totalOpens: integer("total_opens").default(0),
+  totalClicks: integer("total_clicks").default(0),
+  totalConversions: integer("total_conversions").default(0),
+  totalRevenue: decimal("total_revenue", { precision: 10, scale: 2 }).default("0"),
+  avgOpenRate: decimal("avg_open_rate", { precision: 5, scale: 2 }).default("0"),
+  avgClickRate: decimal("avg_click_rate", { precision: 5, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Individual sends within a campaign
+export const sends = pgTable("sends", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  campaignId: varchar("campaign_id").notNull(), // FK to campaigns
+  name: text("name").notNull(),
+  subjectLine: text("subject_line").notNull(),
+  content: text("content").notNull(),
+  status: text("status").notNull().default("suggested"), // suggested, draft, approved, scheduled, sent
+  pipelineStage: text("pipeline_stage").notNull().default("suggested"), // suggested_sends, drafts, approved, scheduled, sent
+  targetedSegments: jsonb("targeted_segments").$type<string[]>().default([]),
+  assignedTo: varchar("assigned_to"), // copywriter user id
+  scheduledAt: timestamp("scheduled_at"),
+  sentAt: timestamp("sent_at"),
+  // Performance data
+  recipientCount: integer("recipient_count").default(0),
+  openCount: integer("open_count").default(0),
+  clickCount: integer("click_count").default(0),
+  conversionCount: integer("conversion_count").default(0),
+  unsubscribeCount: integer("unsubscribe_count").default(0),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
+  openRate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
+  clickRate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
+  // Pixel tracking
+  pixelId: varchar("pixel_id"), // FK to pixels table
+  pixelAttached: boolean("pixel_attached").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Tracking pixels for each send
+export const pixels = pgTable("pixels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  sendId: varchar("send_id").notNull(), // FK to sends
+  pixelCode: text("pixel_code").notNull().unique(), // unique tracking code
+  pixelUrl: text("pixel_url").notNull(), // full tracking URL
+  // Tracking data
+  totalOpens: integer("total_opens").default(0),
+  uniqueOpens: integer("unique_opens").default(0),
+  totalClicks: integer("total_clicks").default(0),
+  uniqueClicks: integer("unique_clicks").default(0),
+  conversions: integer("conversions").default(0),
+  unsubscribes: integer("unsubscribes").default(0),
+  // Device & location tracking
+  deviceData: jsonb("device_data").$type<{
+    desktop: number;
+    mobile: number;
+    tablet: number;
+  }>().default({ desktop: 0, mobile: 0, tablet: 0 }),
+  locationData: jsonb("location_data").$type<Record<string, number>>().default({}),
+  // Fatigue tracking
+  fatigueScore: decimal("fatigue_score", { precision: 5, scale: 2 }).default("0"),
+  fatigueAlerts: jsonb("fatigue_alerts").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastActivityAt: timestamp("last_activity_at"),
 });
 
 export const abTests = pgTable("ab_tests", {
@@ -420,13 +484,32 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).pick({
 export const insertCampaignSchema = createInsertSchema(campaigns).pick({
   publisherId: true,
   name: true,
+  type: true,
+  description: true,
+  owner: true,
+  startDate: true,
+  endDate: true,
+  status: true,
+});
+
+export const insertSendSchema = createInsertSchema(sends).pick({
+  publisherId: true,
+  campaignId: true,
+  name: true,
   subjectLine: true,
   content: true,
   status: true,
-  openRate: true,
-  clickRate: true,
-  revenue: true,
-  subscriberCount: true,
+  pipelineStage: true,
+  targetedSegments: true,
+  assignedTo: true,
+  scheduledAt: true,
+});
+
+export const insertPixelSchema = createInsertSchema(pixels).pick({
+  publisherId: true,
+  sendId: true,
+  pixelCode: true,
+  pixelUrl: true,
 });
 
 export const insertABTestSchema = createInsertSchema(abTests).pick({
@@ -586,6 +669,12 @@ export type Subscriber = typeof subscribers.$inferSelect;
 
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Campaign = typeof campaigns.$inferSelect;
+
+export type InsertSend = z.infer<typeof insertSendSchema>;
+export type Send = typeof sends.$inferSelect;
+
+export type InsertPixel = z.infer<typeof insertPixelSchema>;
+export type Pixel = typeof pixels.$inferSelect;
 
 export type InsertABTest = z.infer<typeof insertABTestSchema>;
 export type ABTest = typeof abTests.$inferSelect;

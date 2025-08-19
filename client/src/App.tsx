@@ -9,6 +9,7 @@ import { VNextAssignmentDesk } from "@/pages/vnext-assignment-desk";
 import { VNextApprovals } from "@/pages/vnext-approvals";
 import { VNextSegments } from "@/pages/vnext-segments";
 import { ABTestingDashboard } from "@/pages/ab-testing";
+import { CampaignsDashboard } from "@/pages/campaigns-dashboard";
 import DemoOnboarding from "@/pages/demo-onboarding";
 import PublicAssignment from "@/pages/public-assignment";
 import Register from "@/pages/register";
@@ -66,7 +67,7 @@ function Router() {
           <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
           <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
           <Route path="/ab-testing" component={() => <ProtectedRoute component={ABTestingDashboard} />} />
-          <Route path="/campaigns" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          <Route path="/campaigns" component={() => <ProtectedRoute component={CampaignsDashboard} />} />
           <Route path="/analytics" component={() => <ProtectedRoute component={VNextDashboard} />} />
           
           {/* Demo Onboarding */}

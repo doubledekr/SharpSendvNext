@@ -19,6 +19,7 @@ import emailGenerationRoutes from "./routes-email-generation";
 import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
+import { registerCampaignRoutes } from "./routes-campaigns";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -697,6 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerSendQueueRoutes(app);
   registerVNextRoutes(app);
   registerDemoRoutes(app);
+  registerCampaignRoutes(app);
   app.use(assignmentRoutes);
   app.use(approvalsRoutes);
   app.use(segmentsRoutes);
