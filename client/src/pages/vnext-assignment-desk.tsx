@@ -174,12 +174,13 @@ export function VNextAssignmentDesk() {
 
     setIsGenerating(true);
     try {
-      const response = await apiRequest("/api/ai/assignments/suggest", "POST", {
+      const response = await apiRequest("POST", "/api/ai/assignments/suggest", {
         source_url: sourceUrl || null,
         raw_text: sourceText || null,
         type_hint: patternType === "auto" ? null : patternType,
-      }) as any;
-      setSuggestions(response.suggestions || []);
+      });
+      const data = await response.json();
+      setSuggestions(data.suggestions || []);
     } catch (error) {
       toast({
         title: "Error",
@@ -241,7 +242,8 @@ export function VNextAssignmentDesk() {
         }
       };
 
-      return await apiRequest("/api/assignments", "POST", payload);
+      const response = await apiRequest("POST", "/api/assignments", payload);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
@@ -278,7 +280,8 @@ export function VNextAssignmentDesk() {
   // Update assignment status
   const updateAssignmentMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Assignment> }) => {
-      return await apiRequest(`/api/assignments/${id}`, "PATCH", updates);
+      const response = await apiRequest("PATCH", `/api/assignments/${id}`, updates);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
@@ -292,7 +295,8 @@ export function VNextAssignmentDesk() {
   // Generate shareable link mutation
   const generateShareableLinkMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/assignments/${id}/share`, "POST", {});
+      const response = await apiRequest("POST", `/api/assignments/${id}/share`, {});
+      return await response.json();
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
@@ -376,10 +380,12 @@ export function VNextAssignmentDesk() {
     setIsRunningDetection(true);
     try {
       // First initialize triggers if needed
-      await apiRequest("/api/opportunity-detection/initialize", "POST", {});
+      const initResponse = await apiRequest("POST", "/api/opportunity-detection/initialize", {});
+      await initResponse.json();
       
       // Run detection
-      const response = await apiRequest("/api/opportunity-detection/run", "POST", {}) as any;
+      const runResponse = await apiRequest("POST", "/api/opportunity-detection/run", {});
+      const response = await runResponse.json();
       
       toast({
         title: "Detection Complete",
