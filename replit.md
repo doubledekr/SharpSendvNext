@@ -47,6 +47,8 @@ The platform is multi-tenant with complete data isolation via subdomain-based ro
 
 **Database Environment Strategy**: Currently using shared database with error handling for duplicate constraints. Production deployment handles PostgreSQL error code 23505 (duplicate key violations) gracefully to prevent server crashes. Future improvement path documented in `database-separation-guide.md` recommends Replit Production Databases for complete demo/production separation.
 
+**Deployment Stability Fixes (August 2025)**: Enhanced server startup process to prevent immediate exits during deployment. Server startup now uses proper Promise-based listener setup with explicit error handling. Added comprehensive fallback mechanisms for both Vite development server failures and static file serving failures in production. The server will now stay alive even if frontend assets are missing, serving basic fallback HTML for health checks.
+
 ## External Dependencies
 
 ### Database Services

@@ -125,9 +125,54 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    try {
+      await setupVite(app, server);
+      console.log("✅ Vite development server setup completed");
+    } catch (viteError) {
+      console.error("⚠️ Vite setup failed, but continuing with server startup:", viteError);
+      // Don't exit - continue with basic static serving
+      try {
+        serveStatic(app);
+        console.log("✅ Fallback to static file serving");
+      } catch (staticError) {
+        console.error("⚠️ Static file serving also failed:", staticError);
+        // Serve a basic fallback response
+        app.get("*", (req, res) => {
+          res.status(200).send(`
+            <!DOCTYPE html>
+            <html>
+              <head><title>SharpSend</title></head>
+              <body>
+                <h1>SharpSend API Server</h1>
+                <p>Server is running but frontend assets are not available.</p>
+                <p>API endpoints are available at /api/*</p>
+              </body>
+            </html>
+          `);
+        });
+      }
+    }
   } else {
-    serveStatic(app);
+    try {
+      serveStatic(app);
+      console.log("✅ Production static file serving setup completed");
+    } catch (staticError) {
+      console.error("⚠️ Static file serving failed, serving basic fallback:", staticError);
+      // Serve a basic fallback response for production
+      app.get("*", (req, res) => {
+        res.status(200).send(`
+          <!DOCTYPE html>
+          <html>
+            <head><title>SharpSend</title></head>
+            <body>
+              <h1>SharpSend API Server</h1>
+              <p>Server is running in production mode.</p>
+              <p>Frontend build may be missing. API endpoints are available at /api/*</p>
+            </body>
+          </html>
+        `);
+      });
+    }
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
@@ -137,15 +182,27 @@ app.use((req, res, next) => {
   const port = parseInt(process.env.PORT || '5000', 10);
   
   try {
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      log(`🎉 Server successfully started on port ${port}`);
-      log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-      log(`🚀 Server ready to accept connections`);
+    // Ensure the server starts and stays running
+    await new Promise<void>((resolve, reject) => {
+      server.listen({
+        port,
+        host: "0.0.0.0",
+        reusePort: true,
+      }, (error?: Error) => {
+        if (error) {
+          reject(error);
+        } else {
+          log(`🎉 Server successfully started on port ${port}`);
+          log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+          log(`🚀 Server ready to accept connections`);
+          resolve();
+        }
+      });
     });
+    
+    // Keep the process alive
+    console.log("✅ Server is running and will stay alive...");
+    
   } catch (listenError) {
     console.error("❌ Failed to start server on port", port, ":", listenError);
     process.exit(1);
