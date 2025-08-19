@@ -25,6 +25,7 @@ import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
 import { registerCampaignRoutes } from "./routes-campaigns";
 import { initializeDemoEnvironment, cleanupDemoData, getDemoConfig } from "./demo-environment";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -876,6 +877,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerDemoRoutes(app);
   registerCampaignRoutes(app);
   app.use(assignmentRoutes);
+  
+  // Image upload endpoints for assignments
+  app.post("/api/assignments/upload-url", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+  
+  app.post("/api/assignments/process-image", async (req, res) => {
+    try {
+      const { uploadUrl, imageType, assignmentId } = req.body;
+      const objectStorageService = new ObjectStorageService();
+      
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        uploadUrl,
+        {
+          owner: assignmentId || "temp",
+          visibility: "public",
+          aclRules: [],
+        },
+      );
+      
+      const cdnUrl = uploadUrl.includes("storage.googleapis.com") 
+        ? uploadUrl 
+        : `https://storage.googleapis.com${objectPath}`;
+      
+      res.json({ 
+        objectPath,
+        cdnUrl,
+        imageType
+      });
+    } catch (error) {
+      console.error("Error processing image:", error);
+      res.status(500).json({ error: "Failed to process image" });
+    }
+  });
+  
+  // Public object serving endpoint
+  app.get("/objects/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+        objectStorageService.downloadObject(objectFile, res);
+      } else {
+        objectStorageService.downloadObject(file, res);
+      }
+    } catch (error) {
+      console.error("Error serving object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // Public assets serving endpoint
+  app.get("/public-objects/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error searching for public object:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
   app.use(approvalsRoutes);
   app.use(segmentsRoutes);
   app.use(emailGenerationRoutes);

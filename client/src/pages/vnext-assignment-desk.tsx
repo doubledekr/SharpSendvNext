@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -65,6 +66,7 @@ export function VNextAssignmentDesk() {
     assignee: "",
     notes: "",
     tags: [] as string[],
+    images: [] as { url: string; type: 'hero' | 'inline' | 'attachment'; caption?: string }[],
   });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
@@ -722,6 +724,146 @@ export function VNextAssignmentDesk() {
                 </div>
 
                 {/* Notes */}
+                {/* Image Upload Section */}
+                <div className="space-y-3">
+                  <Label>Images & Media</Label>
+                  <div className="space-y-2">
+                    {/* Hero Image Upload */}
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Image className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Hero Image</p>
+                          <p className="text-xs text-muted-foreground">Main featured image</p>
+                        </div>
+                      </div>
+                      <ObjectUploader
+                        maxNumberOfFiles={1}
+                        onGetUploadParameters={async () => {
+                          const response = await fetch("/api/assignments/upload-url", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ type: "hero" }),
+                          });
+                          const data = await response.json();
+                          return { method: "PUT" as const, url: data.uploadURL };
+                        }}
+                        onComplete={async (result) => {
+                          if (result.successful.length > 0) {
+                            const uploadUrl = result.successful[0].uploadURL;
+                            const response = await fetch("/api/assignments/process-image", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ 
+                                uploadUrl,
+                                imageType: "hero",
+                                assignmentId: "temp"
+                              }),
+                            });
+                            const data = await response.json();
+                            setNewAssignment({
+                              ...newAssignment,
+                              images: [...newAssignment.images, { url: data.cdnUrl, type: "hero" }]
+                            });
+                            toast({
+                              title: "Hero image uploaded",
+                              description: "Image indexed and ready for CDN delivery",
+                            });
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Upload Hero
+                      </ObjectUploader>
+                    </div>
+
+                    {/* Inline Images Upload */}
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Image className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Inline Images</p>
+                          <p className="text-xs text-muted-foreground">Content body images</p>
+                        </div>
+                      </div>
+                      <ObjectUploader
+                        maxNumberOfFiles={5}
+                        onGetUploadParameters={async () => {
+                          const response = await fetch("/api/assignments/upload-url", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ type: "inline" }),
+                          });
+                          const data = await response.json();
+                          return { method: "PUT" as const, url: data.uploadURL };
+                        }}
+                        onComplete={async (result) => {
+                          for (const file of result.successful) {
+                            const response = await fetch("/api/assignments/process-image", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ 
+                                uploadUrl: file.uploadURL,
+                                imageType: "inline",
+                                assignmentId: "temp"
+                              }),
+                            });
+                            const data = await response.json();
+                            setNewAssignment({
+                              ...newAssignment,
+                              images: [...newAssignment.images, { url: data.cdnUrl, type: "inline" }]
+                            });
+                          }
+                          toast({
+                            title: "Inline images uploaded",
+                            description: `${result.successful.length} images indexed for CDN`,
+                          });
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Inline
+                      </ObjectUploader>
+                    </div>
+
+                    {/* Display uploaded images */}
+                    {newAssignment.images.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium">Uploaded Images</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {newAssignment.images.map((img, idx) => (
+                            <div key={idx} className="relative group">
+                              <img 
+                                src={img.url} 
+                                alt={`${img.type} image`}
+                                className="w-full h-20 object-cover rounded-lg border"
+                              />
+                              <Badge 
+                                className="absolute top-1 left-1 text-xs"
+                                variant={img.type === "hero" ? "default" : "secondary"}
+                              >
+                                {img.type}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => {
+                                  setNewAssignment({
+                                    ...newAssignment,
+                                    images: newAssignment.images.filter((_, i) => i !== idx)
+                                  });
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="assignmentNotes">Notes</Label>
                   <Textarea
