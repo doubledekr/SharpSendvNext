@@ -103,13 +103,15 @@ export function VNextAssignmentDesk() {
     mutationFn: async (id: string) => {
       return await apiRequest(`/api/assignments/${id}/share`, "POST", {});
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
-      navigator.clipboard.writeText(data.shareableUrl);
-      toast({
-        title: "Link Copied!",
-        description: "Shareable link has been copied to clipboard.",
-      });
+      if (data && data.shareableUrl) {
+        navigator.clipboard.writeText(data.shareableUrl);
+        toast({
+          title: "Link Copied!",
+          description: "Shareable link has been copied to clipboard.",
+        });
+      }
     },
   });
 
@@ -357,7 +359,7 @@ export function VNextAssignmentDesk() {
                     {filteredAssignments.map((assignment) => (
                       <div
                         key={assignment.id}
-                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -370,9 +372,9 @@ export function VNextAssignmentDesk() {
                               <Badge variant="outline">{assignment.type}</Badge>
                             </div>
                             {assignment.description && (
-                              <p className="text-gray-600 mb-2">{assignment.description}</p>
+                              <p className="text-muted-foreground mb-2">{assignment.description}</p>
                             )}
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                               {assignment.dueDate && (
                                 <div className="flex items-center space-x-1">
                                   <Calendar className="h-3 w-3" />
