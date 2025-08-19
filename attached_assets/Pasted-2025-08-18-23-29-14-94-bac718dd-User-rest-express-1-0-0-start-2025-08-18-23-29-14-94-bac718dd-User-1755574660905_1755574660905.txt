@@ -1,0 +1,140 @@
+2025-08-18 23:29:14.94
+bac718dd
+User
+> rest-express@1.0.0 start
+2025-08-18 23:29:14.94
+bac718dd
+User
+> NODE_ENV=production node dist/index.js
+2025-08-18 23:31:03.65
+bac718dd
+User
+🌱 Starting demo data seeding...
+2025-08-18 23:31:05.25
+bac718dd
+User
+🚀 Starting server in production mode
+2025-08-18 23:31:05.25
+bac718dd
+User
+📍 Database URL configured: Yes
+2025-08-18 23:31:05.25
+bac718dd
+User
+🔌 Testing database connection...
+2025-08-18 23:31:11.75
+bac718dd
+User
+✅ Database connection successful
+2025-08-18 23:31:11.75
+bac718dd
+User
+Production mode - skipping database seeding
+2025-08-18 23:31:16.65
+bac718dd
+User
+3:31:12 AM [express] 🎉 Server successfully started on port 5000
+2025-08-18 23:31:16.65
+bac718dd
+User
+3:31:16 AM [express] 🌐 Environment: production
+2025-08-18 23:31:16.65
+bac718dd
+User
+3:31:16 AM [express] 🚀 Server ready to accept connections
+2025-08-18 23:31:16.65
+bac718dd
+User
+🔧 Initializing demo environment...
+2025-08-18 23:31:19.05
+bac718dd
+User
+🚀 Initializing comprehensive demo environment...
+2025-08-18 23:31:19.55
+bac718dd
+User
+✓ Using existing demo publisher
+2025-08-18 23:31:20.25
+bac718dd
+User
+✓ Using existing demo user
+2025-08-18 23:31:21.15
+bac718dd
+User
+✓ Skipping campaign creation - handled by seedDatabase
+2025-08-18 23:31:21.15
+bac718dd
+User
+✓ Skipping assignments creation - schema mismatch
+2025-08-18 23:31:22.35
+bac718dd
+User
+❌ Demo data seeding failed: PostgresError: duplicate key value violates unique constraint "publishers_subdomain_unique"
+2025-08-18 23:31:22.35
+bac718dd
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-18 23:31:22.35
+bac718dd
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-18 23:31:22.35
+bac718dd
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-18 23:31:22.35
+bac718dd
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-18 23:31:22.35
+bac718dd
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-18 23:31:22.35
+bac718dd
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-18 23:31:22.35
+bac718dd
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-18 23:31:22.35
+bac718dd
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2025-08-18 23:31:22.35
+bac718dd
+User
+severity_local: 'ERROR',
+2025-08-18 23:31:22.35
+bac718dd
+User
+severity: 'ERROR',
+2025-08-18 23:31:22.35
+bac718dd
+User
+code: '23505',
+2025-08-18 23:31:22.35
+bac718dd
+User
+detail: 'Key (subdomain)=(demo) already exists.',
+2025-08-18 23:31:22.35
+bac718dd
+User
+schema_name: 'public',
+2025-08-18 23:31:22.35
+bac718dd
+User
+table_name: 'publishers',
+2025-08-18 23:31:22.35
+bac718dd
+User
+constraint_name: 'publishers_subdomain_unique',
+2025-08-18 23:31:22.35
+bac718dd
+User
+file: 'nbtinsert.c',
+2025-08-18 23:31:22.35
+bac718dd
+User
+line: '666',
