@@ -14,7 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -39,47 +40,215 @@ export function VNextAssignmentDesk() {
   const { toast } = useToast();
   const [newAssignment, setNewAssignment] = useState({
     title: "",
-    description: "",
+    objective: "",
+    angle: "",
+    keyPoints: [] as string[],
     type: "newsletter",
     priority: "medium",
     dueDate: "",
+    ctaLabel: "",
+    ctaUrl: "",
+    assignee: "",
     notes: "",
     tags: [] as string[],
   });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
+  const [keyPointInput, setKeyPointInput] = useState("");
+  const [isPrefillOpen, setIsPrefillOpen] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceText, setSourceText] = useState("");
+  const [patternType, setPatternType] = useState("auto");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Fetch assignments
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
     queryKey: ["/api/assignments"],
   });
 
+  // Validation functions
+  const validateField = (field: string, value: any): string => {
+    switch(field) {
+      case "title":
+        if (!value) return "Title is required";
+        if (value.length < 2) return "Title must be at least 2 characters";
+        if (value.length > 120) return "Title must be less than 120 characters";
+        return "";
+      case "objective":
+        if (!value) return "Objective is required";
+        if (value.length > 300) return "Objective must be less than 300 characters";
+        return "";
+      case "angle":
+        if (!value) return "Angle/Hook is required";
+        if (value.length > 120) return "Angle must be less than 120 characters";
+        return "";
+      case "keyPoints":
+        if (!value || value.length === 0) return "At least 1 key point is required";
+        if (value.length > 3) return "Maximum 3 key points allowed";
+        for (const point of value) {
+          if (point.length < 5 || point.length > 140) {
+            return "Each key point must be 5-140 characters";
+          }
+        }
+        return "";
+      case "ctaUrl":
+        if (value && !value.match(/^https?:\/\/.+/)) {
+          return "Enter a full URL, e.g., https://example.com";
+        }
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    errors.title = validateField("title", newAssignment.title);
+    errors.objective = validateField("objective", newAssignment.objective);
+    errors.angle = validateField("angle", newAssignment.angle);
+    errors.keyPoints = validateField("keyPoints", newAssignment.keyPoints);
+    if (newAssignment.ctaUrl) {
+      errors.ctaUrl = validateField("ctaUrl", newAssignment.ctaUrl);
+    }
+    
+    setValidationErrors(errors);
+    return !Object.values(errors).some(error => error);
+  };
+
+  // Add key point
+  const addKeyPoint = () => {
+    if (keyPointInput.trim() && newAssignment.keyPoints.length < 3) {
+      const trimmed = keyPointInput.trim();
+      if (trimmed.length >= 5 && trimmed.length <= 140) {
+        setNewAssignment({
+          ...newAssignment,
+          keyPoints: [...newAssignment.keyPoints, trimmed]
+        });
+        setKeyPointInput("");
+        setValidationErrors({ ...validationErrors, keyPoints: "" });
+      }
+    }
+  };
+
+  // Remove key point
+  const removeKeyPoint = (index: number) => {
+    setNewAssignment({
+      ...newAssignment,
+      keyPoints: newAssignment.keyPoints.filter((_, i) => i !== index)
+    });
+  };
+
+  // Generate AI suggestions
+  const generateSuggestions = async () => {
+    if (!sourceUrl && !sourceText) {
+      toast({
+        title: "Input required",
+        description: "Please provide a URL or paste text to generate suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await apiRequest("/api/ai/assignments/suggest", "POST", {
+        source_url: sourceUrl || null,
+        raw_text: sourceText || null,
+        type_hint: patternType === "auto" ? null : patternType,
+      }) as any;
+      setSuggestions(response.suggestions || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate suggestions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Use AI suggestion
+  const useSuggestion = (suggestion: any) => {
+    setNewAssignment({
+      ...newAssignment,
+      title: suggestion.title || newAssignment.title,
+      objective: suggestion.objective || newAssignment.objective,
+      angle: suggestion.angle || newAssignment.angle,
+      keyPoints: suggestion.key_points || newAssignment.keyPoints,
+      ctaLabel: suggestion.cta?.label || newAssignment.ctaLabel,
+      ctaUrl: suggestion.cta?.url || newAssignment.ctaUrl,
+      dueDate: suggestion.due_at_suggestion ? 
+        new Date(suggestion.due_at_suggestion).toISOString().split('T')[0] : 
+        newAssignment.dueDate,
+      assignee: suggestion.assignee || newAssignment.assignee,
+    });
+    setIsPrefillOpen(false);
+    setSuggestions([]);
+    toast({
+      title: "Suggestion applied",
+      description: "Form has been filled with AI suggestions",
+    });
+  };
+
   // Create assignment mutation
   const createAssignmentMutation = useMutation({
     mutationFn: async (data: typeof newAssignment) => {
-      return await apiRequest("/api/assignments", "POST", data);
+      // Validate before sending
+      if (!validateForm()) {
+        throw new Error("Please fix validation errors");
+      }
+
+      const payload = {
+        title: data.title,
+        description: data.objective, // Map objective to description for now
+        type: data.type,
+        priority: data.priority,
+        dueDate: data.dueDate || undefined,
+        notes: data.notes,
+        tags: data.tags,
+        brief: {
+          objective: data.objective,
+          angle: data.angle,
+          keyPoints: data.keyPoints,
+          offer: data.ctaLabel ? {
+            label: data.ctaLabel,
+            url: data.ctaUrl || undefined
+          } : undefined,
+        }
+      };
+
+      return await apiRequest("/api/assignments", "POST", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
-      toast({
-        title: "Assignment Created",
-        description: "New assignment has been added to the desk.",
-      });
       setIsCreateDialogOpen(false);
       setNewAssignment({
         title: "",
-        description: "",
+        objective: "",
+        angle: "",
+        keyPoints: [],
         type: "newsletter",
         priority: "medium",
         dueDate: "",
+        ctaLabel: "",
+        ctaUrl: "",
+        assignee: "",
         notes: "",
         tags: [],
       });
+      setValidationErrors({});
+      toast({
+        title: "Assignment created",
+        description: "Assignment created—ready for writer",
+      });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to create assignment.",
+        description: error.message || "Failed to create assignment",
         variant: "destructive",
       });
     },
@@ -197,91 +366,294 @@ export function VNextAssignmentDesk() {
                 New Assignment
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[525px]">
+            <DialogContent className="sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Assignment</DialogTitle>
                 <DialogDescription>
                   Add a new assignment to the content planning desk.
                 </DialogDescription>
               </DialogHeader>
+              
               <div className="grid gap-4 py-4">
+                {/* AI Prefill Section */}
+                <Collapsible open={isPrefillOpen} onOpenChange={setIsPrefillOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        Use AI to prefill from a link or pasted text
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isPrefillOpen ? "rotate-180" : ""}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 pt-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="sourceUrl">Source URL</Label>
+                      <Input
+                        id="sourceUrl"
+                        value={sourceUrl}
+                        onChange={(e) => setSourceUrl(e.target.value)}
+                        placeholder="Paste source URL"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="sourceText">Or Paste Text</Label>
+                      <Textarea
+                        id="sourceText"
+                        value={sourceText}
+                        onChange={(e) => setSourceText(e.target.value)}
+                        placeholder="...or paste source text"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="patternSelect">Pattern</Label>
+                      <Select value={patternType} onValueChange={setPatternType}>
+                        <SelectTrigger id="patternSelect">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto-detect</SelectItem>
+                          <SelectItem value="newsletter">Newsletter</SelectItem>
+                          <SelectItem value="market_alert">Market Alert</SelectItem>
+                          <SelectItem value="promo">Promo</SelectItem>
+                          <SelectItem value="earnings_recap">Earnings Recap</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      onClick={generateSuggestions}
+                      disabled={isGenerating}
+                      className="w-full"
+                    >
+                      {isGenerating ? "Generating..." : "Generate suggestions"}
+                    </Button>
+                    
+                    {/* Suggestions list */}
+                    {suggestions.length > 0 && (
+                      <div className="space-y-3">
+                        {suggestions.map((suggestion, idx) => (
+                          <Card key={idx} className="p-3">
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-sm">{suggestion.title}</h4>
+                              <p className="text-xs text-muted-foreground">{suggestion.angle}</p>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => useSuggestion(suggestion)}
+                                >
+                                  Use this
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* Title */}
                 <div className="grid gap-2">
-                  <Label htmlFor="title">Title</Label>
+                  <Label htmlFor="assignmentTitle">Title*</Label>
                   <Input
-                    id="title"
+                    id="assignmentTitle"
                     value={newAssignment.title}
-                    onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                    onChange={(e) => {
+                      setNewAssignment({ ...newAssignment, title: e.target.value });
+                      setValidationErrors({ ...validationErrors, title: validateField("title", e.target.value) });
+                    }}
                     placeholder="Assignment title"
+                    className={validationErrors.title ? "border-red-500" : ""}
                   />
+                  {validationErrors.title && (
+                    <p className="text-sm text-red-500">{validationErrors.title}</p>
+                  )}
                 </div>
+
+                {/* Objective */}
                 <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="assignmentObjective">Objective*</Label>
                   <Textarea
-                    id="description"
-                    value={newAssignment.description}
-                    onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
-                    placeholder="Describe the assignment..."
+                    id="assignmentObjective"
+                    value={newAssignment.objective}
+                    onChange={(e) => {
+                      setNewAssignment({ ...newAssignment, objective: e.target.value });
+                      setValidationErrors({ ...validationErrors, objective: validateField("objective", e.target.value) });
+                    }}
+                    placeholder="What should this email accomplish (1-2 sentences)?"
+                    rows={2}
+                    className={validationErrors.objective ? "border-red-500" : ""}
                   />
+                  {validationErrors.objective && (
+                    <p className="text-sm text-red-500">{validationErrors.objective}</p>
+                  )}
                 </div>
+
+                {/* Angle/Hook */}
+                <div className="grid gap-2">
+                  <Label htmlFor="assignmentAngle">Angle/Hook*</Label>
+                  <Input
+                    id="assignmentAngle"
+                    value={newAssignment.angle}
+                    onChange={(e) => {
+                      setNewAssignment({ ...newAssignment, angle: e.target.value });
+                      setValidationErrors({ ...validationErrors, angle: validateField("angle", e.target.value) });
+                    }}
+                    placeholder="What's the big idea in one line?"
+                    className={validationErrors.angle ? "border-red-500" : ""}
+                  />
+                  {validationErrors.angle && (
+                    <p className="text-sm text-red-500">{validationErrors.angle}</p>
+                  )}
+                </div>
+
+                {/* Key Points */}
+                <div className="grid gap-2">
+                  <Label htmlFor="assignmentKeypoints">Key Points* (1-3 required)</Label>
+                  <div id="assignmentKeypoints" className="space-y-2">
+                    {/* Display existing key points as chips */}
+                    {newAssignment.keyPoints.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {newAssignment.keyPoints.map((point, idx) => (
+                          <div key={idx} className="flex items-center gap-1 bg-secondary px-3 py-1 rounded-full">
+                            <span className="text-sm">{point}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeKeyPoint(idx)}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Input
+                        id="keypointInput"
+                        value={keyPointInput}
+                        onChange={(e) => setKeyPointInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addKeyPoint();
+                          }
+                        }}
+                        placeholder="Add 1-3 facts or proofs to guide the draft"
+                        disabled={newAssignment.keyPoints.length >= 3}
+                      />
+                      <Button
+                        type="button"
+                        onClick={addKeyPoint}
+                        disabled={newAssignment.keyPoints.length >= 3}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                  {validationErrors.keyPoints && (
+                    <p className="text-sm text-red-500">{validationErrors.keyPoints}</p>
+                  )}
+                </div>
+
+                {/* Type and Priority */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="type">Type</Label>
+                    <Label htmlFor="assignmentType">Type</Label>
                     <Select
                       value={newAssignment.type}
                       onValueChange={(value) => setNewAssignment({ ...newAssignment, type: value })}
                     >
-                      <SelectTrigger id="type">
+                      <SelectTrigger id="assignmentType">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="newsletter">Newsletter</SelectItem>
-                        <SelectItem value="article">Article</SelectItem>
-                        <SelectItem value="research">Research</SelectItem>
-                        <SelectItem value="analysis">Analysis</SelectItem>
+                        <SelectItem value="market_alert">Market Alert</SelectItem>
+                        <SelectItem value="promo">Promo</SelectItem>
+                        <SelectItem value="earnings_recap">Earnings Recap</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="priority">Priority</Label>
+                    <Label htmlFor="assignmentPriority">Priority</Label>
                     <Select
                       value={newAssignment.priority}
                       onValueChange={(value) => setNewAssignment({ ...newAssignment, priority: value })}
                     >
-                      <SelectTrigger id="priority">
+                      <SelectTrigger id="assignmentPriority">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="low">Low</SelectItem>
                         <SelectItem value="medium">Medium</SelectItem>
                         <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
+
+                {/* Due Date */}
                 <div className="grid gap-2">
-                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Label htmlFor="assignmentDue">Due Date</Label>
                   <Input
-                    id="dueDate"
+                    id="assignmentDue"
                     type="date"
                     value={newAssignment.dueDate}
                     onChange={(e) => setNewAssignment({ ...newAssignment, dueDate: e.target.value })}
                   />
                 </div>
+
+                {/* CTA */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="ctaLabel">CTA Label (optional)</Label>
+                    <Input
+                      id="ctaLabel"
+                      value={newAssignment.ctaLabel}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, ctaLabel: e.target.value })}
+                      placeholder="Button or link text (optional)"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="ctaUrl">CTA URL (optional)</Label>
+                    <Input
+                      id="ctaUrl"
+                      value={newAssignment.ctaUrl}
+                      onChange={(e) => {
+                        setNewAssignment({ ...newAssignment, ctaUrl: e.target.value });
+                        if (e.target.value) {
+                          setValidationErrors({ ...validationErrors, ctaUrl: validateField("ctaUrl", e.target.value) });
+                        }
+                      }}
+                      placeholder="https://example.com/landing-page (optional)"
+                      className={validationErrors.ctaUrl ? "border-red-500" : ""}
+                    />
+                    {validationErrors.ctaUrl && (
+                      <p className="text-sm text-red-500">{validationErrors.ctaUrl}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes */}
                 <div className="grid gap-2">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="assignmentNotes">Notes</Label>
                   <Textarea
-                    id="notes"
+                    id="assignmentNotes"
                     value={newAssignment.notes}
                     onChange={(e) => setNewAssignment({ ...newAssignment, notes: e.target.value })}
                     placeholder="Additional notes..."
+                    rows={2}
                   />
                 </div>
               </div>
+              
               <DialogFooter>
                 <Button
+                  id="btnCreateAssignment"
                   onClick={() => createAssignmentMutation.mutate(newAssignment)}
-                  disabled={!newAssignment.title || createAssignmentMutation.isPending}
+                  disabled={createAssignmentMutation.isPending}
                 >
                   Create Assignment
                 </Button>

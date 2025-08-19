@@ -237,4 +237,53 @@ router.post("/api/assignments/:id/share", async (req, res) => {
   }
 });
 
+// AI Suggestions endpoint (stub for now)
+router.post("/api/ai/assignments/suggest", async (req, res) => {
+  try {
+    const { source_url, raw_text, type_hint } = req.body;
+    
+    // For now, return mock suggestions
+    // In production, this would call OpenAI or another AI service
+    const mockSuggestions = [
+      {
+        title: "Weekly Income Watch: 3 Yield Signals",
+        objective: "Brief readers on income opportunities and drive clicks to the portfolio update.",
+        angle: "A quiet shift in credit markets is setting up better yields.",
+        key_points: [
+          "MBS spreads tightened; watch REITs.",
+          "Utilities dividend coverage improved q/q.",
+          "Preferred pricing dislocation in BBB tier."
+        ],
+        cta: {
+          label: "See the portfolio update",
+          url: "https://publisher.com/portfolio"
+        },
+        due_at_suggestion: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        flags: []
+      },
+      {
+        title: "Market Alert: Fed Minutes Signal Shift",
+        objective: "Alert subscribers to Fed policy changes and their portfolio implications.",
+        angle: "The Fed just revealed what Wall Street missed.",
+        key_points: [
+          "Hawkish tone on Q2 inflation data",
+          "Regional bank stress mentioned 7 times",
+          "Dollar strength concerns growing"
+        ],
+        cta: {
+          label: "Read Full Analysis",
+          url: "https://publisher.com/fed-analysis"
+        },
+        due_at_suggestion: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        flags: []
+      }
+    ];
+    
+    res.json({ suggestions: mockSuggestions });
+  } catch (error) {
+    console.error("Error generating suggestions:", error);
+    res.status(500).json({ error: "Failed to generate suggestions" });
+  }
+});
+
 export default router;

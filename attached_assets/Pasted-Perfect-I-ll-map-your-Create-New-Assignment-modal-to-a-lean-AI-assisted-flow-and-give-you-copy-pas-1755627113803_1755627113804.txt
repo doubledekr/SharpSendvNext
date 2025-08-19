@@ -1,0 +1,177 @@
+Perfect. I’ll map your Create New Assignment modal to a lean, AI-assisted flow and give you copy-pasteable IDs, validation rules, and the /ai/assignments/suggest contract. This keeps the modal minimal, with “power” features hidden behind a collapsible AI Prefill panel (progressive disclosure) so it stays clean for editors. This approach reduces cognitive load and surfaces advanced options only on demand. 
+Nielsen Norman Group
++1
+Minimal field set (with exact IDs)
+Keep (rename 1):
+Title* → #assignmentTitle
+Description* → Objective* → #assignmentObjective
+Type → #assignmentType (Newsletter | Market Alert | Promo | Earnings Recap)
+Priority → #assignmentPriority (Low | Medium | High)
+Due Date → #assignmentDue
+Notes → #assignmentNotes
+Add (still minimal):
+Angle/Hook* → #assignmentAngle (1 line)
+Key Points* (1–3 bullets) → chips input container #assignmentKeypoints (+ hidden input #assignmentKeypointsValue)
+CTA (optional): Label #ctaLabel, URL #ctaUrl
+Assignee (optional) → #assignmentAssignee
+Make Objective, Angle, Key Points required; everything else optional. Use inline validation as the user finishes each field (not only on submit) to reduce form errors and rework.
+Nielsen Norman Group
++1
+AI Prefill (collapsed panel inside the modal)
+Collapsed bar (above Title):
+“Use AI to prefill from a link or pasted text” — [Prefill ▾] → expands panel.
+Expanded panel (#aiPrefillPanel):
+Source URL #sourceUrl (or) Pasted Text #sourceText
+Pattern (auto-detected; override) #patternSelect (Newsletter | Alert | Promo | Earnings Recap)
+[Generate suggestions] #btnGenerateSuggestions
+Suggestions list (#suggestionsList): 3–6 cards, each showing:
+Title, Angle, 3 Key Points, CTA (if detected), Suggested Due
+Buttons: Use this (fills the form), Preview (optional)
+Keep the panel collapsed by default; that’s textbook progressive disclosure—primary tasks first, advanced help on demand. 
+Nielsen Norman Group
++1
+Validation rules (inline)
+#assignmentTitle: 2–120 chars.
+#assignmentObjective: 1–2 sentences (≤ 300 chars).
+#assignmentAngle: 1 line (≤ 120 chars).
+#assignmentKeypoints: require 1–3 items; each 5–140 chars.
+#ctaUrl: if present, must be valid URL (show “Enter a full URL, e.g., https://…”).
+On submit, scroll to first error; show clear, constructive messages near fields. 
+Nielsen Norman Group
+Suggested microcopy (placeholders)
+Objective: “What should this email accomplish (1–2 sentences)?”
+Angle/Hook: “What’s the big idea in one line?”
+Key Points: “Add 1–3 facts or proofs to guide the draft”
+CTA Label: “Button or link text (optional)”
+CTA URL: “https://example.com/landing-page (optional)”
+DOM skeleton (HTML you can adapt)
+<form id="newAssignmentForm">
+  <section id="aiPrefillBar">
+    <button type="button" id="togglePrefill">Prefill from link or text</button>
+  </section>
+
+  <section id="aiPrefillPanel" hidden>
+    <input id="sourceUrl" placeholder="Paste source URL" />
+    <textarea id="sourceText" placeholder="…or paste source text"></textarea>
+    <select id="patternSelect">
+      <option>Auto</option><option>Newsletter</option><option>Market Alert</option>
+      <option>Promo</option><option>Earnings Recap</option>
+    </select>
+    <button type="button" id="btnGenerateSuggestions">Generate suggestions</button>
+    <div id="suggestionsList"></div>
+  </section>
+
+  <input id="assignmentTitle" required placeholder="Assignment title" />
+  <textarea id="assignmentObjective" required placeholder="What should this email accomplish?"></textarea>
+
+  <input id="assignmentAngle" required placeholder="One-sentence angle or hook" />
+
+  <div id="assignmentKeypoints" data-required="true">
+    <input id="keypointInput" placeholder="Type a key point and press Enter" />
+    <input type="hidden" id="assignmentKeypointsValue" />
+  </div>
+
+  <div class="row">
+    <select id="assignmentType"><option>Newsletter</option>…</select>
+    <select id="assignmentPriority"><option>Low</option><option selected>Medium</option><option>High</option></select>
+  </div>
+
+  <input id="assignmentDue" type="date" />
+  <div class="row">
+    <input id="ctaLabel" placeholder="CTA label (optional)" />
+    <input id="ctaUrl" placeholder="https://…" />
+  </div>
+
+  <select id="assignmentAssignee"><option value="">Unassigned</option></select>
+  <textarea id="assignmentNotes" placeholder="Additional notes…"></textarea>
+
+  <button id="btnCreateAssignment" type="submit">Create Assignment</button>
+</form>
+Chip input (Key Points) – minimal JS
+const points = [];
+const input = document.querySelector('#keypointInput');
+const hidden = document.querySelector('#assignmentKeypointsValue');
+const wrap = document.querySelector('#assignmentKeypoints');
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && input.value.trim()) {
+    e.preventDefault();
+    if (points.length >= 3) return alert('Max 3 key points');
+    points.push(input.value.trim());
+    hidden.value = JSON.stringify(points);
+    renderChips();
+    input.value = '';
+  }
+});
+function renderChips(){
+  wrap.querySelectorAll('.chip').forEach(n=>n.remove());
+  points.forEach((p,i)=>{
+    const chip=document.createElement('span');
+    chip.className='chip';
+    chip.textContent=p; 
+    chip.onclick=()=>{ points.splice(i,1); hidden.value=JSON.stringify(points); renderChips(); };
+    wrap.insertBefore(chip, input);
+  });
+}
+AI Prefill API (contract)
+Request POST /ai/assignments/suggest
+{
+  "source_url": "https://site.com/article",
+  "raw_text": null,
+  "type_hint": "Newsletter" // or null
+}
+Response
+{
+  "suggestions": [
+    {
+      "title": "Weekly Income Watch: 3 Yield Signals",
+      "objective": "Brief readers on income opportunities and drive clicks to the portfolio update.",
+      "angle": "A quiet shift in credit markets is setting up better yields.",
+      "key_points": [
+        "MBS spreads tightened; watch REITs.",
+        "Utilities dividend coverage improved q/q.",
+        "Preferred pricing dislocation in BBB tier."
+      ],
+      "cta": {"label":"See the portfolio update","url":"https://publisher.com/portfolio"},
+      "assignee": "user_123",
+      "due_at_suggestion": "2025-08-19T17:00:00-04:00",
+      "flags": []  // e.g., ["missing_source","promissory_language"]
+    }
+  ]
+}
+Fill logic (Use this):
+Map fields directly to the IDs above.
+If cta.url missing → leave #ctaUrl blank (no error; optional).
+If flags contains “promissory_language”, show a warning chip on the card.
+Server acceptance (create)
+Request POST /assignments
+{
+  "title": "...",
+  "objective": "...",
+  "angle": "...",
+  "key_points": ["...", "..."],
+  "type": "Newsletter",
+  "priority": "Medium",
+  "due_at": "2025-08-19",
+  "cta": {"label":"...","url":"..."},
+  "assignee_id": "user_123",
+  "notes": "..."
+}
+Response
+{"id":"asg_07bc6509c3924230","status":"draft"}
+QA / acceptance checklist (for this modal)
+ AI Prefill panel collapsed by default; expands smoothly.
+ “Generate suggestions” returns 3–6 cards; Use this fills Title, Objective, Angle, Key Points, CTA, Due.
+ Inline validation on Objective, Angle, Key Points; submit blocked until they pass.
+ Error messages appear next to the field and in a summary toast.
+ On success, toast “Assignment created—ready for writer” and modal closes.
+Notes for downstream compliance & email hygiene
+Keep compliance checks (unsubscribe + postal address requirement) in the Drafts/Scheduling stage where the actual email footer and list selection exist; ensure your system enforces these before send, per CAN-SPAM. 
+Federal Trade Commission
+eCFR
+
+When you later allow images in the Assignment body, require alt text and output email-safe widths (max ~600px) with retina-ready sources in Drafts. 
+W3C
++1
+Campaign Monitor
++1
