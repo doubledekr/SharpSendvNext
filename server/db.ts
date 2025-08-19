@@ -19,7 +19,7 @@ function createDatabaseConnection() {
     connectionString = process.env.DATABASE_URL;
     environment = 'PRODUCTION';
   } else {
-    // Demo/development database (use original DATABASE_URL for now, can switch to Supabase later)
+    // Demo/development database (for now use original DATABASE_URL, will switch to Supabase later)
     connectionString = process.env.DATABASE_URL;
     environment = nodeEnv === 'development' ? 'DEVELOPMENT' : 'DEMO';
   }
@@ -39,11 +39,12 @@ function createDatabaseConnection() {
     const db = drizzle({ client: pool, schema });
     return { pool, db, environment };
   } else {
-    // Use postgres.js for Supabase (demo/development)
+    // Use postgres.js for Supabase (demo/development) with better connection settings
     const client = postgres(connectionString, {
       max: environment === 'PRODUCTION' ? 20 : 5,
       idle_timeout: 20,
-      connect_timeout: 10,
+      connect_timeout: 30,
+      ssl: 'require'
     });
     const db = drizzlePostgres(client, { schema });
     return { pool: null, db, environment };
