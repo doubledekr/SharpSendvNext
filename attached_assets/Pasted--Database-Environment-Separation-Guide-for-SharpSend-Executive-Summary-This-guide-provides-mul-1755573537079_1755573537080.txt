@@ -1,0 +1,941 @@
+# Database Environment Separation Guide for SharpSend
+
+## Executive Summary
+
+This guide provides multiple strategies for separating demo and production database environments for your SharpSend application. Based on Replit's infrastructure and best practices, you can implement clean separation between environments to prevent data conflicts, improve security, and enable safe testing.
+
+## Why Separate Demo and Production Databases?
+
+### Benefits of Environment Separation
+- **Data Safety**: Prevents demo activities from affecting real user data
+- **Testing Freedom**: Allows safe experimentation without production impact
+- **Performance Isolation**: Demo usage doesn't affect production performance
+- **Security**: Reduces risk of accidental data exposure or corruption
+- **Compliance**: Meets best practices for data governance and privacy
+
+### Your Current Issue
+The duplicate key constraint error occurs because your demo seeding script tries to create publishers that already exist in the shared database. Separating environments eliminates this conflict entirely.
+
+## Solution Options for Replit
+
+### Option 1: Replit Production Databases (RECOMMENDED)
+
+Replit provides built-in support for separate development and production databases.
+
+#### How It Works
+- **Development Database**: Used during development and testing in your workspace
+- **Production Database**: Dedicated database for your deployed application
+- **Automatic Separation**: Replit handles the separation automatically based on environment
+
+#### Implementation Steps
+
+1. **Set Up Production Database**
+   ```bash
+   # In your Replit workspace, use the Database tool
+   # Navigate to Database → Create Production Database
+   ```
+
+2. **Configure Environment Variables**
+   Your app will automatically receive different database URLs:
+   ```javascript
+   // Development environment
+   DATABASE_URL = "postgresql://dev-connection-string"
+   
+   // Production environment  
+   DATABASE_URL = "postgresql://prod-connection-string"
+   ```
+
+3. **Update Your Database Connection**
+   ```javascript
+   // server/database/connection.js
+   import postgres from 'postgres';
+   
+   const sql = postgres(process.env.DATABASE_URL, {
+     // Connection options
+   });
+   
+   export default sql;
+   ```
+
+4. **Environment-Specific Seeding**
+   ```javascript
+   // server/seeders/index.js
+   import sql from '../database/connection.js';
+   
+   async function seedDatabase() {
+     const isProduction = process.env.NODE_ENV === 'production';
+     
+     if (isProduction) {
+       console.log('Production environment - skipping demo seeding');
+       return;
+     }
+     
+     // Only seed demo data in development
+     await seedDemoPublishers();
+     await seedDemoUsers();
+     console.log('✓ Demo data seeded');
+   }
+   ```
+
+#### Advantages
+- ✅ Built into Replit platform
+- ✅ Automatic environment detection
+- ✅ No additional configuration needed
+- ✅ Separate billing and resource management
+
+#### Considerations
+- 🔶 Requires Replit Pro plan for production databases
+- 🔶 Limited to Replit ecosystem
+
+
+### Option 2: Multiple Database URLs with Environment Variables
+
+Use different database connections based on environment variables.
+
+#### Implementation Steps
+
+1. **Set Up Multiple Databases**
+   Create two separate databases (can be on same or different providers):
+   - Demo database: `sharpsend_demo`
+   - Production database: `sharpsend_production`
+
+2. **Configure Environment Variables**
+   ```bash
+   # In Replit Secrets (for production)
+   DATABASE_URL=postgresql://prod-connection-string
+   DEMO_DATABASE_URL=postgresql://demo-connection-string
+   NODE_ENV=production
+   
+   # In development (.env file)
+   DATABASE_URL=postgresql://demo-connection-string
+   NODE_ENV=development
+   ```
+
+3. **Dynamic Database Connection**
+   ```javascript
+   // server/config/database.js
+   import postgres from 'postgres';
+   
+   function getDatabaseConnection() {
+     const isProduction = process.env.NODE_ENV === 'production';
+     const isDemoMode = process.env.DEMO_MODE === 'true';
+     
+     let connectionString;
+     
+     if (isProduction && !isDemoMode) {
+       connectionString = process.env.DATABASE_URL; // Production DB
+     } else {
+       connectionString = process.env.DEMO_DATABASE_URL || process.env.DATABASE_URL;
+     }
+     
+     return postgres(connectionString);
+   }
+   
+   export const sql = getDatabaseConnection();
+   ```
+
+4. **Demo Mode Toggle**
+   ```javascript
+   // server/middleware/demoMode.js
+   export function enableDemoMode(req, res, next) {
+     if (req.query.demo === 'true' || req.headers['x-demo-mode']) {
+       process.env.DEMO_MODE = 'true';
+     }
+     next();
+   }
+   ```
+
+#### Advantages
+- ✅ Full control over database selection
+- ✅ Can use any PostgreSQL provider
+- ✅ Flexible demo mode switching
+- ✅ Cost-effective
+
+#### Considerations
+- 🔶 Requires manual database setup
+- 🔶 More complex configuration
+
+### Option 3: Schema-Based Separation
+
+Use different PostgreSQL schemas within the same database.
+
+#### Implementation Steps
+
+1. **Create Schemas**
+   ```sql
+   -- Create separate schemas
+   CREATE SCHEMA IF NOT EXISTS demo;
+   CREATE SCHEMA IF NOT EXISTS production;
+   
+   -- Set search path based on environment
+   SET search_path TO demo, public;  -- For demo
+   SET search_path TO production, public;  -- For production
+   ```
+
+2. **Environment-Based Schema Selection**
+   ```javascript
+   // server/config/database.js
+   import postgres from 'postgres';
+   
+   const sql = postgres(process.env.DATABASE_URL, {
+     onnotice: () => {}, // Suppress notices
+     transform: {
+       ...postgres.camel,
+       undefined: null
+     }
+   });
+   
+   // Set schema based on environment
+   async function setSchema() {
+     const schema = process.env.NODE_ENV === 'production' ? 'production' : 'demo';
+     await sql`SET search_path TO ${sql(schema)}, public`;
+   }
+   
+   // Initialize schema on connection
+   setSchema();
+   
+   export default sql;
+   ```
+
+3. **Schema-Aware Migrations**
+   ```javascript
+   // server/migrations/migrate.js
+   async function runMigrations() {
+     const schema = process.env.NODE_ENV === 'production' ? 'production' : 'demo';
+     
+     // Create tables in the appropriate schema
+     await sql`
+       CREATE TABLE IF NOT EXISTS ${sql(schema)}.publishers (
+         id SERIAL PRIMARY KEY,
+         subdomain VARCHAR(255) UNIQUE NOT NULL,
+         name VARCHAR(255) NOT NULL,
+         created_at TIMESTAMP DEFAULT NOW()
+       )
+     `;
+   }
+   ```
+
+#### Advantages
+- ✅ Single database instance
+- ✅ Lower cost
+- ✅ Shared connection pooling
+- ✅ Easy backup and maintenance
+
+#### Considerations
+- 🔶 More complex query management
+- 🔶 Risk of schema conflicts
+- 🔶 Requires PostgreSQL knowledge
+
+### Option 4: Subdomain-Based Database Routing
+
+Route to different databases based on subdomain or request parameters.
+
+#### Implementation Steps
+
+1. **Database Router Middleware**
+   ```javascript
+   // server/middleware/databaseRouter.js
+   import postgres from 'postgres';
+   
+   const connections = {
+     demo: postgres(process.env.DEMO_DATABASE_URL),
+     production: postgres(process.env.DATABASE_URL)
+   };
+   
+   export function databaseRouter(req, res, next) {
+     const subdomain = req.headers.host?.split('.')[0];
+     const isDemo = subdomain === 'demo' || req.query.env === 'demo';
+     
+     req.db = isDemo ? connections.demo : connections.production;
+     req.environment = isDemo ? 'demo' : 'production';
+     
+     next();
+   }
+   ```
+
+2. **Use in Routes**
+   ```javascript
+   // server/routes/publishers.js
+   import { databaseRouter } from '../middleware/databaseRouter.js';
+   
+   router.use(databaseRouter);
+   
+   router.get('/publishers', async (req, res) => {
+     try {
+       const publishers = await req.db`
+         SELECT * FROM publishers 
+         ORDER BY created_at DESC
+       `;
+       res.json(publishers);
+     } catch (error) {
+       res.status(500).json({ error: error.message });
+     }
+   });
+   ```
+
+3. **Environment-Specific Seeding**
+   ```javascript
+   // server/seeders/publishers.js
+   export async function seedPublishers(db, environment) {
+     const publisherData = environment === 'demo' 
+       ? getDemoPublishers() 
+       : getProductionPublishers();
+   
+     for (const publisher of publisherData) {
+       await db`
+         INSERT INTO publishers (subdomain, name, email)
+         VALUES (${publisher.subdomain}, ${publisher.name}, ${publisher.email})
+         ON CONFLICT (subdomain) DO NOTHING
+       `;
+     }
+   }
+   ```
+
+#### Advantages
+- ✅ Automatic environment detection
+- ✅ Clean separation by subdomain
+- ✅ Easy to understand and maintain
+- ✅ Supports multiple demo environments
+
+#### Considerations
+- 🔶 Requires subdomain setup
+- 🔶 Multiple database connections
+
+
+## Recommended Implementation for SharpSend
+
+### Quick Fix: Environment-Based Database Selection
+
+Based on your current setup and the seeding error, here's the fastest solution:
+
+#### Step 1: Update Your Database Configuration
+
+```javascript
+// server/config/database.js
+import postgres from 'postgres';
+
+function createDatabaseConnection() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isDemoMode = process.env.DEMO_MODE === 'true';
+  
+  // Use different connection strings based on environment
+  let connectionString;
+  
+  if (isProduction && !isDemoMode) {
+    // Production database
+    connectionString = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+  } else {
+    // Demo/development database
+    connectionString = process.env.DEMO_DATABASE_URL || process.env.DATABASE_URL;
+  }
+  
+  console.log(`🔗 Connecting to ${isProduction && !isDemoMode ? 'PRODUCTION' : 'DEMO'} database`);
+  
+  return postgres(connectionString, {
+    max: isProduction ? 20 : 5, // Different connection pool sizes
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
+}
+
+export const sql = createDatabaseConnection();
+```
+
+#### Step 2: Set Up Environment Variables in Replit
+
+1. **In your Replit Secrets, add:**
+   ```
+   PRODUCTION_DATABASE_URL=your_production_database_connection_string
+   DEMO_DATABASE_URL=your_demo_database_connection_string
+   NODE_ENV=production
+   ```
+
+2. **For local development, create `.env`:**
+   ```
+   DEMO_DATABASE_URL=your_local_or_demo_database_connection_string
+   NODE_ENV=development
+   ```
+
+#### Step 3: Update Your Seeding Script
+
+```javascript
+// server/seeders/index.js
+import { sql } from '../config/database.js';
+
+async function seedDemoData() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isDemoMode = process.env.DEMO_MODE === 'true';
+  
+  // Only seed demo data in development or demo mode
+  if (isProduction && !isDemoMode) {
+    console.log('🚫 Production environment - skipping demo seeding');
+    return;
+  }
+  
+  try {
+    console.log('🌱 Starting demo data seeding...');
+    
+    // Seed demo publishers with conflict handling
+    await seedDemoPublishers();
+    await seedDemoUsers();
+    await seedDemoSegments();
+    
+    console.log('✅ Demo data seeding completed successfully');
+  } catch (error) {
+    console.error('❌ Demo seeding failed:', error.message);
+    // Don't throw - let the app continue running
+  }
+}
+
+async function seedDemoPublishers() {
+  const demoPublishers = [
+    {
+      subdomain: 'demo',
+      name: 'Demo Publisher',
+      email: 'demo@sharpsend.com',
+      settings: JSON.stringify({ theme: 'default' })
+    },
+    {
+      subdomain: 'sample',
+      name: 'Sample Financial Newsletter',
+      email: 'sample@sharpsend.com',
+      settings: JSON.stringify({ theme: 'financial' })
+    }
+  ];
+  
+  for (const publisher of demoPublishers) {
+    await sql`
+      INSERT INTO publishers (subdomain, name, email, settings, created_at)
+      VALUES (${publisher.subdomain}, ${publisher.name}, ${publisher.email}, ${publisher.settings}, NOW())
+      ON CONFLICT (subdomain) 
+      DO UPDATE SET 
+        name = EXCLUDED.name,
+        email = EXCLUDED.email,
+        updated_at = NOW()
+    `;
+  }
+  
+  console.log('✅ Demo publishers seeded');
+}
+
+async function seedDemoUsers() {
+  // Add demo users logic here
+  await sql`
+    INSERT INTO users (email, name, publisher_id, created_at)
+    SELECT 'demo.user@example.com', 'Demo User', p.id, NOW()
+    FROM publishers p 
+    WHERE p.subdomain = 'demo'
+    ON CONFLICT (email) DO NOTHING
+  `;
+  
+  console.log('✅ Demo users seeded');
+}
+
+async function seedDemoSegments() {
+  // Add demo segments logic here
+  const demoSegments = [
+    { name: 'High-Value Investors', description: 'Users with portfolio > $100k' },
+    { name: 'Tech Enthusiasts', description: 'Users interested in technology stocks' },
+    { name: 'Dividend Seekers', description: 'Conservative dividend-focused investors' }
+  ];
+  
+  for (const segment of demoSegments) {
+    await sql`
+      INSERT INTO segments (name, description, created_at)
+      VALUES (${segment.name}, ${segment.description}, NOW())
+      ON CONFLICT (name) DO NOTHING
+    `;
+  }
+  
+  console.log('✅ Demo segments seeded');
+}
+
+export { seedDemoData };
+```
+
+#### Step 4: Update Your Server Startup
+
+```javascript
+// server/index.js
+import express from 'express';
+import { seedDemoData } from './seeders/index.js';
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware setup
+app.use(express.json());
+app.use(express.static('dist/public'));
+
+// Add demo mode middleware
+app.use((req, res, next) => {
+  // Enable demo mode via query parameter or header
+  if (req.query.demo === 'true' || req.headers['x-demo-mode'] === 'true') {
+    process.env.DEMO_MODE = 'true';
+    res.setHeader('X-Environment', 'demo');
+  } else {
+    process.env.DEMO_MODE = 'false';
+    res.setHeader('X-Environment', process.env.NODE_ENV || 'development');
+  }
+  next();
+});
+
+// Routes
+import publishersRouter from './routes/publishers.js';
+import segmentsRouter from './routes/segments.js';
+
+app.use('/api/publishers', publishersRouter);
+app.use('/api/segments', segmentsRouter);
+
+// Serve React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Seed demo data on startup
+  await seedDemoData();
+});
+```
+
+#### Step 5: Add Demo Mode Toggle
+
+```javascript
+// server/routes/demo.js
+import express from 'express';
+const router = express.Router();
+
+// Toggle demo mode
+router.post('/toggle', (req, res) => {
+  const { enabled } = req.body;
+  process.env.DEMO_MODE = enabled ? 'true' : 'false';
+  
+  res.json({
+    success: true,
+    demoMode: enabled,
+    environment: enabled ? 'demo' : process.env.NODE_ENV
+  });
+});
+
+// Get current demo mode status
+router.get('/status', (req, res) => {
+  res.json({
+    demoMode: process.env.DEMO_MODE === 'true',
+    environment: process.env.NODE_ENV || 'development',
+    database: process.env.DEMO_MODE === 'true' ? 'demo' : 'production'
+  });
+});
+
+export default router;
+```
+
+#### Step 6: Update Your Package.json Scripts
+
+```json
+{
+  "scripts": {
+    "dev": "NODE_ENV=development nodemon server/index.js",
+    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "start": "NODE_ENV=production node dist/index.js",
+    "seed:demo": "NODE_ENV=development node -e \"import('./server/seeders/index.js').then(m => m.seedDemoData())\"",
+    "seed:prod": "NODE_ENV=production node -e \"import('./server/seeders/index.js').then(m => m.seedDemoData())\"",
+    "db:demo": "DEMO_MODE=true npm start",
+    "db:status": "node -e \"console.log('Environment:', process.env.NODE_ENV); console.log('Demo Mode:', process.env.DEMO_MODE);\""
+  }
+}
+```
+
+## Advanced Implementation: Complete Environment Separation
+
+### Option A: Replit Production Database Setup
+
+1. **Create Production Database in Replit**
+   - Go to your Replit workspace
+   - Open Database tool
+   - Click "Create Production Database"
+   - This automatically sets up separate dev/prod databases
+
+2. **Update Your .replit File**
+   ```toml
+   [deployment]
+   run = ["npm", "start"]
+   deploymentTarget = "cloudrun"
+   
+   [deployment.env]
+   NODE_ENV = "production"
+   DATABASE_URL = "$PRODUCTION_DATABASE_URL"
+   
+   [run.env]
+   NODE_ENV = "development"
+   DATABASE_URL = "$DEVELOPMENT_DATABASE_URL"
+   ```
+
+### Option B: External Database Providers
+
+1. **Set Up Separate Databases**
+   - **Demo Database**: Use Neon, Supabase, or Railway (free tiers available)
+   - **Production Database**: Use managed PostgreSQL service
+
+2. **Connection Configuration**
+   ```javascript
+   // server/config/environments.js
+   const environments = {
+     development: {
+       database: {
+         url: process.env.DEMO_DATABASE_URL,
+         pool: { min: 1, max: 5 }
+       }
+     },
+     production: {
+       database: {
+         url: process.env.PRODUCTION_DATABASE_URL,
+         pool: { min: 5, max: 20 }
+       }
+     }
+   };
+   
+   export const config = environments[process.env.NODE_ENV || 'development'];
+   ```
+
+## Testing Your Implementation
+
+### Step 1: Test Demo Environment
+```bash
+# Set demo mode
+curl -X POST http://localhost:5000/api/demo/toggle \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": true}'
+
+# Check status
+curl http://localhost:5000/api/demo/status
+```
+
+### Step 2: Test Production Environment
+```bash
+# Disable demo mode
+curl -X POST http://localhost:5000/api/demo/toggle \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": false}'
+
+# Verify production data isolation
+curl http://localhost:5000/api/publishers
+```
+
+### Step 3: Test Database Seeding
+```bash
+# Test demo seeding
+npm run seed:demo
+
+# Test production seeding (should skip demo data)
+npm run seed:prod
+```
+
+
+## Migration Strategy: Moving from Shared to Separate Databases
+
+### Phase 1: Backup Current Data
+```bash
+# Export current database
+pg_dump $DATABASE_URL > sharpsend_backup.sql
+
+# Or using Replit's backup feature
+# Go to Database tool → Settings → Create Backup
+```
+
+### Phase 2: Set Up New Databases
+```javascript
+// server/scripts/setupDatabases.js
+import postgres from 'postgres';
+
+async function setupDatabases() {
+  const prodSql = postgres(process.env.PRODUCTION_DATABASE_URL);
+  const demoSql = postgres(process.env.DEMO_DATABASE_URL);
+  
+  // Create tables in both databases
+  const createTables = async (db, environment) => {
+    console.log(`Setting up ${environment} database...`);
+    
+    await db`
+      CREATE TABLE IF NOT EXISTS publishers (
+        id SERIAL PRIMARY KEY,
+        subdomain VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        settings JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    
+    await db`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
+        publisher_id INTEGER REFERENCES publishers(id),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    
+    await db`
+      CREATE TABLE IF NOT EXISTS segments (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        description TEXT,
+        publisher_id INTEGER REFERENCES publishers(id),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    
+    console.log(`✅ ${environment} database setup complete`);
+  };
+  
+  await createTables(prodSql, 'production');
+  await createTables(demoSql, 'demo');
+  
+  await prodSql.end();
+  await demoSql.end();
+}
+
+// Run setup
+setupDatabases().catch(console.error);
+```
+
+### Phase 3: Migrate Production Data
+```javascript
+// server/scripts/migrateData.js
+import postgres from 'postgres';
+
+async function migrateProductionData() {
+  const oldSql = postgres(process.env.OLD_DATABASE_URL);
+  const prodSql = postgres(process.env.PRODUCTION_DATABASE_URL);
+  
+  try {
+    // Get production publishers (exclude demo ones)
+    const publishers = await oldSql`
+      SELECT * FROM publishers 
+      WHERE subdomain NOT IN ('demo', 'sample', 'test')
+    `;
+    
+    // Migrate publishers
+    for (const publisher of publishers) {
+      await prodSql`
+        INSERT INTO publishers (subdomain, name, email, settings, created_at)
+        VALUES (${publisher.subdomain}, ${publisher.name}, ${publisher.email}, 
+                ${publisher.settings}, ${publisher.created_at})
+        ON CONFLICT (subdomain) DO NOTHING
+      `;
+    }
+    
+    console.log(`✅ Migrated ${publishers.length} publishers`);
+    
+    // Migrate users
+    const users = await oldSql`
+      SELECT u.* FROM users u
+      JOIN publishers p ON u.publisher_id = p.id
+      WHERE p.subdomain NOT IN ('demo', 'sample', 'test')
+    `;
+    
+    for (const user of users) {
+      await prodSql`
+        INSERT INTO users (email, name, publisher_id, created_at)
+        VALUES (${user.email}, ${user.name}, ${user.publisher_id}, ${user.created_at})
+        ON CONFLICT (email) DO NOTHING
+      `;
+    }
+    
+    console.log(`✅ Migrated ${users.length} users`);
+    
+  } catch (error) {
+    console.error('Migration failed:', error);
+  } finally {
+    await oldSql.end();
+    await prodSql.end();
+  }
+}
+
+migrateProductionData().catch(console.error);
+```
+
+## Deployment Instructions
+
+### Step 1: Update Replit Secrets
+```bash
+# Add these environment variables in Replit Secrets:
+PRODUCTION_DATABASE_URL=postgresql://your-prod-connection
+DEMO_DATABASE_URL=postgresql://your-demo-connection
+NODE_ENV=production
+```
+
+### Step 2: Update .replit Configuration
+```toml
+entrypoint = "server/index.js"
+modules = ["nodejs-20"]
+
+[deployment]
+run = ["npm", "run", "build", "&&", "npm", "start"]
+deploymentTarget = "cloudrun"
+
+[deployment.env]
+NODE_ENV = "production"
+
+[run]
+args = ["npm", "run", "dev"]
+
+[run.env]
+NODE_ENV = "development"
+DEMO_MODE = "true"
+```
+
+### Step 3: Deploy and Test
+```bash
+# Deploy to Replit
+# Your app will automatically use production database
+
+# Test demo mode via URL
+https://your-app.replit.app?demo=true
+
+# Test production mode
+https://your-app.replit.app
+```
+
+## Troubleshooting Common Issues
+
+### Issue 1: Connection String Not Found
+```javascript
+// Add fallback logic
+const getDatabaseUrl = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isDemoMode = process.env.DEMO_MODE === 'true';
+  
+  if (isProduction && !isDemoMode) {
+    return process.env.PRODUCTION_DATABASE_URL || 
+           process.env.DATABASE_URL || 
+           'postgresql://localhost:5432/sharpsend_prod';
+  } else {
+    return process.env.DEMO_DATABASE_URL || 
+           process.env.DATABASE_URL || 
+           'postgresql://localhost:5432/sharpsend_demo';
+  }
+};
+```
+
+### Issue 2: Seeding Conflicts
+```javascript
+// Enhanced conflict resolution
+async function seedWithRetry(query, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await query();
+      return;
+    } catch (error) {
+      if (error.code === '23505' && i < maxRetries - 1) {
+        console.log(`Retry ${i + 1}: Handling duplicate key...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+```
+
+### Issue 3: Environment Detection
+```javascript
+// Robust environment detection
+function detectEnvironment() {
+  // Check multiple sources
+  const nodeEnv = process.env.NODE_ENV;
+  const replitEnv = process.env.REPLIT_ENVIRONMENT;
+  const demoMode = process.env.DEMO_MODE === 'true';
+  
+  if (demoMode) return 'demo';
+  if (nodeEnv === 'production') return 'production';
+  if (replitEnv === 'production') return 'production';
+  
+  return 'development';
+}
+```
+
+## Monitoring and Maintenance
+
+### Database Health Checks
+```javascript
+// server/utils/healthCheck.js
+export async function checkDatabaseHealth() {
+  const environment = detectEnvironment();
+  const sql = getDatabaseConnection();
+  
+  try {
+    const result = await sql`SELECT NOW() as timestamp, version()`;
+    console.log(`✅ ${environment} database healthy:`, result[0]);
+    return { healthy: true, environment, timestamp: result[0].timestamp };
+  } catch (error) {
+    console.error(`❌ ${environment} database unhealthy:`, error.message);
+    return { healthy: false, environment, error: error.message };
+  }
+}
+
+// Add to your API
+app.get('/api/health', async (req, res) => {
+  const health = await checkDatabaseHealth();
+  res.status(health.healthy ? 200 : 500).json(health);
+});
+```
+
+### Usage Monitoring
+```javascript
+// server/middleware/analytics.js
+export function trackDatabaseUsage(req, res, next) {
+  const startTime = Date.now();
+  const environment = detectEnvironment();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    console.log(`📊 ${environment} DB query: ${req.method} ${req.path} - ${duration}ms`);
+  });
+  
+  next();
+}
+```
+
+## Summary and Next Steps
+
+### Immediate Actions (Quick Fix)
+1. ✅ Add environment-based database selection
+2. ✅ Update seeding script with conflict handling
+3. ✅ Set up demo/production environment variables
+4. ✅ Deploy and test both environments
+
+### Long-term Improvements
+1. 🔄 Implement Replit Production Databases
+2. 🔄 Add comprehensive monitoring
+3. 🔄 Set up automated backups
+4. 🔄 Implement database migrations system
+
+### Benefits You'll Gain
+- ✅ **No more seeding conflicts** - Demo and production data completely separated
+- ✅ **Safe testing** - Experiment freely without affecting real users
+- ✅ **Better performance** - Optimized connections for each environment
+- ✅ **Improved security** - Production data isolated from demo access
+- ✅ **Easier maintenance** - Clear separation of concerns
+
+Your SharpSend app will now have professional-grade database environment separation, eliminating the duplicate key errors and providing a solid foundation for scaling your application.
+
+## Quick Start Checklist
+
+- [ ] Update database configuration with environment detection
+- [ ] Add production and demo database URLs to Replit Secrets
+- [ ] Update seeding script with conflict handling
+- [ ] Test demo mode functionality
+- [ ] Verify production environment isolation
+- [ ] Deploy and monitor both environments
+
+**Estimated Implementation Time: 2-4 hours**
+
+Need help with any specific step? The configuration above should resolve your immediate seeding conflict while setting up a robust foundation for future growth!
+

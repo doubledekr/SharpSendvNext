@@ -45,6 +45,8 @@ The frontend features a modular component structure, including a multi-tab dashb
 
 The platform is multi-tenant with complete data isolation via subdomain-based routing, `publisher_id` filtering for all database queries, isolated CDN content paths, and tenant middleware. AI is used for cohort analysis, investment sophistication/risk assessment, investment style identification, real-time market intelligence, and email content enhancement with market timing intelligence, volatility-based send optimization, and live pricing/citations. Robust email fatigue tracking is included. AI-Powered Publication Detection uses OpenAI GPT-4o for deep web analysis, smart URL discovery, enhanced HTML extraction, learning patterns, caching, and special domain handling. The Email Tracking & Attribution System includes hierarchical tracking control (platform-wide, per-email, privacy-compliant), conversion attribution (7-day window, multi-touch, session linking), and data collection points (pixel events, click events, page visits, purchases), with GDPR compliance and user consent management.
 
+**Database Environment Strategy**: Currently using shared database with error handling for duplicate constraints. Production deployment handles PostgreSQL error code 23505 (duplicate key violations) gracefully to prevent server crashes. Future improvement path documented in `database-separation-guide.md` recommends Replit Production Databases for complete demo/production separation.
+
 ## External Dependencies
 
 ### Database Services
