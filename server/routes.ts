@@ -36,8 +36,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Root health check endpoint for deployment health checks - optimized for speed
-  app.get("/", (req, res) => {
+  // Health check endpoint for deployment health checks - optimized for speed
+  app.get("/api/health-check", (req, res) => {
+    res.set('Cache-Control', 'no-cache');
+    res.status(200).json({ 
+      status: "healthy", 
+      service: "SharpSend API",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  });
+
+  // Alternative health check endpoint for deployment systems that expect root health checks
+  app.get("/health", (req, res) => {
     res.set('Cache-Control', 'no-cache');
     res.status(200).json({ 
       status: "healthy", 
