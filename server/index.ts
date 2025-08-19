@@ -56,21 +56,27 @@ app.use((req, res, next) => {
     } catch (seedError) {
       console.warn("Database seeding failed but continuing startup:", seedError);
     }
+  } else {
+    console.log("Production mode - skipping database seeding");
   }
   
-  // Initialize demo environment in all environments
-  try {
-    console.log("🔧 Initializing demo environment...");
-    const demoResult = await initializeDemoEnvironment();
-    if (demoResult && demoResult.success) {
-      console.log("✅ Demo environment ready!");
-      console.log("📧 Demo login available at /login");
-    } else {
-      console.log("⚠️ Demo environment setup skipped or failed - server will continue normally");
+  // Initialize demo environment in all environments (non-blocking)
+  // This should never prevent server startup
+  setImmediate(async () => {
+    try {
+      console.log("🔧 Initializing demo environment...");
+      const demoResult = await initializeDemoEnvironment();
+      if (demoResult && demoResult.success) {
+        console.log("✅ Demo environment ready!");
+        console.log("📧 Demo login available at /login");
+      } else {
+        console.log("⚠️ Demo environment setup skipped or failed - server continuing normally");
+      }
+    } catch (demoError) {
+      console.warn("⚠️ Demo environment initialization failed - server continuing normally");
+      console.warn("Error details:", demoError);
     }
-  } catch (demoError) {
-    console.warn("⚠️ Demo environment initialization failed - server will continue normally:", demoError);
-  }
+  });
   
   const server = await registerRoutes(app);
 

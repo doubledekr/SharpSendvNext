@@ -1,0 +1,172 @@
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2025-08-18 22:52:33.80
+d5913eb3
+User
+severity_local: 'ERROR',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+severity: 'ERROR',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+code: '23505',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+detail: 'Key (subdomain)=(demo) already exists.',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+schema_name: 'public',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+table_name: 'publishers',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+constraint_name: 'publishers_subdomain_unique',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+file: 'nbtinsert.c',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+line: '666',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+routine: '_bt_check_unique'
+2025-08-18 22:52:33.80
+d5913eb3
+User
+}
+2025-08-18 22:52:33.80
+d5913eb3
+User
+Demo seeding failed: PostgresError: duplicate key value violates unique constraint "publishers_subdomain_unique"
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:794:26)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:480:6)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at TLSSocket.emit (node:events:524:28)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-08-18 22:52:33.80
+d5913eb3
+User
+at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2025-08-18 22:52:33.80
+d5913eb3
+User
+severity_local: 'ERROR',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+severity: 'ERROR',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+code: '23505',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+detail: 'Key (subdomain)=(demo) already exists.',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+schema_name: 'public',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+table_name: 'publishers',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+constraint_name: 'publishers_subdomain_unique',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+file: 'nbtinsert.c',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+line: '666',
+2025-08-18 22:52:33.80
+d5913eb3
+User
+routine: '_bt_check_unique'
+2025-08-18 22:52:33.80
+d5913eb3
+User
+}
+2025-08-18 22:52:33.83
+d5913eb3
+System
+command finished with error [npm run start]: exit status 1
+2025-08-18 22:52:38.21
+d5913eb3
+System
+crash loop detected
+2025-08-18 22:52:40.79
+1b2e36c6
+User
+> rest-express@1.0.0 start
+2025-08-18 22:52:40.79
+1b2e36c6
+User
+> NODE_ENV=production node dist/index.js

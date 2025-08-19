@@ -44,7 +44,7 @@ export async function initializeDemoEnvironment() {
     // Check database connection first
     await db.select().from(publishers).limit(1);
   } catch (dbError) {
-    console.warn("⚠️ Database connection failed, skipping demo environment setup:", dbError);
+    console.warn("⚠️ Database connection failed, skipping demo environment setup");
     return { success: false, error: "Database connection failed" };
   }
   
@@ -63,20 +63,38 @@ export async function initializeDemoEnvironment() {
         publisherId = demoPublisher.id;
         console.log("✓ Using existing demo publisher");
       } else {
-        const [newPublisher] = await db.insert(publishers).values({
-          name: "Demo Financial Publisher",
-          email: "admin@demo.sharpsend.io",
-          subdomain: "demo",
-          plan: "premium"
-        }).returning();
-        
-        demoPublisher = newPublisher;
-        publisherId = newPublisher.id;
-        console.log("✓ Created demo publisher");
+        try {
+          const [newPublisher] = await db.insert(publishers).values({
+            name: "Demo Financial Publisher",
+            email: "admin@demo.sharpsend.io",
+            subdomain: "demo",
+            plan: "premium"
+          }).returning();
+          
+          demoPublisher = newPublisher;
+          publisherId = newPublisher.id;
+          console.log("✓ Created demo publisher");
+        } catch (insertError: any) {
+          // Handle unique constraint violation (23505 is PostgreSQL unique constraint error)
+          if (insertError.code === '23505' && insertError.constraint_name === 'publishers_subdomain_unique') {
+            console.log("✓ Demo publisher already exists (constraint violation - using existing)");
+            // Try to get the existing publisher again
+            const retryPublisher = await db.select().from(publishers)
+              .where(eq(publishers.subdomain, "demo"))
+              .limit(1);
+            if (retryPublisher.length > 0) {
+              demoPublisher = retryPublisher[0];
+              publisherId = demoPublisher.id;
+            } else {
+              throw insertError;
+            }
+          } else {
+            throw insertError;
+          }
+        }
       }
     } catch (publisherError) {
-      console.warn("⚠️ Publisher creation failed, using fallback:", publisherError);
-      // Fallback: use a default publisher ID or skip demo setup
+      console.warn("⚠️ Publisher creation failed:", publisherError);
       return { success: false, error: "Publisher creation failed" };
     }
     
@@ -94,18 +112,37 @@ export async function initializeDemoEnvironment() {
         userId = demoUser.id;
         console.log("✓ Using existing demo user");
       } else {
-        const hashedPassword = await bcrypt.hash("demo123", 10);
-        const [newUser] = await db.insert(users).values({
-          publisherId,
-          username: "demo",
-          email: "demo@sharpsend.io",
-          password: hashedPassword,
-          role: "admin"
-        }).returning();
-        
-        demoUser = newUser;
-        userId = newUser.id;
-        console.log("✓ Created demo user");
+        try {
+          const hashedPassword = await bcrypt.hash("demo123", 10);
+          const [newUser] = await db.insert(users).values({
+            publisherId,
+            username: "demo",
+            email: "demo@sharpsend.io",
+            password: hashedPassword,
+            role: "admin"
+          }).returning();
+          
+          demoUser = newUser;
+          userId = newUser.id;
+          console.log("✓ Created demo user");
+        } catch (insertError: any) {
+          // Handle unique constraint violation for email
+          if (insertError.code === '23505') {
+            console.log("✓ Demo user already exists (constraint violation - using existing)");
+            // Try to get the existing user again
+            const retryUser = await db.select().from(users)
+              .where(eq(users.email, "demo@sharpsend.io"))
+              .limit(1);
+            if (retryUser.length > 0) {
+              demoUser = retryUser[0];
+              userId = demoUser.id;
+            } else {
+              throw insertError;
+            }
+          } else {
+            throw insertError;
+          }
+        }
       }
     } catch (userError) {
       console.warn("⚠️ User creation failed:", userError);
