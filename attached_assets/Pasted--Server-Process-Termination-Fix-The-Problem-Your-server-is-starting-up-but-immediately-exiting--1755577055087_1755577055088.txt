@@ -1,0 +1,321 @@
+# Server Process Termination Fix
+
+## The Problem
+Your server is starting up but immediately exiting with "main done, exiting". This happens when:
+1. Your main script completes its tasks and exits
+2. There's a `process.exit(0)` call somewhere
+3. The server isn't properly set up to stay alive
+
+## Immediate Fix
+
+### Step 1: Remove Any Process.exit() Calls
+
+Find and remove any `process.exit()` calls in your code:
+
+```javascript
+// WRONG - This kills the server
+console.log("main done, exiting");
+process.exit(0);
+
+// CORRECT - Let the server stay alive
+console.log("✅ Server is running and ready to accept requests");
+// No process.exit() - let the server run indefinitely
+```
+
+### Step 2: Ensure Server Stays Alive
+
+Update your server startup code:
+
+```javascript
+// server/index.js
+import express from 'express';
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Health check endpoint FIRST
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    service: 'SharpSend',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Your middleware and routes
+app.use(express.json());
+app.use(express.static('dist/public'));
+
+// Start server and KEEP IT ALIVE
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🏥 Health check available at http://localhost:${PORT}/`);
+  console.log(`✅ Server is ready to accept requests`);
+  
+  // DO NOT call process.exit() here
+  // The server will stay alive automatically
+});
+
+// Optional: Keep process alive explicitly
+server.on('listening', () => {
+  console.log('🎉 Server successfully started and listening');
+  // Server will continue running until manually stopped
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🛑 Received SIGTERM, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0); // Only exit on shutdown signal
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 Received SIGINT, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0); // Only exit on shutdown signal
+  });
+});
+```
+
+### Step 3: Check Your Main Entry Point
+
+Make sure your main file (the one specified in package.json) doesn't exit:
+
+```javascript
+// If you have a main.js or index.js that imports the server
+import './server/index.js';
+
+// DO NOT add process.exit() here
+console.log('Application started');
+// Let it run indefinitely
+```
+
+### Step 4: Update Package.json Scripts
+
+```json
+{
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js"
+  }
+}
+```
+
+## Common Patterns That Cause Termination
+
+### Pattern 1: Script-style Execution
+```javascript
+// WRONG - This pattern exits after completion
+async function main() {
+  await setupDatabase();
+  await seedData();
+  console.log("main done, exiting");
+  process.exit(0); // This kills the server!
+}
+
+main();
+
+// CORRECT - Server pattern
+async function startServer() {
+  const app = express();
+  
+  // Setup routes
+  app.get('/', (req, res) => res.send('OK'));
+  
+  // Start server
+  app.listen(PORT, () => {
+    console.log('Server running');
+    // No exit - server stays alive
+  });
+  
+  // Do initialization after server starts
+  await setupDatabase();
+  await seedData();
+  console.log("✅ Initialization complete, server running");
+}
+
+startServer();
+```
+
+### Pattern 2: Async/Await Without Server
+```javascript
+// WRONG - Async function completes and exits
+async function init() {
+  const app = express();
+  app.listen(PORT);
+  await doSomeSetup();
+  // Function ends, process exits
+}
+
+init();
+
+// CORRECT - Keep server reference alive
+async function init() {
+  const app = express();
+  
+  const server = app.listen(PORT, () => {
+    console.log('Server started');
+  });
+  
+  await doSomeSetup();
+  console.log('Setup complete, server running');
+  // Server stays alive because it's listening
+}
+
+init();
+```
+
+### Pattern 3: Module Imports That Exit
+```javascript
+// WRONG - If any imported module calls process.exit()
+import './setup.js'; // This might call process.exit()
+import './server.js';
+
+// CORRECT - Check all imported modules for process.exit() calls
+// Remove any process.exit() from imported modules
+```
+
+## Debugging Server Termination
+
+### Add Process Event Listeners
+```javascript
+// Add this to debug why your process is exiting
+process.on('exit', (code) => {
+  console.log(`🚨 Process exiting with code: ${code}`);
+});
+
+process.on('beforeExit', (code) => {
+  console.log(`🚨 Process about to exit with code: ${code}`);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('🚨 Uncaught Exception:', error);
+  // Don't exit on uncaught exceptions in production
+  // process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit on unhandled rejections
+});
+```
+
+### Check for Event Loop Issues
+```javascript
+// If your server exits immediately, the event loop might be empty
+// Add this to keep the process alive
+const server = app.listen(PORT, () => {
+  console.log('Server started');
+  
+  // Keep event loop alive
+  const keepAlive = setInterval(() => {
+    // This prevents the process from exiting
+    // Remove this once you identify the real issue
+  }, 1000);
+  
+  // Clean up on server close
+  server.on('close', () => {
+    clearInterval(keepAlive);
+  });
+});
+```
+
+## Complete Working Server Template
+
+```javascript
+// server/index.js
+import express from 'express';
+import path from 'path';
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+console.log('🚀 Starting SharpSend server...');
+
+// Health check endpoint (CRITICAL for Replit)
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    service: 'SharpSend',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    memory: process.memoryUsage(),
+    uptime: process.uptime()
+  });
+});
+
+// Middleware
+app.use(express.json());
+app.use(express.static('dist/public'));
+
+// API routes
+app.use('/api', (req, res, next) => {
+  console.log(`API Request: ${req.method} ${req.path}`);
+  next();
+});
+
+// Catch-all for React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
+});
+
+// Start server
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🌐 Health check: http://localhost:${PORT}/`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🎉 SharpSend is ready to accept requests`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+});
+
+// Graceful shutdown
+const gracefulShutdown = (signal) => {
+  console.log(`🛑 Received ${signal}, shutting down gracefully`);
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Keep process alive (remove after debugging)
+console.log('🔄 Server process will stay alive until manually stopped');
+
+export default app;
+```
+
+## Quick Checklist
+
+- [ ] Remove any `process.exit(0)` calls from your code
+- [ ] Ensure `app.listen()` is called and server stays alive
+- [ ] Add health check endpoint at `/` that returns 200
+- [ ] Check that no imported modules call `process.exit()`
+- [ ] Verify your main entry point doesn't exit after setup
+- [ ] Test locally that server stays running
+
+## Deploy and Test
+
+1. **Update your server code** with the fixes above
+2. **Remove any process.exit() calls**
+3. **Deploy to Replit**
+4. **Check logs** for "Server running" message
+5. **Test health endpoint**: `curl https://your-app.replit.app/`
+
+Your server should now stay alive and pass health checks!
+

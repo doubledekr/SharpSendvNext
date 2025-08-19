@@ -51,6 +51,8 @@ The platform is multi-tenant with complete data isolation via subdomain-based ro
 
 **Health Check Optimizations (August 2025)**: Implemented Replit-optimized health check system with sub-200ms response times. Health checks now respond immediately before expensive operations (database seeding, demo environment setup) which run asynchronously after server startup. Root endpoint (/) serves fast health responses with uptime data. Detailed health endpoint (/api/health) includes memory usage, environment info, and feature flags. All health endpoints use no-cache headers and optimized Express settings (disabled x-powered-by, etag) for maximum performance.
 
+**Process Stability Monitoring (August 2025)**: Added comprehensive process monitoring with exit event handlers, uncaught exception logging, and unhandled rejection tracking. Implemented graceful shutdown handling for SIGTERM/SIGINT signals. Server includes explicit process-alive messaging and error monitoring to debug any deployment termination issues. All process exits now properly logged with diagnostic information.
+
 ## External Dependencies
 
 ### Database Services

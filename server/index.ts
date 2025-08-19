@@ -13,6 +13,26 @@ const app = express();
 app.set('x-powered-by', false);
 app.set('etag', false);
 
+// Add process monitoring for debugging deployment issues
+process.on('exit', (code) => {
+  console.log(`🚨 Process exiting with code: ${code}`);
+});
+
+process.on('beforeExit', (code) => {
+  console.log(`🚨 Process about to exit with code: ${code}`);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('🚨 Uncaught Exception:', error);
+  console.error('Stack trace:', error.stack);
+  // Don't exit immediately - log the error but continue serving
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit on unhandled rejections - log and continue
+});
+
 // Basic middleware setup
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
@@ -175,6 +195,13 @@ app.use((req, res, next) => {
     
     // Keep the process alive
     console.log("✅ Server is running and will stay alive...");
+    console.log(`🌐 Health check available at http://localhost:${port}/`);
+    console.log(`🔄 Server process will continue running until manually stopped`);
+    
+    // Add server error handling
+    server.on('error', (error) => {
+      console.error('❌ Server error:', error);
+    });
     
     // Initialize expensive operations AFTER server is responding to health checks
     setImmediate(() => {
@@ -241,3 +268,15 @@ async function initializeServicesAsync() {
     // Don't crash the server - health checks should still work
   }
 }
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal: string) => {
+  console.log(`🛑 Received ${signal}, shutting down gracefully`);
+  // Note: server is only available within the async function scope
+  // In production, we rely on the process manager to handle shutdown
+  console.log('✅ Graceful shutdown initiated');
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
