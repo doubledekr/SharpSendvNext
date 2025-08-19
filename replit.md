@@ -61,6 +61,31 @@ The platform is multi-tenant with complete data isolation via subdomain-based ro
 
 **Enhanced Production Server Stability (August 2025)**: Further strengthened deployment resilience with multiple process-alive mechanisms: (1) Added process.stdin.resume() to keep event loop active, (2) Implemented hourly keep-alive interval to prevent garbage collection, (3) Enhanced process monitoring with beforeExit handler that prevents normal exits in production, (4) Added comprehensive diagnostic logging for active handles and requests, (5) Improved graceful shutdown with proper cleanup and timeout handling, (6) Added USR1/USR2 signal handlers for process manager compatibility. Server now uses three redundant mechanisms to ensure continuous operation in deployment environments.
 
+## Platform Integration Capabilities
+
+SharpSend provides comprehensive integration with 16+ email marketing platforms. Each integration offers specific capabilities:
+
+### Core Integration Features
+- **Subscriber Detection**: Automatically discover and sync all subscribers, lists, segments, and tags
+- **Template Synchronization**: Import, edit, and sync templates between SharpSend and platforms
+- **Image Management**: Use platform CDNs, upload to media libraries, optimize for email
+- **Trigger Sends**: Send emails through platform APIs with SharpSend optimization
+- **Real-time Events**: Receive webhooks for opens, clicks, bounces, unsubscribes
+- **Two-way Sync**: Keep data synchronized between SharpSend and platforms
+- **Analytics Consolidation**: Unified dashboard for all platform metrics
+
+### Platform-Specific Strengths
+- **Mailchimp**: E-commerce tracking, audience management, Content Studio
+- **Iterable**: Real-time data feeds, cross-channel messaging, workflows
+- **Customer.io**: Event-based triggers, journey automation, object tracking
+- **SendGrid**: High-volume transactional, dynamic templates, deliverability
+- **ActiveCampaign**: CRM integration, predictive sending, attribution
+- **Keap**: Sales automation, appointment scheduling, pipeline management
+- **Braze**: Enterprise scale, Canvas journeys, multi-channel orchestration
+- **ConvertKit**: Creator tools, visual automation, commerce integration
+
+Detailed documentation available in `platform-integration-features.md` and `integrations-faq.md`.
+
 ## External Dependencies
 
 ### Database Services
