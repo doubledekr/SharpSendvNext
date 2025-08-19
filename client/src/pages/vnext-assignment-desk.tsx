@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase } from "lucide-react";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -76,6 +76,7 @@ export function VNextAssignmentDesk() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isRunningDetection, setIsRunningDetection] = useState(false);
 
   // Fetch assignments
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
@@ -369,6 +370,34 @@ export function VNextAssignmentDesk() {
   };
 
   const filteredAssignments = filterAssignments(assignments);
+
+  // Run AI opportunity detection
+  const handleRunDetection = async () => {
+    setIsRunningDetection(true);
+    try {
+      // First initialize triggers if needed
+      await apiRequest("/api/opportunity-detection/initialize", "POST", {});
+      
+      // Run detection
+      const response = await apiRequest("/api/opportunity-detection/run", "POST", {}) as any;
+      
+      toast({
+        title: "Detection Complete",
+        description: `Found ${response.opportunitiesDetected || 0} new opportunities based on market conditions.`,
+      });
+      
+      // Refresh opportunities list
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+    } catch (error) {
+      toast({
+        title: "Detection Failed",
+        description: "Unable to run opportunity detection. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunningDetection(false);
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -944,20 +973,67 @@ export function VNextAssignmentDesk() {
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle>Revenue Opportunities</CardTitle>
-                <CardDescription>Track sponsorships, partnerships, and growth opportunities</CardDescription>
+                <CardDescription>AI-powered detection of sponsorships, partnerships, and growth opportunities</CardDescription>
               </div>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Opportunity
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRunDetection()}
+                  disabled={isRunningDetection}
+                  className="gap-2"
+                >
+                  {isRunningDetection ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  {isRunningDetection ? "Detecting..." : "Run Detection"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  Triggers
+                </Button>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Opportunity
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
             {isLoadingOpportunities ? (
               <div className="text-center py-8 text-gray-500">Loading opportunities...</div>
             ) : opportunities.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No opportunities yet. Click "New Opportunity" to add one.
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="mb-4">
+                  <Zap className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">No opportunities detected</h3>
+                <p className="text-sm mb-4">
+                  AI will automatically detect revenue opportunities based on market events, stock movements, and news sentiment.
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRunDetection()}
+                    disabled={isRunningDetection}
+                    className="gap-2"
+                  >
+                    {isRunningDetection ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <Zap className="h-4 w-4" />
+                    )}
+                    {isRunningDetection ? "Scanning Markets..." : "Run Detection Now"}
+                  </Button>
+                  <Button size="sm">Add Manual</Button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -981,6 +1057,14 @@ export function VNextAssignmentDesk() {
                           <Badge variant="outline">
                             {opportunity.type}
                           </Badge>
+                          {/* Show AI badge if source is ai_detected or metadata contains aiGenerated */}
+                          {(opportunity.source === "ai_detected" || 
+                            (opportunity as any)?.metadata?.aiGenerated) && (
+                            <Badge variant="secondary" className="gap-1">
+                              <Sparkles className="h-3 w-3" />
+                              AI Generated
+                            </Badge>
+                          )}
                         </div>
                         {opportunity.description && (
                           <p className="text-muted-foreground mb-2">{opportunity.description}</p>
