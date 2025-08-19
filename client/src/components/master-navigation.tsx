@@ -29,13 +29,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function MasterNavigation() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const handleLogout = () => {
+    // Clear all authentication data
+    localStorage.removeItem('token');
+    localStorage.removeItem('publisher');
+    localStorage.removeItem('user');
+    // Redirect to login page
+    setLocation('/login');
+  };
 
   const mainNavItems = [
     {
       title: "Dashboard",
-      href: "/",
+      href: "/dashboard",
       icon: LayoutDashboard,
       description: "Overview & Analytics"
     },
@@ -111,7 +120,7 @@ export function MasterNavigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/dashboard" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">S</span>
               </div>
@@ -197,7 +206,10 @@ export function MasterNavigation() {
                   );
                 })}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">
+                <DropdownMenuItem 
+                  className="text-red-600 cursor-pointer"
+                  onClick={handleLogout}
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
                 </DropdownMenuItem>
