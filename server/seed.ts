@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "./database";
 import { 
   publishers,
@@ -21,25 +21,51 @@ export async function seedDatabase() {
     let publisherId: string;
     if (existingPublisher.length > 0) {
       publisherId = existingPublisher[0].id;
+      console.log("Demo publisher already exists, using existing one");
     } else {
-      const demoPublisher = await db.insert(publishers).values({
-        name: "Demo Publisher",
-        email: "admin@demo.com",
-        subdomain: "demo",
-        plan: "premium"
-      }).returning();
-      publisherId = demoPublisher[0].id;
+      try {
+        const demoPublisher = await db.insert(publishers).values({
+          name: "Demo Publisher",
+          email: "admin@demo.com",
+          subdomain: "demo",
+          plan: "premium"
+        }).returning();
+        publisherId = demoPublisher[0].id;
+        console.log("Created new demo publisher");
+      } catch (publisherError) {
+        console.warn("Failed to create demo publisher, checking if it exists:", publisherError);
+        // Try to find existing publisher again in case of race condition
+        const retryPublisher = await db.select().from(publishers).where(eq(publishers.subdomain, "demo")).limit(1);
+        if (retryPublisher.length > 0) {
+          publisherId = retryPublisher[0].id;
+        } else {
+          throw publisherError;
+        }
+      }
     }
 
-    // Create demo user
-    const hashedPassword = await bcrypt.hash("demo", 10);
-    await db.insert(users).values({
-      publisherId: publisherId,
-      username: "demo",
-      email: "demo@example.com",
-      password: hashedPassword,
-      role: "admin"
-    }).onConflictDoNothing();
+    // Check if demo user already exists before creating
+    const existingUser = await db.select().from(users)
+      .where(eq(users.email, "demo@example.com"))
+      .limit(1);
+
+    if (existingUser.length === 0) {
+      try {
+        const hashedPassword = await bcrypt.hash("demo", 10);
+        await db.insert(users).values({
+          publisherId: publisherId,
+          username: "demo",
+          email: "demo@example.com",
+          password: hashedPassword,
+          role: "admin"
+        });
+        console.log("Created demo user");
+      } catch (userError) {
+        console.warn("Failed to create demo user:", userError);
+      }
+    } else {
+      console.log("Demo user already exists, skipping");
+    }
 
     // Create sample subscribers
     const sampleSubscribers = [
@@ -109,34 +135,58 @@ export async function seedDatabase() {
       }
     ];
 
+    // Check and create sample subscribers
     for (const subscriber of sampleSubscribers) {
-      await db.insert(subscribers).values(subscriber).onConflictDoNothing();
+      try {
+        const existingSubscriber = await db.select().from(subscribers)
+          .where(eq(subscribers.email, subscriber.email))
+          .limit(1);
+        
+        if (existingSubscriber.length === 0) {
+          await db.insert(subscribers).values(subscriber);
+        }
+      } catch (subscriberError) {
+        console.warn(`Failed to create subscriber ${subscriber.email}:`, subscriberError);
+      }
     }
 
     // Skip campaign seeding for now - table structure mismatch
     // Will be handled by demo-init endpoint instead
 
     // Create sample A/B tests
-    await db.insert(abTests).values({
-      publisherId: publisherId,
-      name: "Subject Line Optimization",
-      status: "active",
-      variantA: {
-        subjectLine: "🚀 Breakthrough Tech Stock Alert",
-        content: "Traditional version of our tech stock analysis...",
-        openRate: 24.5,
-        clickRate: 4.2,
-        sent: 4
-      },
-      variantB: {
-        subjectLine: "Tech Stock Alert: AI Revolution Continues",
-        content: "Personalized version with AI-driven insights...",
-        openRate: 31.8,
-        clickRate: 6.1,
-        sent: 4
-      },
-      confidenceLevel: "87.3"
-    }).onConflictDoNothing();
+    try {
+      const existingAbTest = await db.select().from(abTests)
+        .where(eq(abTests.publisherId, publisherId))
+        .limit(1);
+      
+      if (existingAbTest.length === 0) {
+        await db.insert(abTests).values({
+          publisherId: publisherId,
+          name: "Subject Line Optimization",
+          status: "active",
+          variantA: {
+            subjectLine: "🚀 Breakthrough Tech Stock Alert",
+            content: "Traditional version of our tech stock analysis...",
+            openRate: 24.5,
+            clickRate: 4.2,
+            sent: 4
+          },
+          variantB: {
+            subjectLine: "Tech Stock Alert: AI Revolution Continues",
+            content: "Personalized version with AI-driven insights...",
+            openRate: 31.8,
+            clickRate: 6.1,
+            sent: 4
+          },
+          confidenceLevel: "87.3"
+        });
+        console.log("Created sample A/B test");
+      } else {
+        console.log("A/B test already exists, skipping");
+      }
+    } catch (abTestError) {
+      console.warn("Failed to create A/B test:", abTestError);
+    }
 
     // Create email integrations
     const integrations = [
@@ -147,21 +197,49 @@ export async function seedDatabase() {
     ];
 
     for (const integration of integrations) {
-      await db.insert(emailIntegrations).values(integration).onConflictDoNothing();
+      try {
+        const existingIntegration = await db.select().from(emailIntegrations)
+          .where(and(
+            eq(emailIntegrations.publisherId, publisherId),
+            eq(emailIntegrations.platform, integration.platform)
+          ))
+          .limit(1);
+        
+        if (existingIntegration.length === 0) {
+          await db.insert(emailIntegrations).values(integration);
+        }
+      } catch (integrationError) {
+        console.warn(`Failed to create integration ${integration.platform}:`, integrationError);
+      }
     }
 
     // Create analytics data
-    await db.insert(analytics).values({
-      publisherId: publisherId,
-      totalSubscribers: 8,
-      engagementRate: "71.2",
-      churnRate: "2.1", 
-      monthlyRevenue: "13600.00",
-      revenueGrowth: "15.3"
-    }).onConflictDoNothing();
+    try {
+      const existingAnalytics = await db.select().from(analytics)
+        .where(eq(analytics.publisherId, publisherId))
+        .limit(1);
+      
+      if (existingAnalytics.length === 0) {
+        await db.insert(analytics).values({
+          publisherId: publisherId,
+          totalSubscribers: 8,
+          engagementRate: "71.2",
+          churnRate: "2.1", 
+          monthlyRevenue: "13600.00",
+          revenueGrowth: "15.3"
+        });
+        console.log("Created sample analytics data");
+      } else {
+        console.log("Analytics data already exists, skipping");
+      }
+    } catch (analyticsError) {
+      console.warn("Failed to create analytics data:", analyticsError);
+    }
 
     console.log("Database seeded successfully!");
+    return { success: true };
   } catch (error) {
     console.error("Error seeding database:", error);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
