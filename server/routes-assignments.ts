@@ -26,7 +26,7 @@ router.get("/api/assignments", async (req, res) => {
     // Add shareable URLs to each assignment
     const host = req.get('host') || 'sharpsend.io';
     const protocol = req.protocol || 'https';
-    const assignmentsWithUrls = result.map(assignment => ({
+    const assignmentsWithUrls = result.map((assignment: any) => ({
       ...assignment,
       shareableUrl: assignment.shareableSlug 
         ? `${protocol}://${host}/assignment/${assignment.shareableSlug}`
