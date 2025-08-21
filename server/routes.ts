@@ -24,6 +24,7 @@ import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
 import { registerCampaignRoutes } from "./routes-campaigns";
+import platformSendRoutes from "./routes-platform-send";
 import { initializeDemoEnvironment, cleanupDemoData, getDemoConfig } from "./demo-environment";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
@@ -876,6 +877,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerVNextRoutes(app);
   registerDemoRoutes(app);
   registerCampaignRoutes(app);
+  app.use("/api/platform-send", platformSendRoutes);
   app.use(assignmentRoutes);
   
   // Image upload endpoints for assignments

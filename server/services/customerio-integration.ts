@@ -1,369 +1,472 @@
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
+import { db } from '../db';
+import { emailIntegrations } from '../../shared/schema';
+import { eq, and } from 'drizzle-orm';
 
 export interface CustomerIoConfig {
   siteId: string;
   apiKey: string;
-  region: 'us' | 'eu';
-  trackingKey?: string; // For web SDK
+  region?: 'us' | 'eu';
+  trackingKey?: string;
 }
 
-export interface CustomerIoPerson {
+export interface CustomerIoCustomer {
   id: string;
-  email?: string;
-  attributes?: Record<string, any>;
+  email: string;
   created_at?: number;
+  attributes?: Record<string, any>;
+  unsubscribed?: boolean;
 }
 
-export interface CustomerIoEvent {
+export interface CustomerIoSegment {
+  id: string;
   name: string;
-  data?: Record<string, any>;
-  timestamp?: number;
+  description?: string;
+  created?: number;
+  updated?: number;
+  filter?: any;
 }
 
-export interface CustomerIoMessage {
-  to: string;
-  message_id?: string;
-  from?: string;
-  subject?: string;
-  body?: string;
-  message_type?: 'email' | 'push' | 'sms' | 'webhook';
-  identifiers?: {
-    id?: string;
-    email?: string;
-  };
-}
-
-export interface CustomerIoInAppMessage {
-  message_id: string;
-  type: 'modal' | 'banner' | 'fullscreen';
-  style: Record<string, any>;
-  actions: Array<{
-    name: string;
-    value: string;
-  }>;
-  content: {
-    title?: string;
-    body?: string;
-    image_url?: string;
-  };
+export interface CustomerIoBroadcast {
+  id: number;
+  name: string;
+  created?: number;
+  updated?: number;
+  status?: string;
+  tags?: string[];
 }
 
 export interface CustomerIoCampaign {
-  id: string;
+  id: number;
   name: string;
-  type: 'email' | 'push' | 'sms' | 'webhook';
-  state: 'draft' | 'active' | 'stopped' | 'archived';
-  created: number;
-  updated: number;
+  description?: string;
+  created?: number;
+  updated?: number;
+  active?: boolean;
+  type?: string;
+  tags?: string[];
+}
+
+export interface CustomerIoNewsletter {
+  id: number;
+  name: string;
+  subject: string;
+  from: string;
+  reply_to?: string;
+  preprocessor?: string;
+  body?: string;
+  body_amp?: string;
+  language?: string;
+  fake_bcc?: boolean;
+  preheader_text?: string;
 }
 
 export class CustomerIoIntegrationService {
-  private siteId: string;
   private apiKey: string;
-  private trackingKey: string;
-  private trackBaseUrl: string;
-  private appBaseUrl: string;
-  private cdpBaseUrl: string;
+  private siteId: string;
+  private trackApiUrl: string;
+  private apiUrl: string;
+  private trackingKey?: string;
 
   constructor(config: CustomerIoConfig) {
-    this.siteId = config.siteId;
     this.apiKey = config.apiKey;
-    this.trackingKey = config.trackingKey || '';
+    this.siteId = config.siteId;
+    this.trackingKey = config.trackingKey;
     
-    const region = config.region === 'eu' ? 'eu-west-1' : 'us-east-1';
-    this.trackBaseUrl = `https://track-${region}.customer.io/api/v1`;
-    this.appBaseUrl = config.region === 'eu' 
-      ? 'https://api-eu.customer.io/v1/send' 
-      : 'https://api.customer.io/v1/send';
-    this.cdpBaseUrl = config.region === 'eu'
-      ? 'https://cdp-eu.customer.io/v1'
-      : 'https://cdp.customer.io/v1';
+    // Different endpoints for different operations
+    this.trackApiUrl = config.region === 'eu' 
+      ? 'https://track-eu.customer.io/api/v1'
+      : 'https://track.customer.io/api/v1';
+    
+    this.apiUrl = config.region === 'eu'
+      ? 'https://api-eu.customer.io/v1'
+      : 'https://api.customer.io/v1';
   }
 
-  private getAuthHeader(apiType: 'track' | 'app' | 'cdp'): Record<string, string> {
-    switch (apiType) {
-      case 'track':
-        return {
-          'Authorization': `Basic ${Buffer.from(`${this.siteId}:${this.apiKey}`).toString('base64')}`,
-        };
-      case 'app':
-        return {
-          'Authorization': `Bearer ${this.apiKey}`,
-        };
-      case 'cdp':
-        return {
-          'Authorization': `Basic ${Buffer.from(`${this.apiKey}:`).toString('base64')}`,
-        };
-    }
-  }
-
-  private async makeRequest<T>(
-    apiType: 'track' | 'app' | 'cdp',
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    endpoint: string,
-    data?: any
-  ): Promise<T> {
-    let baseUrl: string;
-    switch (apiType) {
-      case 'track':
-        baseUrl = this.trackBaseUrl;
-        break;
-      case 'app':
-        baseUrl = this.appBaseUrl;
-        break;
-      case 'cdp':
-        baseUrl = this.cdpBaseUrl;
-        break;
-    }
-
+  private async makeTrackRequest(method: string, endpoint: string, data?: any): Promise<any> {
     try {
-      const response: AxiosResponse<T> = await axios({
+      const auth = Buffer.from(`${this.siteId}:${this.apiKey}`).toString('base64');
+      const response = await axios({
         method,
-        url: `${baseUrl}${endpoint}`,
+        url: `${this.trackApiUrl}${endpoint}`,
         headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeader(apiType),
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json'
         },
-        data,
+        data
       });
       return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(`Customer.io API Error: ${error.response?.status} - ${error.response?.data?.message || error.message}`);
-      }
-      throw error;
+    } catch (error: any) {
+      console.error(`Customer.io Track API error for ${endpoint}:`, error.response?.data || error.message);
+      throw new Error(error.response?.data?.meta?.error || error.message);
+    }
+  }
+
+  private async makeApiRequest(method: string, endpoint: string, data?: any): Promise<any> {
+    try {
+      const response = await axios({
+        method,
+        url: `${this.apiUrl}${endpoint}`,
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        data
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error(`Customer.io API error for ${endpoint}:`, error.response?.data || error.message);
+      throw new Error(error.response?.data?.meta?.error || error.message);
     }
   }
 
   /**
-   * Person Management (Track API)
-   */
-  async identifyPerson(person: CustomerIoPerson): Promise<void> {
-    await this.makeRequest('track', 'PUT', `/customers/${person.id}`, {
-      email: person.email,
-      created_at: person.created_at || Math.floor(Date.now() / 1000),
-      ...person.attributes,
-    });
-  }
-
-  async deletePerson(personId: string): Promise<void> {
-    await this.makeRequest('track', 'DELETE', `/customers/${personId}`);
-  }
-
-  async addDevice(personId: string, device: {
-    device_id: string;
-    platform: 'ios' | 'android';
-    last_used?: number;
-  }): Promise<void> {
-    await this.makeRequest('track', 'PUT', `/customers/${personId}/devices`, device);
-  }
-
-  /**
-   * Event Tracking (Track API)
-   */
-  async trackEvent(personId: string, event: CustomerIoEvent): Promise<void> {
-    await this.makeRequest('track', 'POST', `/customers/${personId}/events`, {
-      name: event.name,
-      data: event.data,
-      timestamp: event.timestamp || Math.floor(Date.now() / 1000),
-    });
-  }
-
-  async trackAnonymousEvent(event: CustomerIoEvent & { anonymous_id: string }): Promise<void> {
-    await this.makeRequest('track', 'POST', '/events', {
-      name: event.name,
-      data: event.data,
-      anonymous_id: event.anonymous_id,
-      timestamp: event.timestamp || Math.floor(Date.now() / 1000),
-    });
-  }
-
-  /**
-   * Transactional Messages (App API)
-   */
-  async sendTransactionalEmail(message: CustomerIoMessage & {
-    transactional_message_id: string;
-  }): Promise<{ delivery_id: string }> {
-    return this.makeRequest('app', 'POST', '/transactional', {
-      transactional_message_id: message.transactional_message_id,
-      to: message.to,
-      identifiers: message.identifiers,
-      message_data: message.body ? { body: message.body } : undefined,
-      subject: message.subject,
-      from: message.from,
-    });
-  }
-
-  async sendTransactionalPush(message: CustomerIoMessage & {
-    transactional_message_id: string;
-    push_data: {
-      title: string;
-      body: string;
-      sound?: string;
-      badge?: number;
-    };
-  }): Promise<{ delivery_id: string }> {
-    return this.makeRequest('app', 'POST', '/transactional', {
-      transactional_message_id: message.transactional_message_id,
-      to: message.to,
-      identifiers: message.identifiers,
-      message_data: message.push_data,
-    });
-  }
-
-  async sendTransactionalSMS(message: CustomerIoMessage & {
-    transactional_message_id: string;
-    body: string;
-  }): Promise<{ delivery_id: string }> {
-    return this.makeRequest('app', 'POST', '/transactional', {
-      transactional_message_id: message.transactional_message_id,
-      to: message.to,
-      identifiers: message.identifiers,
-      message_data: { body: message.body },
-    });
-  }
-
-  /**
-   * Broadcast Campaigns (App API)
-   */
-  async triggerBroadcast(data: {
-    campaign_id: string;
-    segment_id?: string;
-    data?: Record<string, any>;
-  }): Promise<{ campaign_id: string; run_id: string }> {
-    return this.makeRequest('app', 'POST', '/campaigns/trigger', data);
-  }
-
-  async getCampaigns(): Promise<{ campaigns: CustomerIoCampaign[] }> {
-    return this.makeRequest('app', 'GET', '/campaigns');
-  }
-
-  async getCampaignMetrics(campaignId: string, start?: number, end?: number): Promise<{
-    metric: {
-      sent: number;
-      delivered: number;
-      opened: number;
-      clicked: number;
-      bounced: number;
-      unsubscribed: number;
-    };
-  }> {
-    const params = new URLSearchParams();
-    if (start) params.append('start', start.toString());
-    if (end) params.append('end', end.toString());
-    
-    return this.makeRequest('app', 'GET', `/campaigns/${campaignId}/metrics?${params}`);
-  }
-
-  /**
-   * In-App Messaging
-   */
-  async getInAppMessages(personId: string): Promise<{ messages: CustomerIoInAppMessage[] }> {
-    return this.makeRequest('app', 'GET', `/customers/${personId}/messages`);
-  }
-
-  async trackInAppEvent(personId: string, data: {
-    message_id: string;
-    event: 'opened' | 'clicked' | 'dismissed';
-    href?: string;
-  }): Promise<void> {
-    await this.makeRequest('track', 'POST', `/customers/${personId}/events`, {
-      name: `message_${data.event}`,
-      data: {
-        message_id: data.message_id,
-        href: data.href,
-      },
-    });
-  }
-
-  /**
-   * Segments and Audiences
-   */
-  async getSegments(): Promise<{ segments: Array<{ id: string; name: string; type: string }> }> {
-    return this.makeRequest('app', 'GET', '/segments');
-  }
-
-  async addPersonToSegment(personId: string, segmentId: string): Promise<void> {
-    await this.makeRequest('track', 'POST', `/customers/${personId}/segments/${segmentId}`);
-  }
-
-  async removePersonFromSegment(personId: string, segmentId: string): Promise<void> {
-    await this.makeRequest('track', 'DELETE', `/customers/${personId}/segments/${segmentId}`);
-  }
-
-  /**
-   * Data Management (CDP API)
-   */
-  async createObject(data: {
-    type: string;
-    action: 'identify' | 'track';
-    identifiers: Record<string, any>;
-    attributes?: Record<string, any>;
-  }): Promise<void> {
-    await this.makeRequest('cdp', 'POST', '', {
-      type: data.type,
-      action: data.action,
-      identifiers: data.identifiers,
-      attributes: data.attributes,
-      timestamp: Math.floor(Date.now() / 1000),
-    });
-  }
-
-  /**
-   * Webhooks and Exports
-   */
-  async getExports(): Promise<{ exports: Array<{ id: string; download_url: string; status: string }> }> {
-    return this.makeRequest('app', 'GET', '/exports');
-  }
-
-  async createExport(data: {
-    type: 'customers' | 'deliveries' | 'events';
-    filters?: Record<string, any>;
-    attributes?: string[];
-  }): Promise<{ export_id: string }> {
-    return this.makeRequest('app', 'POST', '/exports', data);
-  }
-
-  /**
-   * Connection Testing
+   * Test connection to Customer.io
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      await this.makeRequest('app', 'GET', '/campaigns');
-      return { success: true, message: 'Connection successful' };
+      await this.makeApiRequest('GET', '/segments');
+      return {
+        success: true,
+        message: 'Connection successful'
+      };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Connection failed' 
+      return {
+        success: false,
+        message: `Connection failed: ${error}`
       };
     }
   }
 
   /**
-   * Journey and Workflow Management
+   * Identify (create or update) a customer
    */
-  async getJourneys(): Promise<{ journeys: Array<{ id: string; name: string; state: string }> }> {
-    return this.makeRequest('app', 'GET', '/journeys');
+  async identifyCustomer(customerId: string, attributes: {
+    email: string;
+    created_at?: number;
+    [key: string]: any;
+  }): Promise<{ success: boolean }> {
+    try {
+      await this.makeTrackRequest('PUT', `/customers/${customerId}`, attributes);
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
   }
 
-  async addPersonToJourney(journeyId: string, personId: string, data?: Record<string, any>): Promise<void> {
-    await this.makeRequest('app', 'POST', `/journeys/${journeyId}/add_people`, {
-      people: [{ id: personId, data }],
+  /**
+   * Delete a customer
+   */
+  async deleteCustomer(customerId: string): Promise<{ success: boolean }> {
+    try {
+      await this.makeTrackRequest('DELETE', `/customers/${customerId}`);
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
+  }
+
+  /**
+   * Track a custom event
+   */
+  async trackEvent(customerId: string, eventData: {
+    name: string;
+    data?: Record<string, any>;
+    timestamp?: number;
+  }): Promise<{ success: boolean }> {
+    try {
+      const payload: any = {
+        name: eventData.name,
+        data: eventData.data || {}
+      };
+      
+      if (eventData.timestamp) {
+        payload.timestamp = eventData.timestamp;
+      }
+
+      await this.makeTrackRequest('POST', `/customers/${customerId}/events`, payload);
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
+  }
+
+  /**
+   * Track a page view
+   */
+  async trackPageView(customerId: string, pageData: {
+    name: string;
+    data?: Record<string, any>;
+    timestamp?: number;
+  }): Promise<{ success: boolean }> {
+    return this.trackEvent(customerId, {
+      name: 'page',
+      data: {
+        name: pageData.name,
+        ...pageData.data
+      },
+      timestamp: pageData.timestamp
     });
   }
 
   /**
-   * Subscription Management
+   * Get segments
    */
-  async updateSubscriptions(personId: string, subscriptions: Record<string, boolean>): Promise<void> {
-    await this.makeRequest('track', 'PUT', `/customers/${personId}`, {
-      subscription_preferences: subscriptions,
-    });
+  async getSegments(): Promise<{ segments: CustomerIoSegment[] }> {
+    const response = await this.makeApiRequest('GET', '/segments');
+    return { segments: response.segments || [] };
   }
 
-  async getSubscriptionPreferences(personId: string): Promise<{ 
-    preferences: Record<string, boolean> 
-  }> {
-    return this.makeRequest('app', 'GET', `/customers/${personId}/subscription_preferences`);
+  /**
+   * Create a new segment (non-destructive with SharpSend prefix)
+   */
+  async createSegment(segmentData: {
+    name: string;
+    description?: string;
+    filter?: any;
+  }): Promise<CustomerIoSegment> {
+    const segmentPayload = {
+      segment: {
+        name: `SharpSend_${segmentData.name}`,
+        description: segmentData.description || `Created by SharpSend on ${new Date().toISOString()}`,
+        filter: segmentData.filter
+      }
+    };
+
+    const response = await this.makeApiRequest('POST', '/segments', segmentPayload);
+    return response.segment;
+  }
+
+  /**
+   * Get broadcasts
+   */
+  async getBroadcasts(): Promise<{ broadcasts: CustomerIoBroadcast[] }> {
+    const response = await this.makeApiRequest('GET', '/broadcasts');
+    return { broadcasts: response.broadcasts || [] };
+  }
+
+  /**
+   * Create and send a broadcast
+   */
+  async sendBroadcast(broadcastData: {
+    name: string;
+    from: string;
+    subject: string;
+    body: string;
+    preheader?: string;
+    segmentId?: string;
+    tags?: string[];
+    sendAt?: Date;
+  }): Promise<{ success: boolean; broadcastId: number; message: string }> {
+    try {
+      // Create newsletter first
+      const newsletterPayload = {
+        newsletter: {
+          name: `SharpSend_${broadcastData.name}`,
+          subject: broadcastData.subject,
+          from: broadcastData.from,
+          body: broadcastData.body,
+          preheader_text: broadcastData.preheader,
+          tags: broadcastData.tags
+        }
+      };
+
+      const newsletterResponse = await this.makeApiRequest('POST', '/newsletters', newsletterPayload);
+      const newsletterId = newsletterResponse.newsletter.id;
+
+      // Create broadcast
+      const broadcastPayload: any = {
+        broadcast: {
+          name: `SharpSend_${broadcastData.name}`,
+          newsletter_id: newsletterId,
+          tags: broadcastData.tags || ['sharpsend']
+        }
+      };
+
+      if (broadcastData.segmentId) {
+        broadcastPayload.broadcast.segment_id = broadcastData.segmentId;
+      }
+
+      const broadcastResponse = await this.makeApiRequest('POST', '/broadcasts', broadcastPayload);
+      const broadcastId = broadcastResponse.broadcast.id;
+
+      // Trigger the broadcast
+      if (broadcastData.sendAt) {
+        // Schedule for later
+        await this.makeApiRequest('POST', `/broadcasts/${broadcastId}/schedule`, {
+          scheduled_for: Math.floor(broadcastData.sendAt.getTime() / 1000)
+        });
+      } else {
+        // Send immediately
+        await this.makeApiRequest('POST', `/broadcasts/${broadcastId}/trigger`);
+      }
+
+      return {
+        success: true,
+        broadcastId,
+        message: broadcastData.sendAt 
+          ? `Broadcast scheduled for ${broadcastData.sendAt.toISOString()}`
+          : 'Broadcast sent successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        broadcastId: 0,
+        message: `Failed to send broadcast: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get campaigns
+   */
+  async getCampaigns(): Promise<{ campaigns: CustomerIoCampaign[] }> {
+    const response = await this.makeApiRequest('GET', '/campaigns');
+    return { campaigns: response.campaigns || [] };
+  }
+
+  /**
+   * Send transactional message
+   */
+  async sendTransactional(messageData: {
+    transactionalMessageId: string;
+    to: string;
+    identifiers?: Record<string, any>;
+    messageData?: Record<string, any>;
+    attachments?: Array<{
+      filename: string;
+      content: string;
+      type?: string;
+    }>;
+  }): Promise<{ success: boolean; deliveryId: string }> {
+    try {
+      const payload: any = {
+        to: messageData.to,
+        transactional_message_id: messageData.transactionalMessageId,
+        message_data: messageData.messageData || {},
+        identifiers: messageData.identifiers || {}
+      };
+
+      if (messageData.attachments) {
+        payload.attachments = messageData.attachments;
+      }
+
+      const response = await this.makeApiRequest('POST', '/send/email', payload);
+
+      return {
+        success: true,
+        deliveryId: response.delivery_id || ''
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        deliveryId: ''
+      };
+    }
+  }
+
+  /**
+   * Add customers to a manual segment
+   */
+  async addToSegment(segmentId: string, customerIds: string[]): Promise<{ success: boolean }> {
+    try {
+      const payload = {
+        ids: customerIds
+      };
+
+      await this.makeApiRequest('POST', `/segments/${segmentId}/add_customers`, payload);
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
+  }
+
+  /**
+   * Remove customers from a manual segment
+   */
+  async removeFromSegment(segmentId: string, customerIds: string[]): Promise<{ success: boolean }> {
+    try {
+      const payload = {
+        ids: customerIds
+      };
+
+      await this.makeApiRequest('POST', `/segments/${segmentId}/remove_customers`, payload);
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
+  }
+
+  /**
+   * Sync SharpSend segments to Customer.io
+   */
+  async syncSegmentsToCustomerIo(publisherId: string, segments: Array<{
+    name: string;
+    memberEmails: string[];
+    filter?: any;
+  }>): Promise<{ success: boolean; syncedSegments: number; errors: string[] }> {
+    const errors: string[] = [];
+    let syncedCount = 0;
+
+    try {
+      // Get the integration config
+      const [integration] = await db
+        .select()
+        .from(emailIntegrations)
+        .where(and(
+          eq(emailIntegrations.publisherId, publisherId),
+          eq(emailIntegrations.platform, 'customerio')
+        ));
+
+      if (!integration) {
+        throw new Error('Customer.io integration not found');
+      }
+
+      // Create or update each segment
+      for (const segment of segments) {
+        try {
+          // Create segment
+          const createdSegment = await this.createSegment({
+            name: segment.name,
+            description: `SharpSend segment: ${segment.name}`,
+            filter: segment.filter
+          });
+
+          // For manual segments, add customers
+          if (segment.memberEmails.length > 0 && !segment.filter) {
+            // First, ensure customers exist
+            for (const email of segment.memberEmails) {
+              const customerId = email.replace('@', '_at_').replace('.', '_dot_');
+              await this.identifyCustomer(customerId, {
+                email,
+                sharpsend_segment: segment.name
+              });
+            }
+
+            // Then add them to the segment
+            const customerIds = segment.memberEmails.map(email => 
+              email.replace('@', '_at_').replace('.', '_dot_')
+            );
+            await this.addToSegment(createdSegment.id, customerIds);
+          }
+
+          syncedCount++;
+        } catch (error: any) {
+          errors.push(`Failed to sync segment ${segment.name}: ${error.message}`);
+        }
+      }
+
+      return {
+        success: syncedCount > 0,
+        syncedSegments: syncedCount,
+        errors
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        syncedSegments: 0,
+        errors: [`Sync failed: ${error.message}`]
+      };
+    }
   }
 }
