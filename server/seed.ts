@@ -254,6 +254,14 @@ export async function seedDatabase() {
       console.warn("Failed to create analytics data:", analyticsError);
     }
 
+    // Seed email templates
+    try {
+      const { seedEmailTemplates } = await import('./seed-email-templates');
+      await seedEmailTemplates();
+    } catch (templateError) {
+      console.warn("Failed to seed email templates:", templateError);
+    }
+
     console.log("Database seeded successfully!");
     return { success: true };
   } catch (error) {
