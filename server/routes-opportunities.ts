@@ -16,7 +16,13 @@ router.get("/api/opportunities", async (req, res) => {
       .where(eq(opportunities.publisherId, publisherId))
       .orderBy(desc(opportunities.createdAt));
     
-    res.json(result);
+    // Convert decimal potentialValue strings to numbers for frontend
+    const formattedResult = result.map(opp => ({
+      ...opp,
+      potentialValue: opp.potentialValue ? parseFloat(opp.potentialValue as string) : 0
+    }));
+    
+    res.json(formattedResult);
   } catch (error) {
     console.error("Error fetching opportunities:", error);
     res.status(500).json({ error: "Failed to fetch opportunities" });
@@ -42,7 +48,13 @@ router.get("/api/opportunities/:id", async (req, res) => {
       return res.status(404).json({ error: "Opportunity not found" });
     }
     
-    res.json(opportunity);
+    // Convert decimal potentialValue string to number for frontend
+    const formattedOpportunity = {
+      ...opportunity,
+      potentialValue: opportunity.potentialValue ? parseFloat(opportunity.potentialValue as string) : 0
+    };
+    
+    res.json(formattedOpportunity);
   } catch (error) {
     console.error("Error fetching opportunity:", error);
     res.status(500).json({ error: "Failed to fetch opportunity" });
@@ -91,7 +103,13 @@ router.post("/api/opportunities", async (req, res) => {
       })
       .returning();
     
-    res.json(newOpportunity);
+    // Convert decimal potentialValue string to number for frontend
+    const formattedOpportunity = {
+      ...newOpportunity,
+      potentialValue: newOpportunity.potentialValue ? parseFloat(newOpportunity.potentialValue as string) : 0
+    };
+    
+    res.json(formattedOpportunity);
   } catch (error) {
     console.error("Error creating opportunity:", error);
     res.status(500).json({ error: "Failed to create opportunity" });
@@ -126,7 +144,13 @@ router.patch("/api/opportunities/:id", async (req, res) => {
       return res.status(404).json({ error: "Opportunity not found" });
     }
     
-    res.json(updatedOpportunity);
+    // Convert decimal potentialValue string to number for frontend
+    const formattedOpportunity = {
+      ...updatedOpportunity,
+      potentialValue: updatedOpportunity.potentialValue ? parseFloat(updatedOpportunity.potentialValue as string) : 0
+    };
+    
+    res.json(formattedOpportunity);
   } catch (error) {
     console.error("Error updating opportunity:", error);
     res.status(500).json({ error: "Failed to update opportunity" });
