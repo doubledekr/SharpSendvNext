@@ -22,9 +22,9 @@ export interface MarketTrigger {
 export interface DetectedOpportunity {
   title: string;
   description: string;
-  type: "sponsorship" | "affiliate" | "premium_content" | "partnership" | "event";
-  potentialValue: number;
-  probability: number;
+  type: "market_alert" | "earnings_alert" | "volatility_alert" | "news_alert" | "segment_behavior";
+  potentialValue: number; // Estimated engagement value from sending this email
+  probability: number; // Likelihood of high engagement
   source: "ai_detected";
   trigger: MarketTrigger;
   context: {
@@ -32,6 +32,8 @@ export interface DetectedOpportunity {
     relevantData: any;
     urgency: "low" | "medium" | "high";
     expiresAt?: Date;
+    suggestedSegments?: string[]; // Which subscriber segments to target
+    emailTiming?: string; // Best time to send
   };
 }
 
@@ -159,17 +161,17 @@ export class OpportunityDetector {
     const triggered = this.checkCondition(currentPrice, trigger.condition, trigger.threshold);
     if (!triggered) return null;
 
-    // Use AI to generate opportunity details
+    // Use AI to identify email send opportunity
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are an expert financial newsletter opportunity detector. Generate actionable revenue opportunities for financial publishers based on market events. Respond with JSON in this format: { 'title': string, 'description': string, 'type': string, 'potentialValue': number, 'probability': number, 'urgency': string }"
+          content: "You are an expert at identifying when financial newsletters should send emails based on market events. Generate email send opportunities in JSON format with: { 'title': string, 'description': string, 'urgency': 'low'|'medium'|'high', 'suggestedSegments': string[], 'emailTiming': string, 'estimatedOpenRate': number, 'estimatedClickRate': number }"
         },
         {
           role: "user",
-          content: `${trigger.symbol} just ${trigger.condition} $${trigger.threshold}. Current price: $${currentPrice}. What revenue opportunity should a financial newsletter publisher pursue?`
+          content: `${trigger.symbol} just ${trigger.condition} $${trigger.threshold}. Current price: $${currentPrice}. When should we send an email alert to subscribers about this price movement and which segments would be most interested?`
         }
       ],
       response_format: { type: "json_object" }
@@ -178,18 +180,20 @@ export class OpportunityDetector {
     const aiSuggestion = JSON.parse(response.choices[0].message.content!);
     
     return {
-      title: aiSuggestion.title,
-      description: aiSuggestion.description,
-      type: this.mapOpportunityType(aiSuggestion.type),
-      potentialValue: aiSuggestion.potentialValue || 5000,
-      probability: aiSuggestion.probability || 70,
+      title: aiSuggestion.title || `Send Alert: ${trigger.symbol} ${trigger.condition} $${trigger.threshold}`,
+      description: aiSuggestion.description || `Time-sensitive email opportunity for ${trigger.symbol} price movement`,
+      type: "market_alert",
+      potentialValue: Math.round((aiSuggestion.estimatedOpenRate || 25) * (aiSuggestion.estimatedClickRate || 5) * 4), // Engagement value score
+      probability: Math.round((aiSuggestion.estimatedOpenRate || 25) * 3), // Based on expected open rate
       source: "ai_detected",
       trigger,
       context: {
         marketEvent: `${trigger.symbol} ${trigger.condition} $${trigger.threshold}`,
         relevantData: { currentPrice, symbol: trigger.symbol },
         urgency: aiSuggestion.urgency || "medium",
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours for price alerts
+        suggestedSegments: aiSuggestion.suggestedSegments || ["Active Traders", "Growth Investors"],
+        emailTiming: aiSuggestion.emailTiming || "Send immediately"
       }
     };
   }
@@ -206,11 +210,11 @@ export class OpportunityDetector {
       messages: [
         {
           role: "system",
-          content: "You are an expert financial newsletter opportunity detector. Generate actionable revenue opportunities for financial publishers based on market milestones. Respond with JSON."
+          content: "You are an expert at identifying when to send financial newsletter emails based on market milestones. Generate email send opportunities in JSON format with: { 'title': string, 'description': string, 'urgency': 'low'|'medium'|'high', 'suggestedSegments': string[], 'emailTiming': string, 'estimatedOpenRate': number, 'estimatedClickRate': number }"
         },
         {
           role: "user",
-          content: `The ${trigger.symbol} just crossed ${trigger.threshold}. Current value: ${indexValue}. What premium content or sponsorship opportunity should a financial publisher create?`
+          content: `The ${trigger.symbol} just crossed ${trigger.threshold}. Current value: ${indexValue}. This is a major market milestone. When should we send an email alert and which subscriber segments would be most interested?`
         }
       ],
       response_format: { type: "json_object" }
@@ -219,18 +223,20 @@ export class OpportunityDetector {
     const aiSuggestion = JSON.parse(response.choices[0].message.content!);
     
     return {
-      title: aiSuggestion.title || `${trigger.symbol} Milestone Alert - Premium Content Opportunity`,
-      description: aiSuggestion.description || `Create premium analysis on ${trigger.symbol} crossing ${trigger.threshold}`,
-      type: "premium_content",
-      potentialValue: aiSuggestion.potentialValue || 3000,
-      probability: aiSuggestion.probability || 80,
+      title: aiSuggestion.title || `Send Alert: ${trigger.symbol} Crosses ${trigger.threshold}`,
+      description: aiSuggestion.description || `Market milestone email opportunity - ${trigger.symbol} at historic level`,
+      type: "market_alert",
+      potentialValue: Math.round((aiSuggestion.estimatedOpenRate || 35) * (aiSuggestion.estimatedClickRate || 8) * 3), // Higher engagement for milestones
+      probability: Math.round((aiSuggestion.estimatedOpenRate || 35) * 2.5), // High probability for milestone events
       source: "ai_detected",
       trigger,
       context: {
         marketEvent: `${trigger.symbol} crosses ${trigger.threshold}`,
         relevantData: { indexValue, symbol: trigger.symbol },
-        urgency: "high",
-        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days for index milestones
+        urgency: aiSuggestion.urgency || "high",
+        expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000), // 6 hours for market milestones
+        suggestedSegments: aiSuggestion.suggestedSegments || ["All Subscribers", "Active Investors"],
+        emailTiming: aiSuggestion.emailTiming || "Send within 1 hour"
       }
     };
   }
@@ -251,11 +257,11 @@ export class OpportunityDetector {
       messages: [
         {
           role: "system",
-          content: "Generate revenue opportunities for financial publishers around earnings events. Focus on sponsorships, premium analysis, or affiliate partnerships."
+          content: "You are an expert at identifying when to send earnings-related newsletter emails. Generate email send opportunities in JSON format with: { 'title': string, 'description': string, 'urgency': 'low'|'medium'|'high', 'suggestedSegments': string[], 'emailTiming': string, 'estimatedOpenRate': number, 'estimatedClickRate': number }"
         },
         {
           role: "user",
-          content: `Major earnings coming up: ${relevantEarnings.map((e: any) => e.company).join(', ')}. What revenue opportunities exist?`
+          content: `Major earnings coming up: ${relevantEarnings.map((e: any) => e.company).join(', ')}. When should we send an earnings preview email and which segments would be most interested?`
         }
       ],
       response_format: { type: "json_object" }
@@ -264,18 +270,20 @@ export class OpportunityDetector {
     const aiSuggestion = JSON.parse(response.choices[0].message.content!);
     
     return {
-      title: aiSuggestion.title || "Earnings Season Sponsorship Opportunity",
-      description: aiSuggestion.description || "Partner with trading platforms for earnings preview content",
-      type: this.mapOpportunityType(aiSuggestion.type) || "sponsorship",
-      potentialValue: aiSuggestion.potentialValue || 7500,
-      probability: aiSuggestion.probability || 65,
+      title: aiSuggestion.title || "Send Earnings Preview Email",
+      description: aiSuggestion.description || `Earnings announcements for ${relevantEarnings.length} companies - send preview analysis`,
+      type: "earnings_alert",
+      potentialValue: Math.round((aiSuggestion.estimatedOpenRate || 30) * (aiSuggestion.estimatedClickRate || 7) * 3.5), // Good engagement for earnings
+      probability: Math.round((aiSuggestion.estimatedOpenRate || 30) * 2.2),
       source: "ai_detected",
       trigger,
       context: {
         marketEvent: "Major earnings announcements",
         relevantData: { earnings: relevantEarnings },
-        urgency: "high",
-        expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // 5 days
+        urgency: aiSuggestion.urgency || "high",
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours before earnings
+        suggestedSegments: aiSuggestion.suggestedSegments || ["Stock Holders", "Options Traders", "Value Investors"],
+        emailTiming: aiSuggestion.emailTiming || "Send 1-2 days before earnings"
       }
     };
   }
@@ -299,11 +307,11 @@ export class OpportunityDetector {
       messages: [
         {
           role: "system",
-          content: "Analyze financial news and suggest revenue opportunities for newsletter publishers. Consider the urgency and market impact."
+          content: "You are an expert at identifying when to send breaking news emails to financial newsletter subscribers. Generate email send opportunities in JSON format with: { 'title': string, 'description': string, 'urgency': 'low'|'medium'|'high', 'suggestedSegments': string[], 'emailTiming': string, 'estimatedOpenRate': number, 'estimatedClickRate': number }"
         },
         {
           role: "user",
-          content: `Recent financial news: ${newsText.substring(0, 500)}. What immediate revenue opportunity should a financial publisher pursue?`
+          content: `Breaking financial news: ${newsText.substring(0, 500)}. When should we send an alert email and which segments need this information immediately?`
         }
       ],
       response_format: { type: "json_object" }
@@ -312,18 +320,20 @@ export class OpportunityDetector {
     const aiSuggestion = JSON.parse(response.choices[0].message.content!);
     
     return {
-      title: aiSuggestion.title || "Breaking News Content Opportunity",
-      description: aiSuggestion.description || "Create timely analysis on breaking financial news",
-      type: this.mapOpportunityType(aiSuggestion.type) || "premium_content",
-      potentialValue: aiSuggestion.potentialValue || 4000,
-      probability: aiSuggestion.probability || 75,
+      title: aiSuggestion.title || "Send Breaking News Alert",
+      description: aiSuggestion.description || `${relevantNews.length} breaking news items - immediate email opportunity`,
+      type: "news_alert",
+      potentialValue: Math.round((aiSuggestion.estimatedOpenRate || 40) * (aiSuggestion.estimatedClickRate || 10) * 2.5), // High engagement for breaking news
+      probability: Math.round((aiSuggestion.estimatedOpenRate || 40) * 2), // High open rates for news
       source: "ai_detected",
       trigger,
       context: {
         marketEvent: "Breaking financial news",
         relevantData: { newsCount: relevantNews.length },
-        urgency: "high",
-        expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) // 2 days for news
+        urgency: aiSuggestion.urgency || "high",
+        expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours for breaking news
+        suggestedSegments: aiSuggestion.suggestedSegments || ["All Active Subscribers", "News Alerts List"],
+        emailTiming: aiSuggestion.emailTiming || "Send within 30 minutes"
       }
     };
   }
@@ -340,11 +350,11 @@ export class OpportunityDetector {
       messages: [
         {
           role: "system",
-          content: "Generate revenue opportunities for financial publishers during high volatility periods. Focus on defensive strategies and risk management content."
+          content: "You are an expert at identifying when to send volatility alert emails to financial newsletter subscribers. Generate email send opportunities in JSON format with: { 'title': string, 'description': string, 'urgency': 'low'|'medium'|'high', 'suggestedSegments': string[], 'emailTiming': string, 'estimatedOpenRate': number, 'estimatedClickRate': number }"
         },
         {
           role: "user",
-          content: `VIX just spiked to ${vix}, indicating high market volatility. What revenue opportunity should a financial publisher create?`
+          content: `VIX just spiked to ${vix}, indicating high market volatility. When should we send a volatility alert and which segments need risk management guidance?`
         }
       ],
       response_format: { type: "json_object" }
@@ -353,18 +363,20 @@ export class OpportunityDetector {
     const aiSuggestion = JSON.parse(response.choices[0].message.content!);
     
     return {
-      title: aiSuggestion.title || "Volatility Spike - Risk Management Content",
-      description: aiSuggestion.description || "Create premium content on navigating market volatility",
-      type: "premium_content",
-      potentialValue: aiSuggestion.potentialValue || 6000,
-      probability: aiSuggestion.probability || 85,
+      title: aiSuggestion.title || "Send Volatility Alert: VIX at ${vix}",
+      description: aiSuggestion.description || "Market volatility spike - send risk management guidance email",
+      type: "volatility_alert",
+      potentialValue: Math.round((aiSuggestion.estimatedOpenRate || 45) * (aiSuggestion.estimatedClickRate || 12) * 2), // Very high engagement during volatility
+      probability: Math.round((aiSuggestion.estimatedOpenRate || 45) * 1.9), // High probability during fear
       source: "ai_detected",
       trigger,
       context: {
         marketEvent: `VIX spike to ${vix}`,
         relevantData: { vix, symbol: trigger.symbol },
-        urgency: "high",
-        expiresAt: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000) // 4 days
+        urgency: aiSuggestion.urgency || "high",
+        expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours for volatility alerts
+        suggestedSegments: aiSuggestion.suggestedSegments || ["Risk-Averse Investors", "Options Traders", "Retirees"],
+        emailTiming: aiSuggestion.emailTiming || "Send immediately"
       }
     };
   }
@@ -386,15 +398,8 @@ export class OpportunityDetector {
     }
   }
 
-  private mapOpportunityType(aiType: string): "sponsorship" | "affiliate" | "premium_content" | "partnership" | "event" {
-    const type = aiType?.toLowerCase() || "";
-    if (type.includes("sponsor")) return "sponsorship";
-    if (type.includes("affiliate")) return "affiliate";
-    if (type.includes("premium") || type.includes("content")) return "premium_content";
-    if (type.includes("partner")) return "partnership";
-    if (type.includes("event")) return "event";
-    return "premium_content"; // default
-  }
+  // Map opportunity type is no longer needed since we focus on email send opportunities
+  // Types are now: market_alert, earnings_alert, volatility_alert, news_alert, segment_behavior
 
   private async storeOpportunity(publisherId: string, opportunity: DetectedOpportunity): Promise<void> {
     try {

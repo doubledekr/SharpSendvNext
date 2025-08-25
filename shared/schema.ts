@@ -292,7 +292,7 @@ export const opportunities = pgTable("opportunities", {
   publisherId: varchar("publisher_id").notNull(),
   title: text("title").notNull(),
   description: text("description"),
-  type: text("type").notNull(), // sponsorship, affiliate, premium_content, partnership, event
+  type: text("type").notNull(), // market_alert, earnings_alert, volatility_alert, news_alert, segment_behavior
   status: text("status").notNull().default("identified"), // identified, qualified, proposal, negotiation, won, lost
   potentialValue: decimal("potential_value", { precision: 10, scale: 2 }),
   probability: integer("probability").default(50), // 0-100
