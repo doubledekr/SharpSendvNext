@@ -4,12 +4,13 @@ import { db } from './db';
 import { campaignEmailVersions } from '../shared/schema-multitenant';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import { inMemoryDemoStore, isDemoMode, useDemoData } from './services/in-memory-demo-store';
 
 const router = Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const MODEL = 'gpt-4o';
+// the newest OpenAI model is "gpt-4.1-mini" which works correctly. gpt-4o is not supported
+const MODEL = 'gpt-4.1-mini';
 
 /**
  * Get all email versions for a campaign
@@ -180,24 +181,47 @@ Write the COMPLETE email with all sections. Use specific numbers, percentages, a
 </body>
 </html>`;
 
-    // Save the generated version to database
+    // Save the generated version - use in-memory store for demo mode
     const versionId = randomUUID();
-    const newVersion = {
-      id: versionId,
-      campaignId,
-      segmentId,
-      segmentName,
-      subject: metadata.subject || `Market Intelligence for ${segmentName}`,
-      content: formattedContent,
-      previewText: metadata.previewText || `Exclusive insights tailored for ${segmentName} investors`,
-      personalizationLevel: 'high' as const,
-      status: 'generated' as const,
-      generatedAt: new Date(),
-      estimatedOpenRate: 25 + Math.random() * 20, // 25-45%
-      estimatedClickRate: 5 + Math.random() * 10,  // 5-15%
-    };
-
-    await db.insert(campaignEmailVersions).values(newVersion);
+    const estimatedOpenRate = 25 + Math.random() * 20; // 25-45%
+    const estimatedClickRate = 5 + Math.random() * 10;  // 5-15%
+    const predictedLift = Math.floor((estimatedOpenRate - 25) / 25 * 100) + Math.floor(Math.random() * 20);
+    
+    const emailVariation = await useDemoData(
+      // Demo mode: save to in-memory store
+      () => {
+        return inMemoryDemoStore.createEmailVariation({
+          campaignId,
+          segmentId,
+          segmentName,
+          subject: metadata.subject || `Market Intelligence for ${segmentName}`,
+          content: formattedContent,
+          previewText: metadata.previewText || `Exclusive insights for ${segmentName}`,
+          estimatedOpenRate,
+          estimatedClickRate,
+          predictedLift
+        });
+      },
+      // Database mode: save to database
+      async () => {
+        const newVersion = {
+          id: versionId,
+          campaignId,
+          segmentId,
+          segmentName,
+          subject: metadata.subject || `Market Intelligence for ${segmentName}`,
+          content: formattedContent,
+          previewText: metadata.previewText || `Exclusive insights tailored for ${segmentName} investors`,
+          personalizationLevel: 'high' as const,
+          status: 'generated' as const,
+          generatedAt: new Date(),
+          estimatedOpenRate,
+          estimatedClickRate,
+        };
+        await db.insert(campaignEmailVersions).values(newVersion);
+        return newVersion;
+      }
+    );
     
     // Extract key points from the content
     const keyPoints = [
@@ -209,7 +233,7 @@ Write the COMPLETE email with all sections. Use specific numbers, percentages, a
     res.json({
       success: true,
       data: {
-        ...newVersion,
+        ...emailVariation,
         keyPoints,
         estimatedReadTime: '4 minutes'
       }

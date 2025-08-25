@@ -25,6 +25,7 @@ import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
 import { registerCampaignRoutes } from "./routes-campaigns";
 import platformSendRoutes from "./routes-platform-send";
+import cohortsRoutes from "./routes-cohorts";
 import { initializeDemoEnvironment, cleanupDemoData, getDemoConfig } from "./demo-environment";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
@@ -966,6 +967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(opportunityRoutes);
   app.use(opportunityDetectorRoutes);
   app.use(integrationsRoutes);
+  app.use(cohortsRoutes);
 
   // Legacy routes for backward compatibility (these will be deprecated)
   
