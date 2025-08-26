@@ -353,12 +353,23 @@ export default function Onboarding() {
                   <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                     <SelectValue placeholder="Select your email provider" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600">
-                    <SelectItem value="sendgrid">SendGrid</SelectItem>
+                  <SelectContent className="bg-slate-700 border-slate-600 max-h-[400px]">
                     <SelectItem value="mailchimp">Mailchimp</SelectItem>
-                    <SelectItem value="exacttarget">ExactTarget</SelectItem>
-                    <SelectItem value="mailgun">Mailgun</SelectItem>
-                    <SelectItem value="ses">Amazon SES</SelectItem>
+                    <SelectItem value="convertkit">ConvertKit</SelectItem>
+                    <SelectItem value="sendgrid">SendGrid</SelectItem>
+                    <SelectItem value="campaign-monitor">Campaign Monitor</SelectItem>
+                    <SelectItem value="activecampaign">ActiveCampaign</SelectItem>
+                    <SelectItem value="klaviyo">Klaviyo</SelectItem>
+                    <SelectItem value="brevo">Brevo (Sendinblue)</SelectItem>
+                    <SelectItem value="constant-contact">Constant Contact</SelectItem>
+                    <SelectItem value="getresponse">GetResponse</SelectItem>
+                    <SelectItem value="aweber">AWeber</SelectItem>
+                    <SelectItem value="drip">Drip</SelectItem>
+                    <SelectItem value="mailerlite">MailerLite</SelectItem>
+                    <SelectItem value="iterable">Iterable</SelectItem>
+                    <SelectItem value="customer-io">Customer.io</SelectItem>
+                    <SelectItem value="keap">Keap (Infusionsoft)</SelectItem>
+                    <SelectItem value="braze">Braze</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -372,6 +383,31 @@ export default function Onboarding() {
                   placeholder="Enter your API key"
                   className="bg-slate-700 border-slate-600 text-white"
                 />
+                {emailProvider && (
+                  <p className="text-sm text-slate-400 mt-2">
+                    {emailProvider === "mailchimp" && "Find your API key in Account → Extras → API keys"}
+                    {emailProvider === "sendgrid" && "Get your API key from Settings → API Keys"}
+                    {emailProvider === "convertkit" && "Find your API secret in Settings → Advanced"}
+                    {emailProvider === "klaviyo" && "Get your private API key from Account → Settings → API Keys"}
+                    {emailProvider === "activecampaign" && "Find your API key in Settings → Developer"}
+                    {emailProvider === "brevo" && "Get your API key from SMTP & API → API Keys"}
+                    {emailProvider === "iterable" && "Find your API key in Integrations → API Keys"}
+                    {emailProvider === "customer-io" && "Get your API key from Integrations → Customer.io API"}
+                    {emailProvider === "keap" && "Find your API key in Admin → Apps → API"}
+                    {emailProvider === "braze" && "Get your REST API key from Settings → API Keys"}
+                    {emailProvider === "campaign-monitor" && "Find your API key in Account Settings → API Keys"}
+                    {emailProvider === "constant-contact" && "Get your API key from My Applications"}
+                    {emailProvider === "getresponse" && "Find your API key in Menu → Integrations → API"}
+                    {emailProvider === "aweber" && "Get your API credentials in My Account → Developer Tools"}
+                    {emailProvider === "drip" && "Find your API token in Settings → My User Settings → API Token"}
+                    {emailProvider === "mailerlite" && "Get your API key from Integrations → Developer API"}
+                  </p>
+                )}
+                {!emailProvider && (
+                  <p className="text-sm text-slate-400 mt-2">
+                    Select a provider above to see API key instructions
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-2">
