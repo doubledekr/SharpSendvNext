@@ -16,6 +16,7 @@ import {
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { randomBytes } from "crypto";
 
 export interface DemoEnvironmentConfig {
@@ -288,13 +289,13 @@ export async function initializeDemoEnvironment() {
       console.warn("⚠️ Analytics creation failed:", analyticsError);
     }
     
-    // Generate demo token
-    const demoToken = Buffer.from(JSON.stringify({
-      publisherId,
-      userId,
-      email: "demo@sharpsend.io",
-      demo: true
-    })).toString('base64');
+    // Generate proper JWT demo token
+    const JWT_SECRET = process.env.JWT_SECRET || "sharpsend-secret-key-change-in-production";
+    const demoToken = jwt.sign(
+      { userId, publisherId },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
     
     // Update demo config
     demoConfig = {
