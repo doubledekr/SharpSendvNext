@@ -864,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
-  // registerMultiTenantRoutes(app);
+  await registerMultiTenantRoutes(app);
   // Integrations routes handled by middleware above
   // platformIntegrationsRoutes(app); // Commented out to avoid conflicts
   registerEmailRoutes(app);

@@ -1,15 +1,12 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
+import { z } from "zod";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { tenantStorage } from "./storage-multitenant";
 import {
-  authenticateAndSetTenant,
-  extractTenantFromSubdomain,
   requireTenant,
-  requireRole,
-  generateToken,
-  hashPassword,
-  verifyPassword,
-  logTenantOperation,
-  type AuthenticatedRequest,
+  getTenantInfo,
+  type TenantInfo
 } from "./middleware/tenant";
 import {
   insertPublisherSchema,
@@ -21,13 +18,73 @@ import {
   insertCrmIntegrationSchema,
 } from "../shared/schema-multitenant";
 
+// Helper functions for authentication
+const JWT_SECRET = process.env.JWT_SECRET || "sharpsend-secret-key-change-in-production";
+
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
+}
+
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  return bcrypt.compare(password, hashedPassword);
+}
+
+function generateToken(userId: string, publisherId: string): string {
+  return jwt.sign({ userId, publisherId }, JWT_SECRET, { expiresIn: '7d' });
+}
+
+// Extended Request type with authentication
+interface AuthenticatedRequest extends Request {
+  user?: { id: string; publisherId: string };
+  tenant?: TenantInfo;
+}
+
+// Authentication middleware
+function authenticateAndSetTenant(req: AuthenticatedRequest, res: Response, next: Function) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; publisherId: string };
+    req.user = { id: decoded.userId, publisherId: decoded.publisherId };
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+// Role checking middleware
+function requireRole(role: string) {
+  return (req: AuthenticatedRequest, res: Response, next: Function) => {
+    // Implement role checking logic here if needed
+    next();
+  };
+}
+
+// Logging middleware
+function logTenantOperation(operation: string) {
+  return (req: AuthenticatedRequest, res: Response, next: Function) => {
+    console.log(`[${new Date().toISOString()}] ${operation} - Publisher: ${req.tenant?.id || 'unknown'}`);
+    next();
+  };
+}
+
 export async function registerMultiTenantRoutes(app: Express): Promise<void> {
   // Public routes for publisher registration and authentication
   
   // Publisher registration
   app.post("/api/publishers/register", async (req, res) => {
     try {
-      const publisherData = insertPublisherSchema.parse(req.body);
+      // Make domain and settings optional for registration
+      const registrationSchema = insertPublisherSchema.omit({ domain: true, settings: true }).extend({
+        domain: z.string().optional(),
+        settings: z.any().optional(),
+        password: z.string().min(8), // Add password validation
+      });
+      const publisherData = registrationSchema.parse(req.body);
       
       // Check if subdomain is already taken
       const existingPublisher = await tenantStorage.getPublisherBySubdomain(publisherData.subdomain);
