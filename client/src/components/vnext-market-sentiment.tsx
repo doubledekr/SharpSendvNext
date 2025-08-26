@@ -41,33 +41,33 @@ export default function VNextMarketSentiment() {
   const newsItems: NewsItem[] = [
     {
       id: "news_001",
-      headline: "Fed Signals Potential Rate Cut in September Meeting",
+      headline: "Dollar Advances as Trump Tariff Threats Fuel Risk-Off Sentiment",
       source: "Reuters",
       impact: "high",
-      sentiment: "bullish",
-      time: "15 min ago",
-      suggestedAction: "Send bullish market update to Premium subscribers",
-      articleUrl: "https://www.reuters.com/markets/us/fed-officials-see-case-building-rate-cut-september-2024-08-20/"
+      sentiment: "bearish",
+      time: "30 min ago",
+      suggestedAction: "Send currency market update to forex and international investors",
+      articleUrl: "https://www.reuters.com/markets/currencies/dollar-gains-trump-tariff-threats-peso-slides-2025-01-23/"
     },
     {
       id: "news_002",
-      headline: "Tech Stocks Rally on Strong Earnings Reports",
+      headline: "Nvidia Hits Record High on AI Chip Demand Surge",
       source: "Bloomberg",
-      impact: "medium",
+      impact: "high",
       sentiment: "bullish",
       time: "1 hour ago",
-      suggestedAction: "Create tech sector opportunity email for Active Traders",
-      articleUrl: "https://www.bloomberg.com/news/articles/2024-08-20/tech-stocks-surge-nasdaq-100-futures-climb"
+      suggestedAction: "Create AI sector opportunity email for tech-focused investors",
+      articleUrl: "https://www.bloomberg.com/news/articles/2025-01-23/nvidia-stock-hits-record-on-ai-chip-demand"
     },
     {
       id: "news_003",
-      headline: "Oil Prices Spike on Middle East Tensions",
-      source: "CNBC",
+      headline: "European Central Bank Cuts Rates by 25 Basis Points",
+      source: "Financial Times",
       impact: "high",
-      sentiment: "bearish",
+      sentiment: "bullish",
       time: "2 hours ago",
-      suggestedAction: "Alert energy sector subscribers about volatility",
-      articleUrl: "https://www.cnbc.com/2024/08/20/oil-prices-spike-middle-east-tensions-supply-concerns.html"
+      suggestedAction: "Alert European market subscribers about rate cut implications",
+      articleUrl: "https://www.ft.com/content/ecb-rate-cut-january-2025-economic-outlook"
     }
   ];
 

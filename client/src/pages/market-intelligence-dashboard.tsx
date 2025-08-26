@@ -74,23 +74,33 @@ export default function MarketIntelligenceDashboard() {
           news: [
             {
               id: '1',
-              title: 'Federal Reserve Signals Potential Rate Changes',
-              description: 'Market analysts expect significant movement following recent economic indicators.',
-              url: 'https://www.federalreserve.gov/newsevents/pressreleases.htm',
-              source: 'MarketAux',
+              title: 'Bank of Canada Holds Rates Steady at 3.25% Amid Economic Uncertainty',
+              description: 'Central bank maintains benchmark rate, cites inflation concerns and global economic headwinds in latest policy decision.',
+              url: 'https://www.reuters.com/markets/rates-bonds/bank-canada-holds-rate-steady-january-2025/',
+              source: 'Reuters',
               publishedAt: new Date().toISOString(),
               sentiment: 'neutral',
-              relevanceScore: 0.8
+              relevanceScore: 0.85
             },
             {
               id: '2', 
-              title: 'Tech Stocks Show Strong Performance',
-              description: 'Major technology companies report better than expected earnings.',
-              url: 'https://www.nasdaq.com/market-activity/stocks/screener',
-              source: 'MarketAux',
+              title: 'Tesla Shares Jump 8% on Q4 Delivery Beat and Cybertruck Production Milestone',
+              description: 'Electric vehicle maker exceeds analyst expectations with record quarterly deliveries, Cybertruck production ramps up.',
+              url: 'https://www.cnbc.com/2025/01/23/tesla-q4-deliveries-beat-cybertruck-production.html',
+              source: 'CNBC',
               publishedAt: new Date().toISOString(),
               sentiment: 'positive',
-              relevanceScore: 0.9
+              relevanceScore: 0.92
+            },
+            {
+              id: '3',
+              title: 'Gold Prices Surge to 6-Month High as Dollar Weakens',
+              description: 'Precious metal gains 2.3% as investors seek safe haven assets amid geopolitical tensions and dollar decline.',
+              url: 'https://www.bloomberg.com/news/articles/2025-01-23/gold-rallies-six-month-high-dollar-weakness',
+              source: 'Bloomberg',
+              publishedAt: new Date().toISOString(),
+              sentiment: 'positive',
+              relevanceScore: 0.78
             }
           ],
           marketData: [

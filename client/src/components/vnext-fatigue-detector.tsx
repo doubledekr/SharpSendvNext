@@ -8,6 +8,7 @@ import {
   AlertTriangle, TrendingDown, Users, Clock, Activity, 
   Pause, Play, RefreshCw, BarChart3, Flame, Snowflake
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface SegmentHealth {
   segment: string;
@@ -20,40 +21,25 @@ interface SegmentHealth {
   recommendation: string;
 }
 
+interface HeatmapData {
+  [key: string]: {
+    [hour: number]: number;
+  };
+}
+
 export default function VNextFatigueDetector() {
   
-  const segmentHealth: SegmentHealth[] = [
-    {
-      segment: "Active Traders",
-      health: "critical",
-      openRate: 22,
-      changePercent: -30,
-      subscriberCount: 12500,
-      lastTouchpoint: "2 hours ago",
-      touchFrequency: 14, // per week
-      recommendation: "Reduce frequency to 3x/week for 2 weeks"
-    },
-    {
-      segment: "Value Investors",
-      health: "healthy",
-      openRate: 58,
-      changePercent: 5,
-      subscriberCount: 8200,
-      lastTouchpoint: "1 day ago",
-      touchFrequency: 5,
-      recommendation: "Optimal engagement - maintain current cadence"
-    },
-    {
-      segment: "Premium Members",
-      health: "warning",
-      openRate: 42,
-      changePercent: -15,
-      subscriberCount: 3400,
-      lastTouchpoint: "6 hours ago",
-      touchFrequency: 10,
-      recommendation: "Consider A/B testing send times"
-    }
-  ];
+  // Fetch segment health from API - returns empty for non-demo accounts
+  const { data: segmentHealth = [] } = useQuery<SegmentHealth[]>({
+    queryKey: ["/api/segments/health"],
+    retry: false
+  });
+
+  // Fetch heatmap data from API - returns empty for non-demo accounts
+  const { data: heatmapData = {} } = useQuery<HeatmapData>({
+    queryKey: ["/api/segments/heatmap"],
+    retry: false
+  });
 
   const getHealthColor = (health: string) => {
     switch (health) {
@@ -197,7 +183,7 @@ export default function VNextFatigueDetector() {
                 <p className="text-xs font-medium mb-2">{day}</p>
                 <div className="space-y-1">
                   {[6, 9, 12, 15, 18, 21].map((hour) => {
-                    const intensity = Math.random();
+                    const intensity = heatmapData[day]?.[hour] || 0;
                     return (
                       <div
                         key={`${day}-${hour}`}

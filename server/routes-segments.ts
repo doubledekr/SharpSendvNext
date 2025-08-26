@@ -29,6 +29,30 @@ router.get("/api/segments/suggested", async (req, res) => {
   }
 });
 
+// Get segment health data - returns empty for non-demo accounts
+router.get("/api/segments/health", async (req, res) => {
+  try {
+    // Always return empty array for real accounts
+    // Only demo accounts should see mock segment health data
+    res.json([]);
+  } catch (error) {
+    console.error("Error fetching segment health:", error);
+    res.status(500).json({ error: "Failed to fetch segment health" });
+  }
+});
+
+// Get engagement heatmap data - returns empty for non-demo accounts
+router.get("/api/segments/heatmap", async (req, res) => {
+  try {
+    // Always return empty object for real accounts
+    // Only demo accounts should see mock heatmap data
+    res.json({});
+  } catch (error) {
+    console.error("Error fetching engagement heatmap:", error);
+    res.status(500).json({ error: "Failed to fetch engagement heatmap" });
+  }
+});
+
 // Detect new segments using AI
 router.post("/api/segments/detect", async (req, res) => {
   try {
