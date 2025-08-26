@@ -3,7 +3,6 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { tenantStorage } from "./storage-multitenant";
-import demoDataService from "./services/demo-data-service";
 import {
   requireTenant,
   getTenantInfo,
@@ -214,40 +213,14 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
   app.get("/api/analytics", 
     authenticateAndSetTenant,
     requireTenant,
+    logTenantOperation("GET_ANALYTICS"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        // Get the publisherId from the authenticated user
-        const publisherId = req.user?.publisherId;
-        
-        if (!publisherId) {
-          return res.status(401).json({ error: "Unauthorized" });
-        }
-        
-        // Check if this is the demo account - use in-memory data
-        const demoPublisherId = demoDataService.getDemoPublisherId();
-        
-        // Log the operation (but not for demo accounts to avoid database calls)
-        if (publisherId !== demoPublisherId) {
-          console.log(`[${new Date().toISOString()}] GET_ANALYTICS - Publisher: ${publisherId}`);
-        }
-        
-        // If demo account, return demo data immediately
-        if (publisherId === demoPublisherId) {
-          const demoAnalytics = demoDataService.getAnalytics(publisherId);
-          if (demoAnalytics) {
-            res.json({
-              ...demoAnalytics,
-              date: new Date().toISOString()
-            });
-            return;
-          }
-        }
-        
-        let analytics = await tenantStorage.getLatestAnalytics(publisherId);
+        let analytics = await tenantStorage.getLatestAnalytics(req.tenant.publisherId);
         
         // If no analytics exist, calculate and create them
         if (!analytics) {
-          analytics = await tenantStorage.calculateAnalytics(publisherId);
+          analytics = await tenantStorage.calculateAnalytics(req.tenant.publisherId);
         }
         
         res.json(analytics);
@@ -277,45 +250,10 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
   app.get("/api/subscribers",
     authenticateAndSetTenant,
     requireTenant,
+    logTenantOperation("GET_SUBSCRIBERS"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        const publisherId = req.user?.publisherId;
-        
-        if (!publisherId) {
-          return res.status(401).json({ error: "Unauthorized" });
-        }
-        
-        const demoPublisherId = demoDataService.getDemoPublisherId();
-        
-        // Log operation for non-demo accounts
-        if (publisherId !== demoPublisherId) {
-          console.log(`[${new Date().toISOString()}] GET_SUBSCRIBERS - Publisher: ${publisherId}`);
-        }
-        
-        // If demo account, generate and return demo subscribers
-        if (publisherId === demoPublisherId) {
-          const demoSubscribers = Array.from({ length: 50 }, (_, i) => ({
-            id: `sub-demo-${i + 1}`,
-            email: `subscriber${i + 1}@example.com`,
-            firstName: ['John', 'Jane', 'Alice', 'Bob', 'Charlie', 'Emma', 'David', 'Sarah'][i % 8],
-            lastName: ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis'][i % 8],
-            status: i % 10 === 0 ? 'unsubscribed' : 'active',
-            subscribedDate: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
-            tags: i % 3 === 0 ? ['vip', 'premium'] : i % 2 === 0 ? ['regular'] : ['free'],
-            publisherId: publisherId,
-            cohort: ['high-value', 'engaged', 'at-risk', 'new'][i % 4],
-            lastEngagement: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-          }));
-          
-          res.json({ 
-            subscribers: demoSubscribers,
-            total: 12847,
-            active: 11356
-          });
-          return;
-        }
-        
-        const subscribers = await tenantStorage.getSubscribers(publisherId);
+        const subscribers = await tenantStorage.getSubscribers(req.tenant.publisherId);
         res.json(subscribers);
       } catch (error) {
         console.error("Subscribers fetch error:", error);
@@ -443,29 +381,10 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
   app.get("/api/campaigns",
     authenticateAndSetTenant,
     requireTenant,
+    logTenantOperation("GET_CAMPAIGNS"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        const publisherId = req.user?.publisherId;
-        
-        if (!publisherId) {
-          return res.status(401).json({ error: "Unauthorized" });
-        }
-        
-        const demoPublisherId = demoDataService.getDemoPublisherId();
-        
-        // Log operation for non-demo accounts
-        if (publisherId !== demoPublisherId) {
-          console.log(`[${new Date().toISOString()}] GET_CAMPAIGNS - Publisher: ${publisherId}`);
-        }
-        
-        // If demo account, return demo campaigns
-        if (publisherId === demoPublisherId) {
-          const demoCampaigns = demoDataService.getCampaigns(publisherId);
-          res.json(demoCampaigns);
-          return;
-        }
-        
-        const campaigns = await tenantStorage.getCampaigns(publisherId);
+        const campaigns = await tenantStorage.getCampaigns(req.tenant.publisherId);
         res.json(campaigns);
       } catch (error) {
         console.error("Campaigns fetch error:", error);

@@ -29,7 +29,6 @@ import cohortsRoutes from "./routes-cohorts";
 import { sharpSendIntelligenceRoutes } from "./routes-sharpsend-intelligence";
 import { initializeDemoEnvironment, cleanupDemoData, getDemoConfig } from "./demo-environment";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { demoDataService } from "./services/demo-data-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable CORS for all routes
@@ -1028,228 +1027,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  // Helper function to extract publisher ID from token
-  function getPublisherIdFromToken(authHeader: string | undefined): string | null {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-    
-    try {
-      const token = authHeader.substring(7);
-      // Try to decode as JWT first (from regular login)
-      if (token.includes('.')) {
-        // JWT format - decode the payload
-        const [, payload] = token.split('.');
-        const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
-        return decoded.publisherId;
-      } else {
-        // Base64 JSON format (demo token)
-        const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
-        return decoded.publisherId;
-      }
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Demo account endpoints - serve in-memory data for demo account
-  app.get("/api/campaigns", async (req, res) => {
-    try {
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      
-      // If demo account, return demo campaigns
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        const demoCampaigns = demoDataService.getCampaigns(publisherId);
-        res.json(demoCampaigns);
-        return;
-      }
-      
-      // Return empty array for non-demo accounts without token error
-      res.json([]);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch campaigns" });
-    }
-  });
-
-  app.get("/api/subscribers", async (req, res) => {
-    try {
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      
-      // If demo account, return demo subscribers count
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        res.json({ count: 12847, growth: 23.5 });
-        return;
-      }
-      
-      // Return zero for non-demo accounts without token error
-      res.json({ count: 0, growth: 0 });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch subscribers" });
-    }
-  });
-
-  app.get("/api/pixels", async (req, res) => {
-    try {
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      
-      // If demo account, return demo pixel events
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        const pixelEvents = demoDataService.getPixelEvents(publisherId, 50);
-        res.json({ 
-          events: pixelEvents,
-          summary: {
-            opens: pixelEvents.filter(e => e.eventType === 'open').length,
-            clicks: pixelEvents.filter(e => e.eventType === 'click').length,
-            purchases: pixelEvents.filter(e => e.eventType === 'purchase').length,
-            visits: pixelEvents.filter(e => e.eventType === 'visit').length
-          }
-        });
-        return;
-      }
-      
-      // Return empty data for non-demo accounts without token error
-      res.json({ 
-        events: [],
-        summary: {
-          opens: 0,
-          clicks: 0,
-          purchases: 0,
-          visits: 0
-        }
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch pixel data" });
-    }
-  });
-
-  app.get("/api/segments", async (req, res) => {
-    try {
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      
-      // If demo account, return demo segments
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        const demoSegments = demoDataService.getSegments(publisherId);
-        res.json(demoSegments);
-        return;
-      }
-      
-      // Return empty array for non-demo accounts without token error
-      res.json([]);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch segments" });
-    }
-  });
-
-  app.get("/api/assignments", async (req, res) => {
-    try {
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      
-      // If demo account, return demo assignments
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        const demoAssignments = demoDataService.getAssignments(publisherId);
-        res.json(demoAssignments);
-        return;
-      }
-      
-      // Return empty array for non-demo accounts without token error
-      res.json([]);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch assignments" });
-    }
-  });
-
-  app.get("/api/opportunities", async (req, res) => {
-    try {
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      console.log('Opportunities endpoint - publisherId:', publisherId);
-      console.log('Demo publisher ID:', demoDataService.getDemoPublisherId());
-      
-      // If demo account, return demo opportunities
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        const demoOpportunities = demoDataService.getOpportunities(publisherId);
-        console.log('Returning demo opportunities:', demoOpportunities.length);
-        res.json(demoOpportunities);
-        return;
-      }
-      
-      // Return empty array for non-demo accounts without token error
-      console.log('Not a demo account, returning empty array');
-      res.json([]);
-    } catch (error) {
-      console.error('Error in opportunities endpoint:', error);
-      res.status(500).json({ error: "Failed to fetch opportunities" });
-    }
-  });
-
-  app.get("/api/integrations", async (req, res) => {
-    try {
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      
-      // If demo account, return demo integrations
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        const demoIntegrations = demoDataService.getIntegrations(publisherId);
-        res.json(demoIntegrations);
-        return;
-      }
-      
-      // Return empty array for non-demo accounts without token error
-      res.json([]);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch integrations" });
-    }
-  });
-
-  app.get("/api/ab-tests", async (req, res) => {
-    try {
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      
-      // If demo account, return demo A/B tests
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        const demoABTests = demoDataService.getABTests(publisherId);
-        res.json(demoABTests);
-        return;
-      }
-      
-      // Return empty array for non-demo accounts without token error
-      res.json([]);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch A/B tests" });
-    }
-  });
-
   // Legacy routes for backward compatibility (these will be deprecated)
   
   // Simple analytics endpoint for demo purposes
   app.get("/api/analytics", async (req, res) => {
     try {
-      // Check if this is the demo account
-      const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
-      
-      // If demo account, return comprehensive demo data
-      if (publisherId === demoDataService.getDemoPublisherId()) {
-        const demoAnalytics = demoDataService.getAnalytics(publisherId);
-        if (demoAnalytics) {
-          res.json({
-            ...demoAnalytics,
-            date: new Date().toISOString()
-          });
-          return;
-        }
-      }
-      
-      // Default analytics for non-demo accounts
+      // Return sample analytics data for demo
       const analytics = {
-        totalSubscribers: 0,
-        engagementRate: "0",
-        churnRate: "0",
-        monthlyRevenue: "0",
-        revenueGrowth: "0",
-        openRate: "0",
-        clickRate: "0",
-        unsubscribeRate: "0",
+        totalSubscribers: 8,
+        engagementRate: "71.2",
+        churnRate: "2.1",
+        monthlyRevenue: "465.00",
+        revenueGrowth: "15.3",
+        openRate: "68.5",
+        clickRate: "12.3",
+        unsubscribeRate: "0.8",
         date: new Date().toISOString(),
       };
       res.json(analytics);
     } catch (error) {
-      console.error("Analytics endpoint error:", error);
       res.status(500).json({ error: "Failed to fetch analytics" });
     }
   });

@@ -2,42 +2,50 @@ import { Router } from "express";
 import { db } from "./db";
 import { opportunities } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
-import demoDataService from "./services/demo-data-service";
 
 const router = Router();
-
-// Helper function to extract publisher ID from JWT token
-function getPublisherIdFromToken(authHeader: string | undefined): string | null {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-  
-  try {
-    const token = authHeader.substring(7);
-    // JWT format - decode the payload
-    if (token.includes('.')) {
-      const [, payload] = token.split('.');
-      const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
-      return decoded.publisherId;
-    }
-  } catch (e) {
-    return null;
-  }
-  return null;
-}
 
 // Get all opportunities for a publisher
 router.get("/api/opportunities", async (req, res) => {
   try {
-    // Get publisher ID from JWT token
-    const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
+    // Check if the user is authenticated
+    const user = (req as any).session?.user;
     
-    // If demo account, return demo opportunities
-    if (publisherId === demoDataService.getDemoPublisherId()) {
-      const demoOpportunities = demoDataService.getOpportunities(publisherId);
-      return res.json(demoOpportunities);
+    // For demo users, return demo opportunities
+    if (user?.id === 'demo-user' || user?.id === 'demo-user-id') {
+      return res.json([
+        {
+          id: "demo-opp-1",
+          title: "Partner with FinTech Weekly",
+          description: "Potential newsletter sponsorship opportunity",
+          type: "sponsorship",
+          status: "qualified",
+          potentialValue: 50000,
+          probability: 75,
+          contactCompany: "FinTech Weekly",
+          nextActionDate: new Date("2025-02-01"),
+          createdAt: new Date("2025-01-10")
+        },
+        {
+          id: "demo-opp-2",
+          title: "Enterprise License Deal - Hedge Fund",
+          description: "Large hedge fund interested in platform license",
+          type: "enterprise",
+          status: "negotiation",
+          potentialValue: 250000,
+          probability: 60,
+          contactCompany: "Alpha Capital Partners",
+          nextActionDate: new Date("2025-01-28"),
+          createdAt: new Date("2025-01-05")
+        }
+      ]);
     }
     
-    // For real users, return empty array or fetch from database
-    if (!publisherId) {
+    // For real users, use their actual publisher ID or return empty
+    const publisherId = user?.publisherId || user?.publisher?.id;
+    
+    if (!publisherId || publisherId === "demo-publisher") {
+      // Return empty array for non-demo accounts without proper publisher
       return res.json([]);
     }
     

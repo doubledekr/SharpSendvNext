@@ -21,14 +21,6 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform desig
 - News articles now display actual MarketAux data with working article URLs when API keys are configured
 - System properly handles missing API keys and provides graceful fallback behavior
 - Successfully integrated real-time news feed showing articles from sources like pymnts.com, argaam.com, businessinsider.com
-- **Demo Account System Improvements (August 26, 2025):**
-  - Fixed authentication system to properly identify demo accounts using JWT token decoding
-  - Implemented complete in-memory demo data system for demo publisher (ID: 189ce086-e6c1-441e-ba0a-5e9bc2fe314e)
-  - Updated all major API endpoints (analytics, campaigns, subscribers) to serve demo data without database queries
-  - Demo account now generates realistic subscriber data on-the-fly (12,847 total, 11,356 active)
-  - MarketAux API integration fully functional with 5-minute automatic refresh cycles
-  - All demo data endpoints now return consistent, medium-sized publisher simulation data
-  - System properly handles both demo and real accounts with appropriate data separation
 
 ## User Preferences
 
