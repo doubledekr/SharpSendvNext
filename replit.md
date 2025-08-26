@@ -10,13 +10,15 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform desig
 - Integrated assignment creation dialog with market context preservation
 - Fixed AI-detected segments to only show for demo accounts (demo-user-id)
 - Removed local mock data from auto-segmentation component - now uses only API data
-- Updated news article URLs to use specific article links instead of generic landing pages (Reuters, Bloomberg, CNBC articles)
 - Fixed `/api/segments` endpoint in routes-segments.ts to return empty array for all accounts
 - Removed duplicate segmentsRoutes mounting in server/routes.ts to prevent routing conflicts
 - All segment-related endpoints now properly return empty data for non-demo accounts
 - Added clickable links to market intelligence dashboard news articles with external link icons
-- Updated all news article URLs to point to actual article pages for better user experience
 - Removed "vNext" from all SharpSend branding across the platform (navigation, onboarding, documentation)
+- Created `/api/market-news` endpoint that fetches real news from MarketAux API when configured
+- Updated Market Sentiment and Market Intelligence Dashboard components to fetch news from API endpoint
+- News articles will display real MarketAux data when MARKETAUX_API_KEY is configured, otherwise falls back to demo data
+- System properly handles missing API keys and provides graceful fallback behavior
 
 ## User Preferences
 

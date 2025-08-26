@@ -36,40 +36,31 @@ export default function VNextMarketSentiment() {
   const [fearGreedIndex, setFearGreedIndex] = useState(65);
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [isLoadingNews, setIsLoadingNews] = useState(true);
   const { toast } = useToast();
-  
-  const newsItems: NewsItem[] = [
-    {
-      id: "news_001",
-      headline: "Federal Reserve Holds Interest Rates Steady, Signals Cautious Outlook",
-      source: "Reuters",
-      impact: "high",
-      sentiment: "neutral",
-      time: "30 min ago",
-      suggestedAction: "Send Fed decision analysis to all macro-focused subscribers",
-      articleUrl: "https://www.reuters.com/markets/us/fed-holds-rates-steady-sees-cautious-2024-outlook-2024-01-31/"
-    },
-    {
-      id: "news_002",
-      headline: "Apple Reports Record Services Revenue in Q1 2024 Earnings",
-      source: "CNBC",
-      impact: "high",
-      sentiment: "bullish",
-      time: "1 hour ago",
-      suggestedAction: "Create tech earnings recap for growth investors",
-      articleUrl: "https://www.cnbc.com/2024/02/01/apple-aapl-earnings-q1-2024.html"
-    },
-    {
-      id: "news_003",
-      headline: "Oil Prices Jump 3% on Middle East Supply Concerns",
-      source: "Bloomberg",
-      impact: "high",
-      sentiment: "bearish",
-      time: "2 hours ago",
-      suggestedAction: "Alert energy sector and commodity traders about volatility",
-      articleUrl: "https://www.bloomberg.com/news/articles/2024-01-31/oil-jumps-as-middle-east-tensions-threaten-supply-disruptions"
-    }
-  ];
+
+  // Fetch real news from MarketAux API
+  useEffect(() => {
+    const fetchMarketNews = async () => {
+      try {
+        const response = await fetch('/api/market-news');
+        const data = await response.json();
+        if (data.news && data.news.length > 0) {
+          setNewsItems(data.news);
+        }
+      } catch (error) {
+        console.error("Error fetching market news:", error);
+      } finally {
+        setIsLoadingNews(false);
+      }
+    };
+
+    fetchMarketNews();
+    // Refresh news every 5 minutes
+    const interval = setInterval(fetchMarketNews, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getSentimentColor = (value: number) => {
     if (value >= 7) return "text-green-600";

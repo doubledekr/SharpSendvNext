@@ -970,6 +970,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(integrationsRoutes);
   app.use(cohortsRoutes);
 
+  // Market news API endpoint - fetches real articles from MarketAux
+  app.get("/api/market-news", async (req, res) => {
+    try {
+      const { MarketAlertService } = await import("./services/market-alerts");
+      const marketService = new MarketAlertService();
+      const marketEvents = await marketService.getMarketEvents();
+      
+      // Transform market events to news format expected by frontend
+      const news = marketEvents.slice(0, 5).map(event => ({
+        id: event.id,
+        headline: event.title,
+        source: event.source,
+        impact: event.impact,
+        sentiment: event.sentiment,
+        time: getRelativeTime(event.timestamp),
+        suggestedAction: getSuggestedAction(event),
+        articleUrl: event.url || '#'
+      }));
+      
+      res.json({ news });
+    } catch (error) {
+      console.error("Error fetching market news:", error);
+      // Return empty news array instead of error to avoid breaking frontend
+      res.json({ news: [] });
+    }
+  });
+
+  // Helper functions for news formatting
+  function getRelativeTime(timestamp: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - timestamp.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  }
+  
+  function getSuggestedAction(event: any): string {
+    switch(event.type) {
+      case 'earnings':
+        return `Send earnings analysis to ${event.symbol || 'relevant'} investors`;
+      case 'fed_announcement':
+        return 'Alert all subscribers about Fed decision implications';
+      case 'volatility_spike':
+        return 'Send risk management update to conservative investors';
+      case 'merger':
+        return 'Create M&A opportunity email for growth investors';
+      case 'dividend':
+        return 'Notify income investors about dividend announcement';
+      default:
+        return `Update ${event.sector || 'relevant'} sector subscribers`;
+    }
+  }
+
   // Legacy routes for backward compatibility (these will be deprecated)
   
   // Simple analytics endpoint for demo purposes

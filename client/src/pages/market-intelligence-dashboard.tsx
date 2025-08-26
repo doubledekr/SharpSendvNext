@@ -69,41 +69,27 @@ export default function MarketIntelligenceDashboard() {
       });
       
       if (marketauxWorking && polygonWorking) {
-        // Simulate market data for demo (since we can't directly call APIs from frontend)
-        const mockData: MarketIntelligenceData = {
-          news: [
-            {
-              id: '1',
-              title: 'Microsoft Cloud Revenue Beats Estimates, Shares Rise in After-Hours',
-              description: 'Tech giant reports 20% growth in Azure revenue, exceeding analyst expectations amid AI boom.',
-              url: 'https://www.reuters.com/technology/microsoft-beats-quarterly-revenue-estimates-cloud-strength-2024-01-24/',
-              source: 'Reuters',
-              publishedAt: new Date().toISOString(),
-              sentiment: 'positive',
-              relevanceScore: 0.88
-            },
-            {
-              id: '2', 
-              title: 'S&P 500 Closes at Record High on Strong Corporate Earnings',
-              description: 'Index gains 1.2% as tech and financial sectors lead broader market rally.',
-              url: 'https://www.cnbc.com/2024/01/24/stock-market-today-live-updates.html',
-              source: 'CNBC',
-              publishedAt: new Date().toISOString(),
-              sentiment: 'positive',
-              relevanceScore: 0.90
-            },
-            {
-              id: '3',
-              title: 'China Manufacturing PMI Falls Below 50, Signals Contraction',
-              description: 'Manufacturing activity contracts for third consecutive month, raising concerns about global growth.',
-              url: 'https://www.bloomberg.com/news/articles/2024-01-31/china-manufacturing-pmi-contracts-again-adding-to-growth-woes',
-              source: 'Bloomberg',
-              publishedAt: new Date().toISOString(),
-              sentiment: 'negative',
-              relevanceScore: 0.82
-            }
-          ],
-          marketData: [
+        // Fetch real news from MarketAux API
+        try {
+          const newsResponse = await fetch('/api/market-news');
+          const newsData = await newsResponse.json();
+          
+          const news = newsData.news ? newsData.news.map((item: any, index: number) => ({
+            id: item.id || String(index + 1),
+            title: item.headline,
+            description: item.suggestedAction || '',
+            url: item.articleUrl || '#',
+            source: item.source,
+            publishedAt: new Date().toISOString(),
+            sentiment: item.sentiment === 'bullish' ? 'positive' : 
+                      item.sentiment === 'bearish' ? 'negative' : 'neutral',
+            relevanceScore: item.impact === 'high' ? 0.9 : 
+                          item.impact === 'medium' ? 0.7 : 0.5
+          })) : [];
+          
+          const mockData: MarketIntelligenceData = {
+            news,
+            marketData: [
             {
               symbol: 'AAPL',
               price: 231.59,
@@ -127,6 +113,35 @@ export default function MarketIntelligenceDashboard() {
         };
         
         setData(mockData);
+        } catch (newsError) {
+          console.error('Error fetching news:', newsError);
+          // Use empty news array if fetch fails
+          const mockData: MarketIntelligenceData = {
+            news: [],
+            marketData: [
+              {
+                symbol: 'AAPL',
+                price: 231.59,
+                change: -2.39,
+                changePercent: -1.03,
+                volume: 45123000,
+                timestamp: new Date().toISOString()
+              },
+              {
+                symbol: 'MSFT',
+                price: 428.45,
+                change: 3.21,
+                changePercent: 0.75,
+                volume: 23456000,
+                timestamp: new Date().toISOString()
+              }
+            ],
+            sectorPerformance: [],
+            sentiment: { overall: 'neutral' },
+            timestamp: new Date().toISOString()
+          };
+          setData(mockData);
+        }
       }
     } catch (error) {
       console.error('Error testing APIs:', error);
