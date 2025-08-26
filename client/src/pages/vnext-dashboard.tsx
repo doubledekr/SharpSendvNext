@@ -95,9 +95,11 @@ export default function VNextDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalSubscribers.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-600">↑ 12%</span> from last month
-            </p>
+            {isDemoAccount() && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="text-green-600">↑ 12%</span> from last month
+              </p>
+            )}
           </CardContent>
         </Card>
         
@@ -116,10 +118,12 @@ export default function VNextDashboard() {
             <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${(stats.monthlyRevenue/1000).toFixed(0)}K</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-600">↑ 23%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">${stats.monthlyRevenue > 0 ? (stats.monthlyRevenue/1000).toFixed(0) + 'K' : '0'}</div>
+            {isDemoAccount() && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="text-green-600">↑ 23%</span> from last month
+              </p>
+            )}
           </CardContent>
         </Card>
         

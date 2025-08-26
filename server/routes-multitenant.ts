@@ -450,6 +450,41 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     }
   );
 
+  // Segments endpoints
+  app.get("/api/segments/suggested", 
+    authenticateAndSetTenant,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        // Check if demo user
+        if (req.user?.id === 'demo-user' || req.user?.id === 'demo-user-id') {
+          // Return demo segments for demo accounts
+          return res.json([
+            {
+              id: "seg_001",
+              name: "High CTR Low Conversion",
+              type: "behavior",
+              size: 3200,
+              confidence: 92,
+              description: "Engaged readers who browse but rarely purchase",
+              criteria: [
+                "CTR > 25% on promotional emails",
+                "Conversion rate < 2%",
+                "Opens 80%+ of emails"
+              ],
+              potentialRevenue: 45000
+            }
+          ]);
+        }
+        
+        // For real accounts, return empty array (no suggested segments yet)
+        res.json([]);
+      } catch (error) {
+        console.error("Segments fetch error:", error);
+        res.status(500).json({ error: "Failed to fetch suggested segments" });
+      }
+    }
+  );
+
   // A/B Testing endpoints
   app.get("/api/ab-tests",
     authenticateAndSetTenant,

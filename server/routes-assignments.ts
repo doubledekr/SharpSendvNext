@@ -14,8 +14,49 @@ function generateShareableSlug(): string {
 // Get all assignments for a publisher with shareable URLs
 router.get("/api/assignments", async (req, res) => {
   try {
-    // For now, using a demo publisher ID
-    const publisherId = "demo-publisher";
+    // Check if the user is authenticated
+    const user = (req as any).session?.user;
+    
+    // For demo users, return demo assignments
+    if (user?.id === 'demo-user' || user?.id === 'demo-user-id') {
+      const host = req.get('host') || 'sharpsend.io';
+      const protocol = req.protocol || 'https';
+      
+      return res.json([
+        {
+          id: "demo-1",
+          title: "Q1 Market Analysis Report",
+          description: "Comprehensive analysis of market trends for Q1",
+          type: "newsletter",
+          status: "in_progress",
+          priority: "high",
+          shareableSlug: "demo-q1-analysis",
+          shareableUrl: `${protocol}://${host}/assignment/demo-q1-analysis`,
+          createdAt: new Date("2025-01-15"),
+          updatedAt: new Date("2025-01-20")
+        },
+        {
+          id: "demo-2",
+          title: "Crypto Investment Guide",
+          description: "Essential guide for crypto investments",
+          type: "analysis",
+          status: "unassigned",
+          priority: "medium",
+          shareableSlug: "demo-crypto-guide",
+          shareableUrl: `${protocol}://${host}/assignment/demo-crypto-guide`,
+          createdAt: new Date("2025-01-10"),
+          updatedAt: new Date("2025-01-10")
+        }
+      ]);
+    }
+    
+    // For real users, use their actual publisher ID or return empty
+    const publisherId = user?.publisherId || user?.publisher?.id;
+    
+    if (!publisherId || publisherId === "demo-publisher") {
+      // Return empty array for non-demo accounts without proper publisher
+      return res.json([]);
+    }
     
     const result = await db
       .select()

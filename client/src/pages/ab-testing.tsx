@@ -170,8 +170,20 @@ export function ABTestingDashboard() {
     return newTest.variants.reduce((sum, v) => sum + v.weight, 0);
   };
 
-  // Mock data for demonstration
-  const mockTests = [
+  // Check if this is a demo account
+  const isDemoAccount = () => {
+    const user = localStorage.getItem('user');
+    if (!user) return false;
+    try {
+      const userData = JSON.parse(user);
+      return userData.id === 'demo-user' || userData.id === 'demo-user-id';
+    } catch {
+      return false;
+    }
+  };
+
+  // Mock data only for demo accounts
+  const mockTests = isDemoAccount() ? [
     {
       id: "1",
       name: "Subject Line Optimization - Q1 Market Report",
@@ -207,7 +219,7 @@ export function ABTestingDashboard() {
       confidence: 95.2,
       targetSegment: "All Subscribers"
     }
-  ];
+  ] : [];
 
   const testsToDisplay = activeTests.length > 0 ? activeTests : mockTests;
 

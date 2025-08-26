@@ -7,6 +7,7 @@ import {
   DollarSign, Clock, Target, ChevronRight, Plus
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useQuery } from "@tanstack/react-query";
 
 interface SuggestedSegment {
   id: string;
@@ -22,7 +23,27 @@ interface SuggestedSegment {
 export default function VNextAutoSegmentation() {
   const [adoptedSegments, setAdoptedSegments] = useState<string[]>([]);
   
-  const suggestedSegments: SuggestedSegment[] = [
+  // Check if this is a demo account
+  const isDemoAccount = () => {
+    const user = localStorage.getItem('user');
+    if (!user) return false;
+    try {
+      const userData = JSON.parse(user);
+      return userData.id === 'demo-user' || userData.id === 'demo-user-id';
+    } catch {
+      return false;
+    }
+  };
+  
+  // Fetch real segments from API for non-demo accounts
+  const { data: realSegments = [] } = useQuery<SuggestedSegment[]>({
+    queryKey: ["/api/segments/suggested"],
+    retry: false,
+    enabled: !isDemoAccount(),
+  });
+  
+  // Mock data only for demo accounts
+  const demoSegments: SuggestedSegment[] = [
     {
       id: "seg_001",
       name: "High CTR Low Conversion",
@@ -78,6 +99,9 @@ export default function VNextAutoSegmentation() {
       ]
     }
   ];
+  
+  // Use demo data for demo accounts, real data for real accounts
+  const suggestedSegments = isDemoAccount() ? demoSegments : realSegments;
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -118,15 +142,28 @@ export default function VNextAutoSegmentation() {
                 AI continuously analyzes pixel + ESP data to suggest micro-segments
               </CardDescription>
             </div>
-            <Badge variant="default" className="gap-1">
-              <Sparkles className="h-3 w-3" />
-              4 New Segments Found
-            </Badge>
+            {suggestedSegments.length > 0 && (
+              <Badge variant="default" className="gap-1">
+                <Sparkles className="h-3 w-3" />
+                {suggestedSegments.length} New Segments Found
+              </Badge>
+            )}
           </div>
         </CardHeader>
       </Card>
 
       {/* Suggested Segments */}
+      {suggestedSegments.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-8">
+            <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">No AI-detected segments yet</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Start sending campaigns to discover segments
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
       <div className="grid gap-4">
         {suggestedSegments.map((segment) => (
           <Card key={segment.id} className={adoptedSegments.includes(segment.id) ? "opacity-50" : ""}>
@@ -203,6 +240,7 @@ export default function VNextAutoSegmentation() {
           </Card>
         ))}
       </div>
+      )}
 
       {/* Quick Actions */}
       <Card>
