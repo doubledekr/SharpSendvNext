@@ -1062,7 +1062,7 @@ export default function VNextOnboardingNew() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              <span className="font-semibold">SharpSend vNext</span>
+              <span className="font-semibold">SharpSend</span>
             </div>
             <span className="text-sm text-muted-foreground">
               Step {currentStep} of {steps.length}

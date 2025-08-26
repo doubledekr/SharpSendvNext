@@ -152,7 +152,7 @@ export function MasterNavigation() {
                 className="w-8 h-8 object-contain"
               />
               <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-                SharpSend vNext
+                SharpSend
               </span>
             </Link>
           </div>

@@ -116,7 +116,7 @@ export default function VNextOnboarding() {
       // Complete onboarding
       toast({ 
         title: "Onboarding Complete!", 
-        description: "Your SharpSend vNext platform is ready to use" 
+        description: "Your SharpSend platform is ready to use" 
       });
       // Redirect to main dashboard
       window.location.href = "/vnext-dashboard";
@@ -534,7 +534,7 @@ export default function VNextOnboarding() {
         {/* Header */}
         <div className="text-center mb-8" data-testid="header-onboarding">
           <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="title-main">
-            Welcome to SharpSend vNext
+            Welcome to SharpSend
           </h1>
           <p className="text-gray-600" data-testid="desc-main">
             Get your AI-powered newsletter platform ready in just a few minutes
