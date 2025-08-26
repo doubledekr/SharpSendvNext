@@ -23,85 +23,14 @@ interface SuggestedSegment {
 export default function VNextAutoSegmentation() {
   const [adoptedSegments, setAdoptedSegments] = useState<string[]>([]);
   
-  // Check if this is a demo account
-  const isDemoAccount = () => {
-    const user = localStorage.getItem('user');
-    if (!user) return false;
-    try {
-      const userData = JSON.parse(user);
-      return userData.id === 'demo-user' || userData.id === 'demo-user-id';
-    } catch {
-      return false;
-    }
-  };
-  
-  // Fetch real segments from API for non-demo accounts
+  // Always fetch segments from API - it will return demo data for demo accounts, empty for real accounts
   const { data: realSegments = [] } = useQuery<SuggestedSegment[]>({
     queryKey: ["/api/segments/suggested"],
-    retry: false,
-    enabled: !isDemoAccount(),
+    retry: false
   });
   
-  // Mock data only for demo accounts
-  const demoSegments: SuggestedSegment[] = [
-    {
-      id: "seg_001",
-      name: "High CTR Low Conversion",
-      type: "behavior",
-      size: 3200,
-      confidence: 92,
-      description: "Engaged readers who browse but rarely purchase",
-      criteria: [
-        "CTR > 25% on promotional emails",
-        "Conversion rate < 2%",
-        "Opens 80%+ of emails"
-      ],
-      potentialRevenue: 45000
-    },
-    {
-      id: "seg_002",
-      name: "Premium Offer Browsers",
-      type: "value",
-      size: 1850,
-      confidence: 88,
-      description: "Clicked premium offers 3x+ but never converted",
-      criteria: [
-        "Clicked premium CTAs 3+ times",
-        "No premium purchases",
-        "Account age > 6 months"
-      ],
-      potentialRevenue: 125000
-    },
-    {
-      id: "seg_003",
-      name: "Bullish Headline Lovers",
-      type: "sentiment",
-      size: 5400,
-      confidence: 85,
-      description: "Always opens bullish market sentiment headlines",
-      criteria: [
-        "Opens 90%+ bullish subject lines",
-        "Opens <30% bearish headlines",
-        "Active during market rallies"
-      ]
-    },
-    {
-      id: "seg_004",
-      name: "Morning Power Users",
-      type: "engagement",
-      size: 2100,
-      confidence: 94,
-      description: "Highly engaged pre-market readers",
-      criteria: [
-        "Opens emails 6-9 AM EST",
-        "Engagement rate > 75%",
-        "Clicks within 5 min of open"
-      ]
-    }
-  ];
-  
-  // Use demo data for demo accounts, real data for real accounts
-  const suggestedSegments = isDemoAccount() ? demoSegments : realSegments;
+  // Use only API data - no local mock data
+  const suggestedSegments = realSegments;
 
   const getTypeIcon = (type: string) => {
     switch (type) {

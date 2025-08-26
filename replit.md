@@ -8,6 +8,9 @@ SharpSend vNext is a multi-tenant AI-powered newsletter personalization platform
 - Implemented clickable news headlines and external link buttons for article access
 - Added tooltips and improved UX for opening referenced news articles
 - Integrated assignment creation dialog with market context preservation
+- Fixed AI-detected segments to only show for demo accounts (demo-user-id)
+- Removed local mock data from auto-segmentation component - now uses only API data
+- Updated news article URLs to use valid example links (Reuters, Bloomberg, CNBC market pages)
 
 ## User Preferences
 
