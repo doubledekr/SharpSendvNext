@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,8 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { 
   BarChart3, TrendingUp, Users, Mail, Calendar, 
   Activity, Brain, Target, Sparkles, AlertCircle,
-  Eye, Gauge, Newspaper, Settings, Zap
+  Eye, Gauge, Newspaper, Settings, Zap, Loader2
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import VNextPixelManager from "@/components/vnext-pixel-manager";
 import VNextFatigueDetector from "@/components/vnext-fatigue-detector";
 import VNextAutoSegmentation from "@/components/vnext-auto-segmentation";
@@ -17,17 +18,37 @@ import VNextMarketSentiment from "@/components/vnext-market-sentiment";
 export default function VNextDashboard() {
   const [activeTab, setActiveTab] = useState("performance");
   
-  // Mock stats for overview
+  // Fetch real analytics data
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<any>({
+    queryKey: ["/api/analytics"],
+    retry: false,
+  });
+  
+  // Fetch subscriber count
+  const { data: subscribers, isLoading: subscribersLoading } = useQuery<any[]>({
+    queryKey: ["/api/subscribers"],
+    retry: false,
+  });
+  
+  // Fetch campaigns
+  const { data: campaigns, isLoading: campaignsLoading } = useQuery<any[]>({
+    queryKey: ["/api/campaigns"],
+    retry: false,
+  });
+  
+  // Calculate real stats from fetched data
   const stats = {
-    totalSubscribers: 45230,
-    engagementRate: 68.5,
-    monthlyRevenue: 125000,
-    activeCampaigns: 12,
-    pixelsActive: 24,
-    fatigueAlerts: 2,
-    newSegments: 4,
-    marketSentiment: 7.2
+    totalSubscribers: subscribers?.length || 0,
+    engagementRate: analytics?.engagementRate || 0,
+    monthlyRevenue: analytics?.revenue?.monthly || 0,
+    activeCampaigns: campaigns?.filter((c: any) => c.status === 'active')?.length || 0,
+    pixelsActive: analytics?.pixelStats?.active || 0,
+    fatigueAlerts: analytics?.alerts?.fatigue || 0,
+    newSegments: analytics?.segments?.new || 0,
+    marketSentiment: analytics?.marketSentiment || 0
   };
+  
+  const isLoading = analyticsLoading || subscribersLoading || campaignsLoading;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -44,8 +65,17 @@ export default function VNextDashboard() {
           Quick Campaign
         </Button>
       </div>
+      
+      {/* Show loading state while fetching data */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
 
-      {/* Key Metrics Overview */}
+      {/* Key Metrics Overview - only show when data is loaded */}
+      {!isLoading && (
+      <>
       <div className="grid grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
@@ -234,6 +264,8 @@ export default function VNextDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+      </>
+      )}
     </div>
   );
 }

@@ -39,6 +39,18 @@ export function MasterNavigation() {
   const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
+  // Check if this is a demo account
+  const isDemoAccount = () => {
+    const user = localStorage.getItem('user');
+    if (!user) return false;
+    try {
+      const userData = JSON.parse(user);
+      return userData.id === 'demo-user' || userData.id === 'demo-user-id';
+    } catch {
+      return false;
+    }
+  };
+  
   const handleLogout = () => {
     // Clear all authentication data
     localStorage.removeItem('token');
@@ -170,21 +182,23 @@ export function MasterNavigation() {
 
           {/* Platform Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Demo Environment Badge */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center space-x-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg cursor-help">
-                  <Building2 className="w-4 h-4 text-purple-500" />
-                  <span className="text-sm font-medium text-purple-500">Demo Environment</span>
-                  <Info className="w-3 h-3 text-purple-400" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p className="text-sm">
-                  You're in the demo environment with sample data. Perfect for exploring SharpSend's features without affecting real data.
-                </p>
-              </TooltipContent>
-            </Tooltip>
+            {/* Demo Environment Badge - only show for demo accounts */}
+            {isDemoAccount() && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg cursor-help">
+                    <Building2 className="w-4 h-4 text-purple-500" />
+                    <span className="text-sm font-medium text-purple-500">Demo Environment</span>
+                    <Info className="w-3 h-3 text-purple-400" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">
+                    You're in the demo environment with sample data. Perfect for exploring SharpSend's features without affecting real data.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {/* Settings Menu */}
             <DropdownMenu>
