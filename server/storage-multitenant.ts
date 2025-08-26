@@ -8,27 +8,21 @@ import {
   campaigns,
   abTests,
   emailIntegrations,
-  crmIntegrations,
   analytics,
-  aiContentHistory,
   type Publisher,
   type User,
   type Subscriber,
   type Campaign,
   type ABTest,
   type EmailIntegration,
-  type CrmIntegration,
   type Analytics,
-  type AiContentHistory,
   type InsertPublisher,
   type InsertUser,
   type InsertSubscriber,
   type InsertCampaign,
   type InsertABTest,
   type InsertEmailIntegration,
-  type InsertCrmIntegration,
-  type InsertAiContentHistory,
-} from "../shared/schema-multitenant";
+} from "../shared/schema";
 
 // Database connection
 const connectionString = process.env.DATABASE_URL || "postgresql://sharpsend:sharpsend123@localhost:5432/sharpsend";
@@ -41,7 +35,7 @@ const db = drizzle(client);
 class TenantAwareStorage {
   // Publisher operations
   async createPublisher(data: InsertPublisher): Promise<Publisher> {
-    const [publisher] = await db.insert(publishers).values(data).returning();
+    const [publisher] = await db.insert(publishers).values([data]).returning();
     return publisher;
   }
 
@@ -71,7 +65,7 @@ class TenantAwareStorage {
 
   // User operations (tenant-aware)
   async createUser(data: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(data).returning();
+    const [user] = await db.insert(users).values([data]).returning();
     return user;
   }
 
@@ -103,7 +97,7 @@ class TenantAwareStorage {
 
   // Subscriber operations (tenant-aware)
   async createSubscriber(data: InsertSubscriber): Promise<Subscriber> {
-    const [subscriber] = await db.insert(subscribers).values(data).returning();
+    const [subscriber] = await db.insert(subscribers).values([data]).returning();
     return subscriber;
   }
 
@@ -153,7 +147,7 @@ class TenantAwareStorage {
 
   // Campaign operations (tenant-aware)
   async createCampaign(data: InsertCampaign): Promise<Campaign> {
-    const [campaign] = await db.insert(campaigns).values(data).returning();
+    const [campaign] = await db.insert(campaigns).values([data]).returning();
     return campaign;
   }
 
@@ -191,7 +185,7 @@ class TenantAwareStorage {
 
   // A/B Test operations (tenant-aware)
   async createABTest(data: InsertABTest): Promise<ABTest> {
-    const [abTest] = await db.insert(abTests).values(data).returning();
+    const [abTest] = await db.insert(abTests).values([data]).returning();
     return abTest;
   }
 
@@ -222,7 +216,7 @@ class TenantAwareStorage {
 
   // Email Integration operations (tenant-aware)
   async createEmailIntegration(data: InsertEmailIntegration): Promise<EmailIntegration> {
-    const [integration] = await db.insert(emailIntegrations).values(data).returning();
+    const [integration] = await db.insert(emailIntegrations).values([data]).returning();
     return integration;
   }
 
@@ -250,39 +244,27 @@ class TenantAwareStorage {
     return integration || null;
   }
 
-  // CRM Integration operations (tenant-aware)
-  async createCrmIntegration(data: InsertCrmIntegration): Promise<CrmIntegration> {
-    const [integration] = await db.insert(crmIntegrations).values(data).returning();
-    return integration;
-  }
+  // CRM Integration operations - COMMENTED OUT (not in main schema)
+  // async createCrmIntegration(data: any): Promise<any> {
+  //   // CRM integrations not available in current schema
+  //   throw new Error("CRM integrations not implemented");
+  // }
 
-  async getCrmIntegrations(publisherId: string): Promise<CrmIntegration[]> {
-    return await db
-      .select()
-      .from(crmIntegrations)
-      .where(eq(crmIntegrations.publisherId, publisherId));
-  }
+  // async getCrmIntegrations(publisherId: string): Promise<any[]> {
+  //   return [];
+  // }
 
-  async getCrmIntegration(id: string, publisherId: string): Promise<CrmIntegration | null> {
-    const [integration] = await db
-      .select()
-      .from(crmIntegrations)
-      .where(and(eq(crmIntegrations.id, id), eq(crmIntegrations.publisherId, publisherId)));
-    return integration || null;
-  }
+  // async getCrmIntegration(id: string, publisherId: string): Promise<any | null> {
+  //   return null;
+  // }
 
-  async updateCrmIntegration(id: string, publisherId: string, updates: Partial<CrmIntegration>): Promise<CrmIntegration | null> {
-    const [integration] = await db
-      .update(crmIntegrations)
-      .set(updates)
-      .where(and(eq(crmIntegrations.id, id), eq(crmIntegrations.publisherId, publisherId)))
-      .returning();
-    return integration || null;
-  }
+  // async updateCrmIntegration(id: string, publisherId: string, updates: any): Promise<any | null> {
+  //   return null;
+  // }
 
   // Analytics operations (tenant-aware)
   async createAnalytics(data: Partial<Analytics> & { publisherId: string }): Promise<Analytics> {
-    const [analyticsRecord] = await db.insert(analytics).values(data).returning();
+    const [analyticsRecord] = await db.insert(analytics).values([data]).returning();
     return analyticsRecord;
   }
 
@@ -310,20 +292,15 @@ class TenantAwareStorage {
       .orderBy(desc(analytics.date));
   }
 
-  // AI Content History operations (tenant-aware)
-  async createAiContentHistory(data: InsertAiContentHistory): Promise<AiContentHistory> {
-    const [record] = await db.insert(aiContentHistory).values(data).returning();
-    return record;
-  }
+  // AI Content History operations - COMMENTED OUT (not in main schema)
+  // async createAiContentHistory(data: any): Promise<any> {
+  //   // AI content history not available in current schema
+  //   throw new Error("AI content history not implemented");
+  // }
 
-  async getAiContentHistory(publisherId: string, limit: number = 50): Promise<AiContentHistory[]> {
-    return await db
-      .select()
-      .from(aiContentHistory)
-      .where(eq(aiContentHistory.publisherId, publisherId))
-      .orderBy(desc(aiContentHistory.createdAt))
-      .limit(limit);
-  }
+  // async getAiContentHistory(publisherId: string, limit: number = 50): Promise<any[]> {
+  //   return [];
+  // }
 
   // Utility methods for analytics calculation
   async calculateAnalytics(publisherId: string): Promise<Analytics> {
