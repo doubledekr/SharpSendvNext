@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   TrendingUp, TrendingDown, AlertTriangle, Newspaper, 
   DollarSign, Activity, Zap, Send, ArrowUp, ArrowDown,
-  Clock, Bell, ChevronRight, Plus, FileText
+  Clock, Bell, ChevronRight, Plus, FileText, ExternalLink
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +27,7 @@ interface NewsItem {
   sentiment: "bullish" | "bearish" | "neutral";
   time: string;
   suggestedAction?: string;
+  articleUrl?: string;
 }
 
 export default function VNextMarketSentiment() {
@@ -44,7 +46,8 @@ export default function VNextMarketSentiment() {
       impact: "high",
       sentiment: "bullish",
       time: "15 min ago",
-      suggestedAction: "Send bullish market update to Premium subscribers"
+      suggestedAction: "Send bullish market update to Premium subscribers",
+      articleUrl: "https://www.reuters.com/markets/us/fed-officials-signal-september-rate-cut"
     },
     {
       id: "news_002",
@@ -53,7 +56,8 @@ export default function VNextMarketSentiment() {
       impact: "medium",
       sentiment: "bullish",
       time: "1 hour ago",
-      suggestedAction: "Create tech sector opportunity email for Active Traders"
+      suggestedAction: "Create tech sector opportunity email for Active Traders",
+      articleUrl: "https://www.bloomberg.com/news/tech-stocks-earnings-rally"
     },
     {
       id: "news_003",
@@ -62,7 +66,8 @@ export default function VNextMarketSentiment() {
       impact: "high",
       sentiment: "bearish",
       time: "2 hours ago",
-      suggestedAction: "Alert energy sector subscribers about volatility"
+      suggestedAction: "Alert energy sector subscribers about volatility",
+      articleUrl: "https://www.cnbc.com/oil-prices-middle-east-tensions"
     }
   ];
 
@@ -246,10 +251,46 @@ export default function VNextMarketSentiment() {
                       {item.sentiment}
                     </Badge>
                   </div>
-                  <h4 className="font-semibold">{item.headline}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {item.source} • {item.time}
-                  </p>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-semibold">
+                        {item.articleUrl ? (
+                          <a
+                            href={item.articleUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-blue-600 hover:underline cursor-pointer transition-colors"
+                          >
+                            {item.headline}
+                          </a>
+                        ) : (
+                          item.headline
+                        )}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {item.source} • {item.time}
+                      </p>
+                    </div>
+                    {item.articleUrl && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2"
+                              onClick={() => window.open(item.articleUrl, '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Open article in new tab</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 </div>
               </div>
               

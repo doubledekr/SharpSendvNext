@@ -2,6 +2,13 @@
 
 SharpSend vNext is a multi-tenant AI-powered newsletter personalization platform designed for financial publishers. It offers publisher-specific subdomains, automated pixel management, and comprehensive workflow tools for content planning and approvals. The platform provides a unified dashboard for subscriber management, AI-powered content generation, A/B testing, performance analysis, and revenue impact calculation. It integrates with various email marketing services and uses advanced analytics to optimize content and engagement. The business vision is a B2B SaaS model aiming for scalable growth through AI-driven personalization, email fatigue management, real-time market event integration, and a hierarchical tracking pixel system. It includes advanced email intelligence features like a Smart Pixel Engine with context-aware tracking and behavioral predictions, an AI-powered segmentation engine, and a real-time behavioral intelligence loop.
 
+## Recent Changes (January 2025)
+- Enhanced market sentiment component to allow creating assignments directly from opportunities
+- Added "Create Assignment" functionality to all proactive campaign suggestions
+- Implemented clickable news headlines and external link buttons for article access
+- Added tooltips and improved UX for opening referenced news articles
+- Integrated assignment creation dialog with market context preservation
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
