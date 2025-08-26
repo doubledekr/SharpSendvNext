@@ -15,6 +15,7 @@ import PublicAssignment from "@/pages/public-assignment";
 import AssignmentEditorPage from "@/pages/assignment-editor-page";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
+import Onboarding from "@/pages/onboarding";
 import IntegrationsPage from "@/pages/integrations";
 import PublisherSettings from "@/pages/publisher-settings";
 import NotFound from "@/pages/not-found";
@@ -47,8 +48,9 @@ function Router() {
   const [location] = useLocation();
   const isAuthPage = location === "/" || location === "/login" || location === "/register";
   const isDemoOnboarding = location === "/demo-onboarding";
+  const isOnboarding = location === "/onboarding";
   const isPublicAssignment = location.startsWith("/assignment/");
-  const hideNavigation = isAuthPage || isDemoOnboarding || isPublicAssignment;
+  const hideNavigation = isAuthPage || isDemoOnboarding || isOnboarding || isPublicAssignment;
   
   return (
     <>
@@ -70,7 +72,8 @@ function Router() {
           {/* Settings Routes */}
           <Route path="/settings/publisher" component={() => <ProtectedRoute component={PublisherSettings} />} />
           
-          {/* Demo Onboarding */}
+          {/* Onboarding Routes */}
+          <Route path="/onboarding" component={() => <ProtectedRoute component={Onboarding} />} />
           <Route path="/demo-onboarding" component={DemoOnboarding} />
           
           {/* Public Assignment View */}
