@@ -470,8 +470,12 @@ export function ABTestingDashboard() {
             <CardTitle className="text-sm font-medium">Avg. Lift</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">+24.5%</div>
-            <p className="text-xs text-muted-foreground">Winner vs control</p>
+            <div className="text-2xl font-bold text-green-600">
+              {isDemoAccount() ? '+24.5%' : '—'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isDemoAccount() ? 'Winner vs control' : 'No data yet'}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -479,8 +483,12 @@ export function ABTestingDashboard() {
             <CardTitle className="text-sm font-medium">Revenue Impact</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">+$45,200</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold text-green-600">
+              {isDemoAccount() ? '+$45,200' : '—'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isDemoAccount() ? 'This month' : 'No data yet'}
+            </p>
           </CardContent>
         </Card>
       </div>

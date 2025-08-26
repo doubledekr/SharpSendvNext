@@ -232,24 +232,32 @@ export default function VNextPixelManager() {
                     <CardTitle className="text-base">Device Distribution</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm flex items-center gap-2">
-                          <Smartphone className="h-3 w-3" /> Mobile
-                        </span>
-                        <span className="text-sm font-semibold">48%</span>
-                      </div>
-                      <Progress value={48} className="h-2" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm flex items-center gap-2">
-                          <Monitor className="h-3 w-3" /> Desktop
-                        </span>
-                        <span className="text-sm font-semibold">38%</span>
-                      </div>
-                      <Progress value={38} className="h-2" />
-                    </div>
+                    {pixels.length > 0 && isDemoAccount() ? (
+                      <>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm flex items-center gap-2">
+                              <Smartphone className="h-3 w-3" /> Mobile
+                            </span>
+                            <span className="text-sm font-semibold">48%</span>
+                          </div>
+                          <Progress value={48} className="h-2" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm flex items-center gap-2">
+                              <Monitor className="h-3 w-3" /> Desktop
+                            </span>
+                            <span className="text-sm font-semibold">38%</span>
+                          </div>
+                          <Progress value={38} className="h-2" />
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No device data available yet
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </div>
