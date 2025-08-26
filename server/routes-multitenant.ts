@@ -48,30 +48,6 @@ function authenticateAndSetTenant(req: AuthenticatedRequest, res: Response, next
   }
   
   try {
-    // First, check if it's a demo token (base64 encoded JSON)
-    try {
-      const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
-      if (decoded.demo === true) {
-        // Handle demo token - set both user and tenant
-        req.user = { 
-          id: decoded.userId || 'demo-user-id', 
-          publisherId: decoded.publisherId || '189ce086-e6c1-441e-ba0a-5e9bc2fe314e' 
-        };
-        // Also set tenant for demo users with publisherId property
-        req.tenant = {
-          id: decoded.publisherId || '189ce086-e6c1-441e-ba0a-5e9bc2fe314e',
-          publisherId: decoded.publisherId || '189ce086-e6c1-441e-ba0a-5e9bc2fe314e', // Add publisherId property
-          subdomain: 'demo',
-          name: 'Demo Financial Publisher',
-          settings: {}
-        } as any;
-        return next();
-      }
-    } catch {
-      // Not a demo token, continue with JWT verification
-    }
-    
-    // Try to verify as JWT token
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; publisherId: string };
     req.user = { id: decoded.userId, publisherId: decoded.publisherId };
     next();

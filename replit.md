@@ -21,11 +21,6 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform desig
 - News articles now display actual MarketAux data with working article URLs when API keys are configured
 - System properly handles missing API keys and provides graceful fallback behavior
 - Successfully integrated real-time news feed showing articles from sources like pymnts.com, argaam.com, businessinsider.com
-- Fixed database insert operations in storage-multitenant.ts - all inserts now use proper array syntax
-- Corrected schema import in storage-multitenant.ts to use main schema.ts instead of schema-multitenant.ts
-- Removed references to non-existent tables (aiContentHistory, crmIntegrations) from storage layer
-- Demo data now loads successfully for demo accounts with proper authentication
-- Fixed campaigns, analytics, and A/B tests endpoints to work with current database schema
 
 ## User Preferences
 
