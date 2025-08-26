@@ -74,33 +74,33 @@ export default function MarketIntelligenceDashboard() {
           news: [
             {
               id: '1',
-              title: 'Bank of Canada Holds Rates Steady at 3.25% Amid Economic Uncertainty',
-              description: 'Central bank maintains benchmark rate, cites inflation concerns and global economic headwinds in latest policy decision.',
-              url: 'https://www.reuters.com/markets/rates-bonds/bank-canada-holds-rate-steady-january-2025/',
+              title: 'Microsoft Cloud Revenue Beats Estimates, Shares Rise in After-Hours',
+              description: 'Tech giant reports 20% growth in Azure revenue, exceeding analyst expectations amid AI boom.',
+              url: 'https://www.reuters.com/technology/microsoft-beats-quarterly-revenue-estimates-cloud-strength-2024-01-24/',
               source: 'Reuters',
               publishedAt: new Date().toISOString(),
-              sentiment: 'neutral',
-              relevanceScore: 0.85
+              sentiment: 'positive',
+              relevanceScore: 0.88
             },
             {
               id: '2', 
-              title: 'Tesla Shares Jump 8% on Q4 Delivery Beat and Cybertruck Production Milestone',
-              description: 'Electric vehicle maker exceeds analyst expectations with record quarterly deliveries, Cybertruck production ramps up.',
-              url: 'https://www.cnbc.com/2025/01/23/tesla-q4-deliveries-beat-cybertruck-production.html',
+              title: 'S&P 500 Closes at Record High on Strong Corporate Earnings',
+              description: 'Index gains 1.2% as tech and financial sectors lead broader market rally.',
+              url: 'https://www.cnbc.com/2024/01/24/stock-market-today-live-updates.html',
               source: 'CNBC',
               publishedAt: new Date().toISOString(),
               sentiment: 'positive',
-              relevanceScore: 0.92
+              relevanceScore: 0.90
             },
             {
               id: '3',
-              title: 'Gold Prices Surge to 6-Month High as Dollar Weakens',
-              description: 'Precious metal gains 2.3% as investors seek safe haven assets amid geopolitical tensions and dollar decline.',
-              url: 'https://www.bloomberg.com/news/articles/2025-01-23/gold-rallies-six-month-high-dollar-weakness',
+              title: 'China Manufacturing PMI Falls Below 50, Signals Contraction',
+              description: 'Manufacturing activity contracts for third consecutive month, raising concerns about global growth.',
+              url: 'https://www.bloomberg.com/news/articles/2024-01-31/china-manufacturing-pmi-contracts-again-adding-to-growth-woes',
               source: 'Bloomberg',
               publishedAt: new Date().toISOString(),
-              sentiment: 'positive',
-              relevanceScore: 0.78
+              sentiment: 'negative',
+              relevanceScore: 0.82
             }
           ],
           marketData: [

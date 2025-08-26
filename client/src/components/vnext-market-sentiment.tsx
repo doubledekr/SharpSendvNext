@@ -41,33 +41,33 @@ export default function VNextMarketSentiment() {
   const newsItems: NewsItem[] = [
     {
       id: "news_001",
-      headline: "Dollar Advances as Trump Tariff Threats Fuel Risk-Off Sentiment",
+      headline: "Federal Reserve Holds Interest Rates Steady, Signals Cautious Outlook",
       source: "Reuters",
       impact: "high",
-      sentiment: "bearish",
+      sentiment: "neutral",
       time: "30 min ago",
-      suggestedAction: "Send currency market update to forex and international investors",
-      articleUrl: "https://www.reuters.com/markets/currencies/dollar-gains-trump-tariff-threats-peso-slides-2025-01-23/"
+      suggestedAction: "Send Fed decision analysis to all macro-focused subscribers",
+      articleUrl: "https://www.reuters.com/markets/us/fed-holds-rates-steady-sees-cautious-2024-outlook-2024-01-31/"
     },
     {
       id: "news_002",
-      headline: "Nvidia Hits Record High on AI Chip Demand Surge",
-      source: "Bloomberg",
+      headline: "Apple Reports Record Services Revenue in Q1 2024 Earnings",
+      source: "CNBC",
       impact: "high",
       sentiment: "bullish",
       time: "1 hour ago",
-      suggestedAction: "Create AI sector opportunity email for tech-focused investors",
-      articleUrl: "https://www.bloomberg.com/news/articles/2025-01-23/nvidia-stock-hits-record-on-ai-chip-demand"
+      suggestedAction: "Create tech earnings recap for growth investors",
+      articleUrl: "https://www.cnbc.com/2024/02/01/apple-aapl-earnings-q1-2024.html"
     },
     {
       id: "news_003",
-      headline: "European Central Bank Cuts Rates by 25 Basis Points",
-      source: "Financial Times",
+      headline: "Oil Prices Jump 3% on Middle East Supply Concerns",
+      source: "Bloomberg",
       impact: "high",
-      sentiment: "bullish",
+      sentiment: "bearish",
       time: "2 hours ago",
-      suggestedAction: "Alert European market subscribers about rate cut implications",
-      articleUrl: "https://www.ft.com/content/ecb-rate-cut-january-2025-economic-outlook"
+      suggestedAction: "Alert energy sector and commodity traders about volatility",
+      articleUrl: "https://www.bloomberg.com/news/articles/2024-01-31/oil-jumps-as-middle-east-tensions-threaten-supply-disruptions"
     }
   ];
 
