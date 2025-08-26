@@ -3,6 +3,7 @@ import { db } from "./db";
 import { assignments } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import demoDataService from "./services/demo-data-service";
 
 const router = Router();
 
@@ -11,50 +12,38 @@ function generateShareableSlug(): string {
   return randomBytes(8).toString("hex");
 }
 
+// Helper function to extract publisher ID from JWT token
+function getPublisherIdFromToken(authHeader: string | undefined): string | null {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  
+  try {
+    const token = authHeader.substring(7);
+    // JWT format - decode the payload
+    if (token.includes('.')) {
+      const [, payload] = token.split('.');
+      const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
+      return decoded.publisherId;
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
 // Get all assignments for a publisher with shareable URLs
 router.get("/api/assignments", async (req, res) => {
   try {
-    // Check if the user is authenticated
-    const user = (req as any).session?.user;
+    // Get publisher ID from JWT token
+    const publisherId = getPublisherIdFromToken(req.headers.authorization as string);
     
-    // For demo users, return demo assignments
-    if (user?.id === 'demo-user' || user?.id === 'demo-user-id') {
-      const host = req.get('host') || 'sharpsend.io';
-      const protocol = req.protocol || 'https';
-      
-      return res.json([
-        {
-          id: "demo-1",
-          title: "Q1 Market Analysis Report",
-          description: "Comprehensive analysis of market trends for Q1",
-          type: "newsletter",
-          status: "in_progress",
-          priority: "high",
-          shareableSlug: "demo-q1-analysis",
-          shareableUrl: `${protocol}://${host}/assignment/demo-q1-analysis`,
-          createdAt: new Date("2025-01-15"),
-          updatedAt: new Date("2025-01-20")
-        },
-        {
-          id: "demo-2",
-          title: "Crypto Investment Guide",
-          description: "Essential guide for crypto investments",
-          type: "analysis",
-          status: "unassigned",
-          priority: "medium",
-          shareableSlug: "demo-crypto-guide",
-          shareableUrl: `${protocol}://${host}/assignment/demo-crypto-guide`,
-          createdAt: new Date("2025-01-10"),
-          updatedAt: new Date("2025-01-10")
-        }
-      ]);
+    // If demo account, return demo assignments
+    if (publisherId === demoDataService.getDemoPublisherId()) {
+      const demoAssignments = demoDataService.getAssignments(publisherId);
+      return res.json(demoAssignments);
     }
     
-    // For real users, use their actual publisher ID or return empty
-    const publisherId = user?.publisherId || user?.publisher?.id;
-    
-    if (!publisherId || publisherId === "demo-publisher") {
-      // Return empty array for non-demo accounts without proper publisher
+    // For real users, return empty array or fetch from database
+    if (!publisherId) {
       return res.json([]);
     }
     
