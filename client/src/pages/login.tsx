@@ -44,6 +44,10 @@ export default function Login() {
     onSuccess: (data) => {
       // Store token and redirect to dashboard
       localStorage.setItem("token", data.token);
+      // Also store as demo_token if this is the demo account
+      if (data.publisher?.id === "189ce086-e6c1-441e-ba0a-5e9bc2fe314e") {
+        localStorage.setItem("demo_token", data.token);
+      }
       localStorage.setItem("publisher", JSON.stringify(data.publisher));
       localStorage.setItem("user", JSON.stringify(data.user));
       setLocation("/dashboard");
@@ -94,33 +98,33 @@ export default function Login() {
     setErrors({}); // Clear any existing errors
     
     try {
+      // Automatically login with demo credentials
       const response = await fetch("/api/demo/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}) // Explicitly send empty body
+        body: JSON.stringify({}) // Server handles demo credentials
       });
 
       const data = await response.json();
       
-      // Even if response is not ok, if we have token data, use it
       if (data.token) {
-        // Store token and redirect to dashboard
+        // Store demo token specifically for demo account
+        localStorage.setItem("demo_token", data.token);
         localStorage.setItem("token", data.token);
         localStorage.setItem("publisher", JSON.stringify(data.publisher));
         localStorage.setItem("user", JSON.stringify(data.user));
+        
+        // Redirect to dashboard immediately
         setLocation("/dashboard");
         return;
       }
       
-      // Only throw error if we don't have a token
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to start demo");
-      }
+      throw new Error(data.error || "Failed to start demo");
     } catch (error) {
       console.error("Demo login error:", error);
-      setErrors({ general: "Demo temporarily unavailable. Please try again in a moment." });
+      setErrors({ general: "Demo temporarily unavailable. Please try again." });
     } finally {
       setIsDemoLoading(false);
     }
