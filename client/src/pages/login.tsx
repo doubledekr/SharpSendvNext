@@ -130,6 +130,11 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
+          <img 
+            src="/sharpsend-logo.png" 
+            alt="SharpSend" 
+            className="w-16 h-16 mx-auto mb-4 object-contain"
+          />
           <h1 className="text-4xl font-bold text-white mb-2">Welcome Back</h1>
           <p className="text-slate-300">Sign in to your SharpSend account</p>
         </div>

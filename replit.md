@@ -9,6 +9,7 @@ SharpSend vNext is a multi-tenant AI-powered newsletter personalization platform
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Logo: SharpSend logo (blue gradient S shape) used throughout the application and as favicon.
 
 ## System Architecture
 
