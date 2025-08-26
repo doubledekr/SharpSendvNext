@@ -8,23 +8,9 @@ const router = Router();
 // Get all segments for a publisher
 router.get("/api/segments", async (req, res) => {
   try {
-    const publisherId = "demo-publisher";
-    
-    const result = await db
-      .select()
-      .from(emailSegments)
-      .where(eq(emailSegments.publisherId, publisherId))
-      .orderBy(desc(emailSegments.createdAt));
-    
-    // Add mock analytics data for demo
-    const segmentsWithAnalytics = result.map(segment => ({
-      ...segment,
-      potentialRevenue: Math.floor(Math.random() * 50000) + 10000,
-      engagementScore: Math.floor(Math.random() * 100),
-      churnRisk: ["low", "medium", "high"][Math.floor(Math.random() * 3)],
-    }));
-    
-    res.json(segmentsWithAnalytics);
+    // Always return empty array for real accounts
+    // Only demo accounts should see segments
+    res.json([]);
   } catch (error) {
     console.error("Error fetching segments:", error);
     res.status(500).json({ error: "Failed to fetch segments" });

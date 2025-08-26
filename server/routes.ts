@@ -961,7 +961,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.use(approvalsRoutes);
-  app.use(segmentsRoutes);
+  // Removed duplicate segmentsRoutes - it's already mounted below
   app.use(emailGenerationRoutes);
   app.use(imageTemplateRoutes);
   app.use(assetRoutes);

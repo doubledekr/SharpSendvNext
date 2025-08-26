@@ -11,6 +11,9 @@ SharpSend vNext is a multi-tenant AI-powered newsletter personalization platform
 - Fixed AI-detected segments to only show for demo accounts (demo-user-id)
 - Removed local mock data from auto-segmentation component - now uses only API data
 - Updated news article URLs to use valid example links (Reuters, Bloomberg, CNBC market pages)
+- Fixed `/api/segments` endpoint in routes-segments.ts to return empty array for all accounts
+- Removed duplicate segmentsRoutes mounting in server/routes.ts to prevent routing conflicts
+- All segment-related endpoints now properly return empty data for non-demo accounts
 
 ## User Preferences
 
