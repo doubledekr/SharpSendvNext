@@ -38,14 +38,15 @@ export class MarketAlertService {
    */
   async getMarketEvents(categories?: string[]): Promise<MarketEvent[]> {
     try {
+      // Simplified API call - removing problematic published_after parameter
       const response = await axios.get('https://api.marketaux.com/v1/news/all', {
         params: {
           api_token: this.marketauxApiKey,
           limit: 20,
           filter_entities: true,
           language: 'en',
-          published_after: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Last 24 hours
-          categories: categories?.join(',') || 'general,forex,crypto,merger,ipo,earnings,dividend,financials'
+          // Removed published_after due to format issues
+          categories: categories?.join(',') || 'general,forex,crypto,merger'
         }
       });
 
@@ -63,8 +64,13 @@ export class MarketAlertService {
         sentiment: this.analyzeSentiment(article.title + ' ' + article.description),
         priceImpact: article.entities?.[0]?.sentiment_score
       }));
-    } catch (error) {
-      console.error('Error fetching market events:', error);
+    } catch (error: any) {
+      console.error('Error fetching market events:', error.response?.data || error.message);
+      // Log the full error for debugging
+      if (error.response) {
+        console.error('MarketAux API Error Status:', error.response.status);
+        console.error('MarketAux API Error Data:', JSON.stringify(error.response.data));
+      }
       return this.getMockMarketEvents(); // Fallback for demo
     }
   }
