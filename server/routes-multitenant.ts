@@ -615,6 +615,22 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     }
   );
 
+  // Pixels endpoint - returns empty array for real accounts
+  app.get("/api/pixels",
+    authenticateAndSetTenant,
+    requireTenant,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        // For now, return empty array for real accounts
+        // This will be populated when pixel tracking is actually implemented
+        res.json([]);
+      } catch (error) {
+        console.error("Pixels fetch error:", error);
+        res.status(500).json({ error: "Failed to fetch pixels" });
+      }
+    }
+  );
+
   // Publisher settings endpoints
   app.get("/api/publisher/settings",
     authenticateAndSetTenant,

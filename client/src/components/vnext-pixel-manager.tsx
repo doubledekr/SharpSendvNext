@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface PixelData {
   id: string;
@@ -37,8 +38,27 @@ export default function VNextPixelManager() {
   const [pixelName, setPixelName] = useState("");
   const [selectedCampaign, setSelectedCampaign] = useState("");
   
-  // Mock pixel data
-  const pixels: PixelData[] = [
+  // Check if this is a demo account
+  const isDemoAccount = () => {
+    const user = localStorage.getItem('user');
+    if (!user) return false;
+    try {
+      const userData = JSON.parse(user);
+      return userData.id === 'demo-user' || userData.id === 'demo-user-id';
+    } catch {
+      return false;
+    }
+  };
+  
+  // Fetch real pixel data from API for non-demo accounts
+  const { data: pixelsData, isLoading } = useQuery<PixelData[]>({
+    queryKey: ["/api/pixels"],
+    retry: false,
+    enabled: !isDemoAccount(), // Only fetch for real accounts
+  });
+  
+  // Mock data only for demo accounts
+  const demoPixels: PixelData[] = isDemoAccount() ? [
     {
       id: "px_001",
       name: "Premium Alert 7/18",
@@ -63,7 +83,10 @@ export default function VNextPixelManager() {
       locationBreakdown: { "US": 80, "CA": 12, "UK": 8 },
       createdAt: new Date("2024-07-15")
     }
-  ];
+  ] : [];
+  
+  // Use demo data for demo accounts, real data for real accounts
+  const pixels: PixelData[] = isDemoAccount() ? demoPixels : (pixelsData || []);
 
   const copyPixelCode = (pixelId: string) => {
     const code = `<img src="https://sharpsend.io/px/${pixelId}" width="1" height="1" />`;

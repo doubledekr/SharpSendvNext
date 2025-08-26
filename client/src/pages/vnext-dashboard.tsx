@@ -18,6 +18,18 @@ import VNextMarketSentiment from "@/components/vnext-market-sentiment";
 export default function VNextDashboard() {
   const [activeTab, setActiveTab] = useState("performance");
   
+  // Check if this is a demo account
+  const isDemoAccount = () => {
+    const user = localStorage.getItem('user');
+    if (!user) return false;
+    try {
+      const userData = JSON.parse(user);
+      return userData.id === 'demo-user' || userData.id === 'demo-user-id';
+    } catch {
+      return false;
+    }
+  };
+  
   // Fetch real analytics data
   const { data: analytics, isLoading: analyticsLoading } = useQuery<any>({
     queryKey: ["/api/analytics"],
@@ -172,69 +184,104 @@ export default function VNextDashboard() {
 
         <TabsContent value="performance" className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Email Performance Trends</CardTitle>
-                <CardDescription>Last 30 days pixel data</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Average Open Rate</span>
-                    <span className="font-semibold">68.5%</span>
-                  </div>
-                  <Progress value={68.5} className="h-2" />
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Click-Through Rate</span>
-                    <span className="font-semibold">24.3%</span>
-                  </div>
-                  <Progress value={24.3} className="h-2" />
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Conversion Rate</span>
-                    <span className="font-semibold">3.8%</span>
-                  </div>
-                  <Progress value={3.8 * 10} className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Performing Campaigns</CardTitle>
-                <CardDescription>By engagement metrics</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Market Alert 7/18</span>
-                    <Badge variant="default">78% Open</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    12,450 opens • 3,200 clicks
-                  </p>
-                </div>
-                <div className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Weekly Digest</span>
-                    <Badge variant="secondary">52% Open</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    8,900 opens • 1,800 clicks
-                  </p>
-                </div>
-                <div className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Premium Offer</span>
-                    <Badge variant="outline">45% Open</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    5,200 opens • 890 clicks
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Only show mock data for demo accounts */}
+            {isDemoAccount() ? (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Email Performance Trends</CardTitle>
+                    <CardDescription>Last 30 days pixel data</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Average Open Rate</span>
+                        <span className="font-semibold">68.5%</span>
+                      </div>
+                      <Progress value={68.5} className="h-2" />
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Click-Through Rate</span>
+                        <span className="font-semibold">24.3%</span>
+                      </div>
+                      <Progress value={24.3} className="h-2" />
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Conversion Rate</span>
+                        <span className="font-semibold">3.8%</span>
+                      </div>
+                      <Progress value={3.8 * 10} className="h-2" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Performing Campaigns</CardTitle>
+                    <CardDescription>By engagement metrics</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Market Alert 7/18</span>
+                        <Badge variant="default">78% Open</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        12,450 opens • 3,200 clicks
+                      </p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Weekly Digest</span>
+                        <Badge variant="secondary">52% Open</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        8,900 opens • 1,800 clicks
+                      </p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Premium Offer</span>
+                        <Badge variant="outline">45% Open</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        5,200 opens • 890 clicks
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Email Performance Trends</CardTitle>
+                    <CardDescription>Last 30 days pixel data</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Mail className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No performance data yet</p>
+                      <p className="text-sm mt-1">Start sending campaigns to see metrics</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Performing Campaigns</CardTitle>
+                    <CardDescription>By engagement metrics</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8 text-muted-foreground">
+                      <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No campaigns yet</p>
+                      <p className="text-sm mt-1">Create your first campaign to get started</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
           
           <VNextPixelManager />
