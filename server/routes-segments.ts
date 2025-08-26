@@ -31,6 +31,18 @@ router.get("/api/segments", async (req, res) => {
   }
 });
 
+// Get suggested segments - returns empty for non-demo accounts
+router.get("/api/segments/suggested", async (req, res) => {
+  try {
+    // Always return empty array for suggested segments
+    // Real accounts should not see mock AI-detected segments
+    res.json([]);
+  } catch (error) {
+    console.error("Error fetching suggested segments:", error);
+    res.status(500).json({ error: "Failed to fetch suggested segments" });
+  }
+});
+
 // Detect new segments using AI
 router.post("/api/segments/detect", async (req, res) => {
   try {
