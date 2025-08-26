@@ -108,13 +108,34 @@ export const sends = pgTable("sends", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Tracking pixels for each send
+// Tracking pixels for each send - Enhanced with SharpSend Intelligence
 export const pixels = pgTable("pixels", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   publisherId: varchar("publisher_id").notNull(),
   sendId: varchar("send_id").notNull(), // FK to sends
   pixelCode: text("pixel_code").notNull().unique(), // unique tracking code
   pixelUrl: text("pixel_url").notNull(), // full tracking URL
+  // SharpSend Intelligence - Behavioral context and predictions
+  behavioralContext: jsonb("behavioral_context").$type<{
+    subscriberId: string;
+    publisherId: string;
+    campaignId?: string;
+    segmentContext: string[];
+    expectedBehaviors: Array<{
+      action: string;
+      probability: number;
+      expectedTimeframe: number;
+      confidence: number;
+    }>;
+    abVariant?: string;
+    personalizedContent?: boolean;
+  }>(),
+  predictedBehaviors: jsonb("predicted_behaviors").$type<Array<{
+    action: string;
+    probability: number;
+    expectedTimeframe: number;
+    confidence: number;
+  }>>(),
   // Tracking data
   totalOpens: integer("total_opens").default(0),
   uniqueOpens: integer("unique_opens").default(0),
@@ -1105,6 +1126,150 @@ export const insertImageCdnCacheSchema = createInsertSchema(imageCdnCache).pick(
   errorMessage: true,
 });
 
+// SharpSend Intelligence Tables - Advanced Email Tracking & Behavioral Analysis
+
+// Pixel Events - Individual tracking events from pixel hits
+export const pixelEvents = pgTable("pixel_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pixelId: varchar("pixel_id").notNull(), // FK to pixels.pixelCode
+  publisherId: varchar("publisher_id").notNull(),
+  subscriberId: varchar("subscriber_id").notNull(),
+  eventType: text("event_type").notNull(), // open, click, convert, unsubscribe
+  timestamp: timestamp("timestamp").defaultNow(),
+  deviceType: text("device_type"), // desktop, mobile, tablet, bot
+  location: text("location"), // Approximate location
+  userAgent: text("user_agent"),
+  metadata: jsonb("metadata").$type<{
+    referer?: string;
+    ipAddress?: string;
+    sessionId?: string;
+    variant?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Behavioral Predictions - AI predictions for subscriber behavior
+export const behavioralPredictions = pgTable("behavioral_predictions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  subscriberId: varchar("subscriber_id").notNull(),
+  predictions: jsonb("predictions").$type<Array<{
+    action: string;
+    probability: number;
+    expectedTimeframe: number;
+    confidence: number;
+  }>>().notNull(),
+  accuracy: decimal("accuracy", { precision: 5, scale: 2 }), // Calculated post-facto
+  createdAt: timestamp("created_at").defaultNow(),
+  evaluatedAt: timestamp("evaluated_at"),
+});
+
+// Segment Definitions - Master segment definitions with AI intelligence
+export const segmentDefinitions = pgTable("segment_definitions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  fingerprint: integer("fingerprint").notNull().unique(), // Binary fingerprint
+  taxonomyMapping: jsonb("taxonomy_mapping").$type<Record<string, string>>().notNull(),
+  criteria: jsonb("criteria").$type<any>(),
+  subscriberCount: integer("subscriber_count").default(0),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }).default("0"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Segment Mappings - Maps segments to platform tags
+export const segmentMappings = pgTable("segment_mappings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  fingerprint: integer("fingerprint").notNull(),
+  rawSegment: text("raw_segment").notNull(),
+  taxonomyMapping: jsonb("taxonomy_mapping").$type<Record<string, string>>().notNull(),
+  platformTags: jsonb("platform_tags").$type<Record<string, string[]>>().notNull(),
+  confidence: varchar("confidence").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Subscriber Segments - Many-to-many relationship
+export const subscriberSegments = pgTable("subscriber_segments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  subscriberId: varchar("subscriber_id").notNull(),
+  segmentId: varchar("segment_id").notNull(), // FK to segmentDefinitions
+  confidence: decimal("confidence", { precision: 5, scale: 2 }).default("1"),
+  addedAt: timestamp("added_at").defaultNow(),
+  lastVerifiedAt: timestamp("last_verified_at"),
+  source: text("source"), // ai_detected, manual, rule_based, imported
+});
+
+// Intelligence Loop Feedback - Continuous improvement data
+export const intelligenceLoopFeedback = pgTable("intelligence_loop_feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  subscriberId: varchar("subscriber_id"),
+  feedbackType: text("feedback_type").notNull(), // prediction_accuracy, segment_performance, content_effectiveness
+  feedbackData: jsonb("feedback_data").$type<any>().notNull(),
+  modelVersion: text("model_version"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Cross Platform Tag Sync - Track tag synchronization across platforms
+export const crossPlatformTagSync = pgTable("cross_platform_tag_sync", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  subscriberId: varchar("subscriber_id").notNull(),
+  platform: text("platform").notNull(), // mailchimp, convertkit, sendgrid, etc
+  tags: text("tags").array().notNull(),
+  syncStatus: text("sync_status").notNull(), // pending, synced, failed
+  errorMessage: text("error_message"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Add insert schemas for new tables
+export const insertPixelEventSchema = createInsertSchema(pixelEvents).pick({
+  pixelId: true,
+  publisherId: true,
+  subscriberId: true,
+  eventType: true,
+  deviceType: true,
+  location: true,
+  userAgent: true,
+  metadata: true,
+});
+
+export const insertBehavioralPredictionSchema = createInsertSchema(behavioralPredictions).pick({
+  subscriberId: true,
+  predictions: true,
+});
+
+export const insertSegmentDefinitionSchema = createInsertSchema(segmentDefinitions).pick({
+  publisherId: true,
+  name: true,
+  description: true,
+  fingerprint: true,
+  taxonomyMapping: true,
+  criteria: true,
+  confidence: true,
+});
+
+export const insertSegmentMappingSchema = createInsertSchema(segmentMappings).pick({
+  publisherId: true,
+  fingerprint: true,
+  rawSegment: true,
+  taxonomyMapping: true,
+  platformTags: true,
+  confidence: true,
+});
+
+export const insertSubscriberSegmentSchema = createInsertSchema(subscriberSegments).pick({
+  subscriberId: true,
+  segmentId: true,
+  confidence: true,
+  source: true,
+});
+
 // Types for the new tables
 export type InsertImageAsset = z.infer<typeof insertImageAssetSchema>;
 export type ImageAsset = typeof imageAssets.$inferSelect;
@@ -1117,3 +1282,19 @@ export type TemplateSection = typeof templateSections.$inferSelect;
 
 export type InsertImageCdnCache = z.infer<typeof insertImageCdnCacheSchema>;
 export type ImageCdnCache = typeof imageCdnCache.$inferSelect;
+
+// SharpSend Intelligence Types
+export type PixelEvent = typeof pixelEvents.$inferSelect;
+export type InsertPixelEvent = z.infer<typeof insertPixelEventSchema>;
+
+export type BehavioralPrediction = typeof behavioralPredictions.$inferSelect;
+export type InsertBehavioralPrediction = z.infer<typeof insertBehavioralPredictionSchema>;
+
+export type SegmentDefinition = typeof segmentDefinitions.$inferSelect;
+export type InsertSegmentDefinition = z.infer<typeof insertSegmentDefinitionSchema>;
+
+export type SegmentMapping = typeof segmentMappings.$inferSelect;
+export type InsertSegmentMapping = z.infer<typeof insertSegmentMappingSchema>;
+
+export type SubscriberSegment = typeof subscriberSegments.$inferSelect;
+export type InsertSubscriberSegment = z.infer<typeof insertSubscriberSegmentSchema>;

@@ -26,6 +26,7 @@ import { registerDemoRoutes } from "./routes-demo";
 import { registerCampaignRoutes } from "./routes-campaigns";
 import platformSendRoutes from "./routes-platform-send";
 import cohortsRoutes from "./routes-cohorts";
+import { sharpSendIntelligenceRoutes } from "./routes-sharpsend-intelligence";
 import { initializeDemoEnvironment, cleanupDemoData, getDemoConfig } from "./demo-environment";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
@@ -1094,6 +1095,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(assignmentRoutes);
   app.use(approvalsRoutes);
   app.use(segmentsRoutes);
+  
+  // Register SharpSend Intelligence routes
+  app.use('/api/sharpsend', sharpSendIntelligenceRoutes);
 
   // Error handling middleware
   app.use((err: any, req: any, res: any, next: any) => {

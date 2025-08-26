@@ -4,6 +4,8 @@
 
 SharpSend vNext is a multi-tenant AI-powered newsletter personalization platform designed for financial publishers. It enables publisher-specific subdomains, automated pixel management, and comprehensive workflow management including content planning, approval workflows, and AI-driven dynamic segment detection. The platform provides a unified dashboard for subscriber management, AI-powered content generation, A/B testing, performance analysis, and revenue impact calculation. It integrates with various email marketing services and offers advanced analytics to optimize content and maximize engagement. The business vision is a B2B SaaS model with high-margin credit and overage charges, aiming for scalable growth through AI-driven personalization, email fatigue management, real-time market event integration, and a hierarchical tracking pixel system.
 
+**SharpSend Intelligence Integration (August 2025)**: Successfully integrated advanced email intelligence capabilities including Smart Pixel Engine with context-aware tracking and embedded behavioral predictions, AI-powered segmentation engine using hierarchical taxonomy mapping (infinite AI segments to finite platform tags), Real-time behavioral intelligence loop for continuous model improvement, Cross-platform orchestration with automatic tag synchronization across email platforms. Patent-pending technology combines pixel tracking with predictive analytics for superior email personalization.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -17,6 +19,12 @@ The frontend is a React 18 SPA using TypeScript, Wouter for routing, Vite for bu
 ### Backend Architecture
 
 The backend is a Node.js Express.js REST API, written in TypeScript. It uses Drizzle ORM with PostgreSQL for type-safe database operations and includes custom middleware for logging and error handling.
+
+**SharpSend Intelligence Services**:
+- **Smart Pixel Engine** (`server/services/sharpsend-pixel-engine.ts`): Context-aware tracking pixels with embedded behavioral predictions
+- **Segmentation Engine** (`server/services/sharpsend-segmentation-engine.ts`): AI-powered hierarchical segment mapping (infinite segments to finite platform tags)
+- **Intelligence Loop** (`server/services/sharpsend-intelligence-loop.ts`): Real-time feedback system for continuous model improvement
+- **Intelligence API Routes** (`server/routes-sharpsend-intelligence.ts`): RESTful endpoints for pixel generation, segment management, and behavioral predictions
 
 ### Data Storage Solutions
 
@@ -32,6 +40,15 @@ The platform combines multiple data sources for analytics:
 ### Key Data Models
 
 Core entities include Users, Subscribers, Campaigns, A/B Tests, Email Integrations, and Analytics.
+
+**SharpSend Intelligence Models**:
+- **Pixel Events**: Individual tracking events from smart pixel hits with behavioral context
+- **Behavioral Predictions**: AI-generated predictions for subscriber behavior (open, click, convert probabilities)
+- **Segment Definitions**: Master segment definitions with AI intelligence and fingerprint mapping
+- **Segment Mappings**: Maps infinite AI segments to finite platform tags using hierarchical taxonomy
+- **Subscriber Segments**: Many-to-many relationships between subscribers and segments with confidence scores
+- **Intelligence Loop Feedback**: Continuous improvement data for model refinement
+- **Cross Platform Tag Sync**: Tracks tag synchronization across email platforms (Mailchimp, ConvertKit, SendGrid, etc.)
 
 ### Authentication and Authorization
 
