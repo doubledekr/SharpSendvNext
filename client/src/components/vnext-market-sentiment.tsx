@@ -6,9 +6,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   TrendingUp, TrendingDown, AlertTriangle, Newspaper, 
   DollarSign, Activity, Zap, Send, ArrowUp, ArrowDown,
-  Clock, Bell, ChevronRight
+  Clock, Bell, ChevronRight, Plus, FileText
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewsItem {
   id: string;
@@ -24,6 +32,9 @@ export default function VNextMarketSentiment() {
   const [vixLevel, setVixLevel] = useState(18.5);
   const [marketSentiment, setMarketSentiment] = useState(7.2);
   const [fearGreedIndex, setFearGreedIndex] = useState(65);
+  const [showCreateAssignment, setShowCreateAssignment] = useState(false);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
+  const { toast } = useToast();
   
   const newsItems: NewsItem[] = [
     {
@@ -67,6 +78,41 @@ export default function VNextMarketSentiment() {
     if (value >= 45) return "Neutral";
     if (value >= 25) return "Fear";
     return "Extreme Fear";
+  };
+
+  // Create assignment from opportunity
+  const createAssignmentMutation = useMutation({
+    mutationFn: async (data: any) => apiRequest('/api/assignments', 'POST', data),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Assignment created successfully" });
+      setShowCreateAssignment(false);
+      setSelectedOpportunity(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/assignments'] });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create assignment", variant: "destructive" });
+    }
+  });
+
+  const handleCreateAssignment = (opportunity: any) => {
+    setSelectedOpportunity(opportunity);
+    setShowCreateAssignment(true);
+  };
+
+  const handleSubmitAssignment = (formData: any) => {
+    const assignmentData = {
+      title: formData.title,
+      description: formData.description,
+      type: formData.type,
+      urgency: formData.urgency,
+      targetSegment: formData.targetSegment || "All Subscribers",
+      status: "draft",
+      context: {
+        source: "market_opportunity",
+        marketData: selectedOpportunity
+      }
+    };
+    createAssignmentMutation.mutate(assignmentData);
   };
 
   return (
@@ -143,9 +189,19 @@ export default function VNextMarketSentiment() {
               VIX is up 15% today - Historical data shows your "volatility play" emails 
               get 45% higher open rates during market uncertainty.
             </p>
-            <Button size="sm" className="mt-2">
+            <Button 
+              size="sm" 
+              className="mt-2"
+              onClick={() => handleCreateAssignment({
+                type: "market_alert",
+                title: "Volatility Play Email",
+                description: "VIX spike detected - create targeted campaign for volatility-sensitive subscribers",
+                suggestedSegments: ["Active Traders", "Options Traders"],
+                marketContext: { vix: vixLevel, sentiment: marketSentiment }
+              })}
+            >
               <Send className="h-3 w-3 mr-1" />
-              Create Volatility Campaign
+              Create Assignment
             </Button>
           </div>
         </AlertDescription>
@@ -204,9 +260,24 @@ export default function VNextMarketSentiment() {
                       <p className="text-sm font-medium">SharpSend Suggestion:</p>
                       <p className="text-sm text-muted-foreground">{item.suggestedAction}</p>
                     </div>
-                    <Button size="sm">
+                    <Button 
+                      size="sm"
+                      onClick={() => handleCreateAssignment({
+                        type: "news_based",
+                        title: item.headline.substring(0, 50) + "...",
+                        description: item.suggestedAction || "Create targeted email based on this news event",
+                        urgency: item.impact === "high" ? "priority" : "standard",
+                        suggestedSegments: item.sentiment === "bullish" ? ["Growth Investors", "Tech Sector"] : ["Risk-Averse", "Value Investors"],
+                        marketContext: { 
+                          news: item.headline,
+                          source: item.source,
+                          sentiment: item.sentiment,
+                          impact: item.impact
+                        }
+                      })}
+                    >
                       <Zap className="h-3 w-3 mr-1" />
-                      Create
+                      Create Assignment
                     </Button>
                   </div>
                 </div>
@@ -223,29 +294,193 @@ export default function VNextMarketSentiment() {
           <CardDescription>Based on current market conditions</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button variant="outline" className="w-full justify-between">
+          <Button 
+            variant="outline" 
+            className="w-full justify-between"
+            onClick={() => handleCreateAssignment({
+              type: "market_alert",
+              title: "VIX Spike Alert Campaign",
+              description: "Create urgent market volatility alert for subscribers tracking VIX movements",
+              urgency: "priority",
+              suggestedSegments: ["Options Traders", "Risk-Aware Investors"],
+              marketContext: { vix: vixLevel, alertType: "volatility_spike" }
+            })}
+          >
             <span className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
               VIX Spike Alert Campaign
             </span>
-            <ChevronRight className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
           </Button>
-          <Button variant="outline" className="w-full justify-between">
+          <Button 
+            variant="outline" 
+            className="w-full justify-between"
+            onClick={() => handleCreateAssignment({
+              type: "email_series",
+              title: "Bullish Momentum Email Series",
+              description: "Multi-part series capitalizing on current bullish market sentiment",
+              urgency: "standard",
+              suggestedSegments: ["Growth Investors", "Momentum Traders"],
+              marketContext: { sentiment: marketSentiment, fearGreed: fearGreedIndex }
+            })}
+          >
             <span className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-600" />
               Bullish Momentum Email Series
             </span>
-            <ChevronRight className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
           </Button>
-          <Button variant="outline" className="w-full justify-between">
+          <Button 
+            variant="outline" 
+            className="w-full justify-between"
+            onClick={() => handleCreateAssignment({
+              type: "countdown_sequence",
+              title: "Fed Meeting Countdown Sequence",
+              description: "Time-sensitive email sequence leading up to Fed rate decision",
+              urgency: "priority",
+              suggestedSegments: ["All Subscribers", "Macro Investors"],
+              marketContext: { eventType: "fed_meeting", daysUntil: 5 }
+            })}
+          >
             <span className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-blue-600" />
               Fed Meeting Countdown Sequence
             </span>
-            <ChevronRight className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
           </Button>
         </CardContent>
       </Card>
+
+      {/* Create Assignment Dialog */}
+      <Dialog open={showCreateAssignment} onOpenChange={setShowCreateAssignment}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Create Assignment from Opportunity
+            </DialogTitle>
+            <DialogDescription>
+              Convert this market opportunity into an actionable content assignment
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="title">Assignment Title</Label>
+                <Input
+                  id="title"
+                  defaultValue={selectedOpportunity?.title}
+                  placeholder="e.g., Market Volatility Alert"
+                />
+              </div>
+              <div>
+                <Label htmlFor="type">Assignment Type</Label>
+                <Select defaultValue={selectedOpportunity?.type || "email_content"}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="email_content">Email Content</SelectItem>
+                    <SelectItem value="subject_line">Subject Line</SelectItem>
+                    <SelectItem value="email_series">Email Series</SelectItem>
+                    <SelectItem value="market_alert">Market Alert</SelectItem>
+                    <SelectItem value="countdown_sequence">Countdown Sequence</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                rows={3}
+                defaultValue={selectedOpportunity?.description}
+                placeholder="Describe the assignment requirements..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="urgency">Urgency</Label>
+                <Select defaultValue={selectedOpportunity?.urgency || "standard"}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard (72h)</SelectItem>
+                    <SelectItem value="priority">Priority (24h)</SelectItem>
+                    <SelectItem value="rush">Rush (6h)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="segment">Target Segment</Label>
+                <Select defaultValue="All Subscribers">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All Subscribers">All Subscribers</SelectItem>
+                    <SelectItem value="Active Traders">Active Traders</SelectItem>
+                    <SelectItem value="Options Traders">Options Traders</SelectItem>
+                    <SelectItem value="Growth Investors">Growth Investors</SelectItem>
+                    <SelectItem value="Value Investors">Value Investors</SelectItem>
+                    <SelectItem value="Risk-Aware">Risk-Aware Investors</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {selectedOpportunity?.marketContext && (
+              <div className="p-4 bg-muted rounded-lg">
+                <Label>Market Context</Label>
+                <div className="mt-2 space-y-1 text-sm">
+                  {selectedOpportunity.marketContext.vix && (
+                    <div>VIX Level: {selectedOpportunity.marketContext.vix}</div>
+                  )}
+                  {selectedOpportunity.marketContext.sentiment && (
+                    <div>Market Sentiment: {selectedOpportunity.marketContext.sentiment}/10</div>
+                  )}
+                  {selectedOpportunity.marketContext.news && (
+                    <div>Related News: {selectedOpportunity.marketContext.news}</div>
+                  )}
+                  {selectedOpportunity.marketContext.source && (
+                    <div>Source: {selectedOpportunity.marketContext.source}</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCreateAssignment(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  const title = (document.getElementById('title') as HTMLInputElement)?.value;
+                  const description = (document.getElementById('description') as HTMLTextAreaElement)?.value;
+                  const type = selectedOpportunity?.type || 'email_content';
+                  const urgency = selectedOpportunity?.urgency || 'standard';
+                  const targetSegment = 'All Subscribers';
+                  
+                  handleSubmitAssignment({
+                    title,
+                    description,
+                    type,
+                    urgency,
+                    targetSegment
+                  });
+                }}
+                disabled={createAssignmentMutation.isPending}
+              >
+                {createAssignmentMutation.isPending ? 'Creating...' : 'Create Assignment'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
