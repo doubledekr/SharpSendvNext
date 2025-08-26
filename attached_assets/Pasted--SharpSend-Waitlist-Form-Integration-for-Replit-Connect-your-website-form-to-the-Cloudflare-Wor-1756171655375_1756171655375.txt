@@ -1,0 +1,180 @@
+// SharpSend Waitlist Form Integration for Replit
+// Connect your website form to the Cloudflare Worker
+
+// Your Cloudflare Worker URL
+const WORKER_URL = 'https://sharpsend-waitlist.davemaxwellmaxwell.workers.dev/';
+
+// Main form submission handler
+async function subscribeToWaitlist(formData) {
+  try {
+    // Show loading state
+    const submitButton = document.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.textContent = 'Joining Waitlist...';
+    submitButton.disabled = true;
+
+    // Call your Cloudflare Worker
+    const response = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData)
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      // Success! Show confirmation
+      showSuccessMessage(result);
+      document.querySelector('form').reset();
+      
+      // Track conversion (if you have Google Analytics)
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'conversion', {
+          'send_to': 'AW-CONVERSION_ID/CONVERSION_LABEL',
+          'value': 1.0,
+          'currency': 'USD'
+        });
+      }
+      
+    } else {
+      throw new Error(result.error || 'Subscription failed');
+    }
+  } catch (error) {
+    console.error('Subscription error:', error);
+    showErrorMessage(error.message);
+  } finally {
+    // Reset button state
+    const submitButton = document.querySelector('button[type="submit"]');
+    submitButton.textContent = originalText;
+    submitButton.disabled = false;
+  }
+}
+
+// Show success message
+function showSuccessMessage(result) {
+  // Create success message element
+  const successDiv = document.createElement('div');
+  successDiv.className = 'success-message';
+  successDiv.innerHTML = `
+    <div style="
+      background: #10B981;
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+      text-align: center;
+      font-weight: 500;
+    ">
+      🎉 Successfully joined the waitlist!<br>
+      <small>Lead Score: ${result.leadScore}/100 | Tags Applied: ${result.tags}</small>
+    </div>
+  `;
+  
+  // Insert after form
+  const form = document.querySelector('form');
+  form.parentNode.insertBefore(successDiv, form.nextSibling);
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    successDiv.remove();
+  }, 5000);
+}
+
+// Show error message
+function showErrorMessage(errorMessage) {
+  // Create error message element
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'error-message';
+  errorDiv.innerHTML = `
+    <div style="
+      background: #EF4444;
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+      text-align: center;
+      font-weight: 500;
+    ">
+      ❌ Error: ${errorMessage}<br>
+      <small>Please try again or contact support</small>
+    </div>
+  `;
+  
+  // Insert after form
+  const form = document.querySelector('form');
+  form.parentNode.insertBefore(errorDiv, form.nextSibling);
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    errorDiv.remove();
+  }, 5000);
+}
+
+// Form validation
+function validateForm(formData) {
+  const errors = [];
+  
+  if (!formData.email) errors.push('Email is required');
+  if (!formData.company) errors.push('Company is required');
+  if (!formData.subscriberCount) errors.push('Subscriber count is required');
+  if (!formData.emailPlatform) errors.push('Email platform is required');
+  
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (formData.email && !emailRegex.test(formData.email)) {
+    errors.push('Please enter a valid email address');
+  }
+  
+  return errors;
+}
+
+// Initialize form handler when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form');
+  
+  if (form) {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // Remove any existing messages
+      document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
+      
+      // Get form data
+      const formData = new FormData(e.target);
+      const data = {
+        email: formData.get('email'),
+        company: formData.get('company'),
+        subscriberCount: formData.get('subscriberCount'),
+        emailPlatform: formData.get('emailPlatform')
+      };
+      
+      // Validate form
+      const validationErrors = validateForm(data);
+      if (validationErrors.length > 0) {
+        showErrorMessage(validationErrors.join(', '));
+        return;
+      }
+      
+      // Submit to waitlist
+      await subscribeToWaitlist(data);
+    });
+  }
+});
+
+// Optional: Test function for debugging
+function testWorkerConnection() {
+  const testData = {
+    email: 'test@example.com',
+    company: 'Test Company',
+    subscriberCount: '5,000 - 25,000',
+    emailPlatform: 'Mailchimp'
+  };
+  
+  subscribeToWaitlist(testData);
+}
+
+// Make test function available globally for debugging
+window.testWorkerConnection = testWorkerConnection;
+
