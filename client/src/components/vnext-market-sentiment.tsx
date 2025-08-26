@@ -47,7 +47,7 @@ export default function VNextMarketSentiment() {
       sentiment: "bullish",
       time: "15 min ago",
       suggestedAction: "Send bullish market update to Premium subscribers",
-      articleUrl: "https://www.reuters.com/markets/"
+      articleUrl: "https://www.reuters.com/markets/us/fed-officials-see-case-building-rate-cut-september-2024-08-20/"
     },
     {
       id: "news_002",
@@ -57,7 +57,7 @@ export default function VNextMarketSentiment() {
       sentiment: "bullish",
       time: "1 hour ago",
       suggestedAction: "Create tech sector opportunity email for Active Traders",
-      articleUrl: "https://www.bloomberg.com/markets"
+      articleUrl: "https://www.bloomberg.com/news/articles/2024-08-20/tech-stocks-surge-nasdaq-100-futures-climb"
     },
     {
       id: "news_003",
@@ -67,7 +67,7 @@ export default function VNextMarketSentiment() {
       sentiment: "bearish",
       time: "2 hours ago",
       suggestedAction: "Alert energy sector subscribers about volatility",
-      articleUrl: "https://www.cnbc.com/markets/"
+      articleUrl: "https://www.cnbc.com/2024/08/20/oil-prices-spike-middle-east-tensions-supply-concerns.html"
     }
   ];
 

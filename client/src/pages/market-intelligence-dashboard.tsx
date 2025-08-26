@@ -12,7 +12,8 @@ import {
   Globe,
   Activity,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  ExternalLink
 } from "lucide-react";
 
 interface MarketNews {
@@ -75,7 +76,7 @@ export default function MarketIntelligenceDashboard() {
               id: '1',
               title: 'Federal Reserve Signals Potential Rate Changes',
               description: 'Market analysts expect significant movement following recent economic indicators.',
-              url: '#',
+              url: 'https://www.federalreserve.gov/newsevents/pressreleases.htm',
               source: 'MarketAux',
               publishedAt: new Date().toISOString(),
               sentiment: 'neutral',
@@ -85,7 +86,7 @@ export default function MarketIntelligenceDashboard() {
               id: '2', 
               title: 'Tech Stocks Show Strong Performance',
               description: 'Major technology companies report better than expected earnings.',
-              url: '#',
+              url: 'https://www.nasdaq.com/market-activity/stocks/screener',
               source: 'MarketAux',
               publishedAt: new Date().toISOString(),
               sentiment: 'positive',
@@ -261,7 +262,20 @@ export default function MarketIntelligenceDashboard() {
                 <div className="space-y-4">
                   {data.news.map((article) => (
                     <div key={article.id} className="p-3 bg-dark-bg rounded-lg">
-                      <h4 className="text-white font-medium mb-2">{article.title}</h4>
+                      <h4 className="text-white font-medium mb-2">
+                        {article.url && article.url !== '#' ? (
+                          <a 
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-blue-400 hover:underline transition-colors"
+                          >
+                            {article.title}
+                          </a>
+                        ) : (
+                          article.title
+                        )}
+                      </h4>
                       <p className="text-slate-400 text-sm mb-3">{article.description}</p>
                       <div className="flex items-center justify-between">
                         <Badge 
@@ -273,7 +287,20 @@ export default function MarketIntelligenceDashboard() {
                         >
                           {article.sentiment}
                         </Badge>
-                        <span className="text-xs text-slate-500">{article.source}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500">{article.source}</span>
+                          {article.url && article.url !== '#' && (
+                            <a 
+                              href={article.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-slate-400 hover:text-blue-400 transition-colors"
+                              title="Open article"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
