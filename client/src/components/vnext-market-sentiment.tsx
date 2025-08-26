@@ -47,7 +47,7 @@ export default function VNextMarketSentiment() {
       sentiment: "bullish",
       time: "15 min ago",
       suggestedAction: "Send bullish market update to Premium subscribers",
-      articleUrl: "https://www.reuters.com/markets/us/fed-officials-signal-september-rate-cut"
+      articleUrl: "https://www.reuters.com/markets/"
     },
     {
       id: "news_002",
@@ -57,7 +57,7 @@ export default function VNextMarketSentiment() {
       sentiment: "bullish",
       time: "1 hour ago",
       suggestedAction: "Create tech sector opportunity email for Active Traders",
-      articleUrl: "https://www.bloomberg.com/news/tech-stocks-earnings-rally"
+      articleUrl: "https://www.bloomberg.com/markets"
     },
     {
       id: "news_003",
@@ -67,7 +67,7 @@ export default function VNextMarketSentiment() {
       sentiment: "bearish",
       time: "2 hours ago",
       suggestedAction: "Alert energy sector subscribers about volatility",
-      articleUrl: "https://www.cnbc.com/oil-prices-middle-east-tensions"
+      articleUrl: "https://www.cnbc.com/markets/"
     }
   ];
 

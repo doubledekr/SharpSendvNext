@@ -455,8 +455,8 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     authenticateAndSetTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
-        // Check if demo user
-        if (req.user?.id === 'demo-user' || req.user?.id === 'demo-user-id') {
+        // Check if demo user - ONLY return data for demo accounts
+        if (req.user?.id === 'demo-user-id') {
           // Return demo segments for demo accounts
           return res.json([
             {
@@ -472,11 +472,51 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
                 "Opens 80%+ of emails"
               ],
               potentialRevenue: 45000
+            },
+            {
+              id: "seg_002",
+              name: "Premium Offer Browsers",
+              type: "value",
+              size: 1850,
+              confidence: 88,
+              description: "Clicked premium offers 3x+ but never converted",
+              criteria: [
+                "Clicked premium CTAs 3+ times",
+                "No premium purchases",
+                "Account age > 6 months"
+              ],
+              potentialRevenue: 125000
+            },
+            {
+              id: "seg_003",
+              name: "Bullish Headline Lovers",
+              type: "sentiment",
+              size: 5400,
+              confidence: 85,
+              description: "Always opens bullish market sentiment headlines",
+              criteria: [
+                "Opens 90%+ bullish subject lines",
+                "Opens <30% bearish headlines",
+                "Active during market rallies"
+              ]
+            },
+            {
+              id: "seg_004",
+              name: "Morning Power Users",
+              type: "engagement",
+              size: 2100,
+              confidence: 94,
+              description: "Highly engaged pre-market readers",
+              criteria: [
+                "Opens emails 6-9 AM EST",
+                "Engagement rate > 75%",
+                "Clicks within 5 min of open"
+              ]
             }
           ]);
         }
         
-        // For real accounts, return empty array (no suggested segments yet)
+        // For ALL real accounts (including test.sharpsend), return empty array
         res.json([]);
       } catch (error) {
         console.error("Segments fetch error:", error);
