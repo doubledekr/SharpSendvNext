@@ -819,8 +819,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Demo login endpoint for backward compatibility (must be before multi-tenant routes) 
-  app.post("/api/auth/login", async (req, res) => {
+  // Demo login endpoint - only handle demo users, pass others to multi-tenant
+  app.post("/api/demo/login", async (req, res) => {
     try {
       const { email, password, subdomain } = req.body;
       
