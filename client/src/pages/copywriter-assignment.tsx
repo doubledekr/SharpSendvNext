@@ -337,30 +337,32 @@ export function CopywriterAssignment() {
             </div>
             
             <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleSaveDraft}
+                disabled={saveDraftMutation.isPending}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saveDraftMutation.isPending ? "Saving..." : isSubmitted ? "Save Revision" : "Save Draft"}
+              </Button>
               {!isSubmitted && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleSaveDraft}
-                    disabled={saveDraftMutation.isPending}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {saveDraftMutation.isPending ? "Saving..." : "Save Draft"}
-                  </Button>
-                  <Button 
-                    onClick={handleSubmit}
-                    disabled={submitMutation.isPending}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {submitMutation.isPending ? "Submitting..." : "Submit"}
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={submitMutation.isPending}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {submitMutation.isPending ? "Submitting..." : "Submit"}
+                </Button>
               )}
               {isSubmitted && (
-                <Badge variant="default" className="px-4 py-2">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Submitted for Review
-                </Badge>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={submitMutation.isPending}
+                  variant="default"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {submitMutation.isPending ? "Resubmitting..." : "Resubmit"}
+                </Button>
               )}
             </div>
           </div>
@@ -467,7 +469,6 @@ export function CopywriterAssignment() {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowImageBrowser(true)}
-                        disabled={isSubmitted}
                       >
                         <ImageIcon className="h-4 w-4 mr-2" />
                         Browse CDN
@@ -476,40 +477,27 @@ export function CopywriterAssignment() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isSubmitted ? (
-                    <div className="bg-muted/30 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground mb-2">This assignment has been submitted for review.</p>
-                      <div className="text-sm">
-                        <strong>Status:</strong> {assignment?.status === 'review' ? 'Under Review' : 'Submitted'}
+                  {isSubmitted && (
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                          Status: {assignment?.status === 'review' ? 'Under Review' : 'Submitted'}
+                        </span>
                       </div>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                        You can continue editing. Changes will be saved as new revisions.
+                      </p>
                     </div>
-                  ) : (
-                    <DragDropContentEditor
-                      content={submission.contentBlocks}
-                      onChange={(blocks) => setSubmission(prev => ({ ...prev, contentBlocks: blocks }))}
-                      onImageInsert={handleImageInsert}
-                      placeholder="Start writing your assignment content..."
-                    />
                   )}
+                  <DragDropContentEditor
+                    content={submission.contentBlocks}
+                    onChange={(blocks) => setSubmission(prev => ({ ...prev, contentBlocks: blocks }))}
+                    onImageInsert={handleImageInsert}
+                    placeholder="Start writing your assignment content..."
+                  />
                 </CardContent>
               </Card>
-
-              {/* Submitted Content Display */}
-              {isSubmitted && assignment?.content && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      Submitted Content
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="prose prose-sm max-w-none dark:prose-invert">
-                      <div className="whitespace-pre-wrap text-sm">{assignment.content}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Notes Section */}
               <Card>
@@ -522,7 +510,6 @@ export function CopywriterAssignment() {
                     value={submission.notes}
                     onChange={(e) => setSubmission(prev => ({ ...prev, notes: e.target.value }))}
                     rows={3}
-                    disabled={isSubmitted}
                   />
                 </CardContent>
               </Card>
