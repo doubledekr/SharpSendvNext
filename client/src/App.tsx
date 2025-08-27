@@ -13,6 +13,7 @@ import { CampaignsDashboard } from "@/pages/campaigns-dashboard";
 import DemoOnboarding from "@/pages/demo-onboarding";
 import PublicAssignment from "@/pages/public-assignment";
 import AssignmentEditorPage from "@/pages/assignment-editor-page";
+import { CopywriterAssignment } from "@/pages/copywriter-assignment";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
@@ -77,7 +78,7 @@ function Router() {
           <Route path="/demo-onboarding" component={DemoOnboarding} />
           
           {/* Public Assignment View */}
-          <Route path="/assignment/:slug" component={PublicAssignment} />
+          <Route path="/assignment/:slug" component={CopywriterAssignment} />
           
           {/* Authentication routes */}
           <Route path="/register" component={() => <PublicRoute component={Register} />} />
