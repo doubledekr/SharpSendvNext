@@ -211,6 +211,22 @@ export function CopywriterAssignment() {
     },
   });
 
+  // Approve assignment mutation
+  const approveMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("PATCH", `/api/assignments/${assignment?.id}`, {
+        status: "approved"
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Assignment Approved",
+        description: "The assignment has been approved and moved to the next phase.",
+      });
+    },
+  });
+
   const handleSaveDraft = () => {
     saveDraftMutation.mutate(submission);
   };
@@ -225,6 +241,10 @@ export function CopywriterAssignment() {
       return;
     }
     submitMutation.mutate(submission);
+  };
+
+  const handleApprove = () => {
+    approveMutation.mutate();
   };
 
   const handleImageSelect = (image: any) => {
@@ -356,14 +376,25 @@ export function CopywriterAssignment() {
                 </Button>
               )}
               {isSubmitted && (
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={submitMutation.isPending}
-                  variant="default"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {submitMutation.isPending ? "Resubmitting..." : "Resubmit"}
-                </Button>
+                <>
+                  <Button 
+                    onClick={handleSubmit}
+                    disabled={submitMutation.isPending}
+                    variant="outline"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {submitMutation.isPending ? "Resubmitting..." : "Resubmit"}
+                  </Button>
+                  <Button 
+                    onClick={handleApprove}
+                    disabled={approveMutation.isPending}
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {approveMutation.isPending ? "Approving..." : "Approve"}
+                  </Button>
+                </>
               )}
             </div>
           </div>
