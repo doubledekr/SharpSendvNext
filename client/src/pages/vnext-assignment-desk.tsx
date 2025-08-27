@@ -263,6 +263,7 @@ export function VNextAssignmentDesk() {
         assignee: "",
         notes: "",
         tags: [],
+        images: [],
       });
       setValidationErrors({});
       toast({
