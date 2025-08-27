@@ -14,6 +14,7 @@ import DemoOnboarding from "@/pages/demo-onboarding";
 import PublicAssignment from "@/pages/public-assignment";
 import AssignmentEditorPage from "@/pages/assignment-editor-page";
 import { CopywriterAssignment } from "@/pages/copywriter-assignment";
+import AssignmentCopywriterFlow from "@/pages/AssignmentCopywriterFlow";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
@@ -62,7 +63,7 @@ function Router() {
           <Route path="/" component={() => <PublicRoute component={Login} />} />
           <Route path="/dashboard" component={() => <ProtectedRoute component={VNextDashboard} />} />
           <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
-          <Route path="/assignments/:id" component={() => <ProtectedRoute component={CopywriterAssignment} />} />
+          <Route path="/assignments/:id" component={() => <ProtectedRoute component={AssignmentCopywriterFlow} />} />
           <Route path="/assignments/:id/edit" component={() => <ProtectedRoute component={AssignmentEditorPage} />} />
           <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
           <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
@@ -79,7 +80,7 @@ function Router() {
           <Route path="/demo-onboarding" component={DemoOnboarding} />
           
           {/* Public Assignment View */}
-          <Route path="/assignment/:slug" component={CopywriterAssignment} />
+          <Route path="/assignment/:slug" component={AssignmentCopywriterFlow} />
           
           {/* Authentication routes */}
           <Route path="/register" component={() => <PublicRoute component={Register} />} />
