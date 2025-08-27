@@ -324,6 +324,7 @@ export default function OverviewTab() {
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           title: `Market ${marketSentiment.sentiment} Alert - ${new Date().toLocaleDateString()}`,
           description: `AI-detected market opportunity requiring immediate content creation`,
@@ -426,14 +427,6 @@ Your SharpSend Team`,
         });
       }, 2000);
       
-    } catch (error) {
-      console.error('Error creating assignment:', error);
-      toast({
-        title: "Generation Failed",
-        description: "Failed to create email draft. Please try again.",
-        variant: "destructive"
-      });
-      setShowGenerationModal(false);
     }
   };
 
@@ -445,6 +438,7 @@ Your SharpSend Team`,
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           title: `${event.title} - Content Assignment`,
           description: event.description,
@@ -1064,7 +1058,7 @@ This assignment includes comprehensive market context to help the copywriter cre
                           }}
                           className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors cursor-pointer flex items-center gap-1"
                         >
-                          {campaign.campaignName || campaign.campaignId}
+                          {campaign.campaignId}
                           <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
                         <div className="flex items-center gap-2">
