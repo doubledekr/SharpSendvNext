@@ -25,6 +25,8 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { CDNImageBrowser } from "@/components/CDNImageBrowser";
+import { DragDropContentEditor } from "@/components/DragDropContentEditor";
 
 interface Assignment {
   id: string;
@@ -43,19 +45,37 @@ interface Assignment {
     offer?: { label: string; url?: string };
     references?: string[];
   };
+  masterDraft?: {
+    blocks: Array<{
+      type: string;
+      md?: string;
+      assetId?: string;
+      caption?: string;
+      align?: string;
+      size?: string;
+      level?: number;
+    }>;
+  };
   shareableSlug?: string;
   shareableUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
 
+interface ContentBlock {
+  id: string;
+  type: 'paragraph' | 'image' | 'heading' | 'list' | 'quote';
+  content?: string;
+  imageUrl?: string;
+  imageCaption?: string;
+  imageAlign?: 'left' | 'center' | 'right';
+  imageSize?: 'small' | 'medium' | 'large' | 'full';
+  level?: number;
+  listType?: 'bullet' | 'numbered';
+}
+
 interface CopywriterSubmission {
-  content: string;
-  images: Array<{
-    url: string;
-    type: 'hero' | 'inline' | 'attachment';
-    caption?: string;
-  }>;
+  contentBlocks: ContentBlock[];
   notes?: string;
 }
 
@@ -65,13 +85,13 @@ export function CopywriterAssignment() {
   const slug = params?.slug;
   
   const [submission, setSubmission] = useState<CopywriterSubmission>({
-    content: "",
-    images: [],
+    contentBlocks: [],
     notes: ""
   });
   
   const [isDraft, setIsDraft] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showImageBrowser, setShowImageBrowser] = useState(false);
+  const [insertAfterBlockId, setInsertAfterBlockId] = useState<string | undefined>();
 
   // Fetch assignment by slug
   const { data: assignment, isLoading, error } = useQuery<Assignment>({
@@ -88,10 +108,31 @@ export function CopywriterAssignment() {
 
   // Load existing submission if any
   React.useEffect(() => {
-    if (assignment?.content) {
+    if (assignment?.masterDraft?.blocks) {
       setSubmission(prev => ({
         ...prev,
-        content: assignment.content || ""
+        contentBlocks: assignment.masterDraft.blocks.map((block: any) => ({
+          id: Math.random().toString(36).substr(2, 9),
+          type: block.type,
+          content: block.md,
+          imageUrl: block.assetId,
+          imageCaption: block.caption,
+          imageAlign: block.align || 'center',
+          imageSize: block.size || 'medium',
+          level: block.level || 2,
+          listType: 'bullet'
+        }))
+      }));
+    } else if (assignment?.content) {
+      // Convert legacy text content to blocks
+      const paragraphs = assignment.content.split('\n\n').filter(p => p.trim());
+      setSubmission(prev => ({
+        ...prev,
+        contentBlocks: paragraphs.map(p => ({
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'paragraph' as const,
+          content: p.trim()
+        }))
       }));
     }
   }, [assignment]);
@@ -100,12 +141,18 @@ export function CopywriterAssignment() {
   const saveDraftMutation = useMutation({
     mutationFn: async (data: CopywriterSubmission) => {
       const response = await apiRequest("PATCH", `/api/assignments/${assignment?.id}`, {
-        content: data.content,
+        content: data.contentBlocks.map(block => block.content || '').join('\n\n'),
         status: "in_progress",
         masterDraft: {
-          blocks: data.content.split('\n\n').map(paragraph => ({
-            type: "paragraph",
-            md: paragraph
+          blocks: data.contentBlocks.map(block => ({
+            type: block.type,
+            md: block.content,
+            assetId: block.imageUrl,
+            alt: block.imageCaption,
+            caption: block.imageCaption,
+            align: block.imageAlign,
+            size: block.imageSize,
+            level: block.level
           }))
         }
       });
@@ -123,21 +170,19 @@ export function CopywriterAssignment() {
   const submitMutation = useMutation({
     mutationFn: async (data: CopywriterSubmission) => {
       const response = await apiRequest("PATCH", `/api/assignments/${assignment?.id}`, {
-        content: data.content,
+        content: data.contentBlocks.map(block => block.content || '').join('\n\n'),
         status: "review",
         masterDraft: {
-          blocks: [
-            ...data.content.split('\n\n').map(paragraph => ({
-              type: "paragraph",
-              md: paragraph
-            })),
-            ...data.images.map(img => ({
-              type: "image",
-              assetId: img.url,
-              alt: img.caption || "",
-              caption: img.caption
-            }))
-          ]
+          blocks: data.contentBlocks.map(block => ({
+            type: block.type,
+            md: block.content,
+            assetId: block.imageUrl,
+            alt: block.imageCaption,
+            caption: block.imageCaption,
+            align: block.imageAlign,
+            size: block.imageSize,
+            level: block.level
+          }))
         }
       });
       return response.json();
@@ -156,7 +201,7 @@ export function CopywriterAssignment() {
   };
 
   const handleSubmit = () => {
-    if (!submission.content.trim()) {
+    if (submission.contentBlocks.length === 0) {
       toast({
         title: "Content Required",
         description: "Please add content before submitting.",
@@ -167,27 +212,38 @@ export function CopywriterAssignment() {
     submitMutation.mutate(submission);
   };
 
-  const handleImageUpload = (files: File[]) => {
-    // This would typically upload to object storage
-    // For now, we'll simulate with placeholder URLs
-    const newImages = files.map((file, index) => ({
-      url: URL.createObjectURL(file),
-      type: 'inline' as const,
-      caption: `Uploaded image ${submission.images.length + index + 1}`
-    }));
-    
-    setSubmission(prev => ({
-      ...prev,
-      images: [...prev.images, ...newImages]
-    }));
+  const handleImageSelect = (image: any) => {
+    const newBlock: ContentBlock = {
+      id: Math.random().toString(36).substr(2, 9),
+      type: 'image',
+      imageUrl: image.url,
+      imageAlign: 'center',
+      imageSize: 'medium',
+      imageCaption: image.name
+    };
+
+    if (insertAfterBlockId) {
+      const index = submission.contentBlocks.findIndex(block => block.id === insertAfterBlockId);
+      const newBlocks = [...submission.contentBlocks];
+      newBlocks.splice(index + 1, 0, newBlock);
+      setSubmission(prev => ({ ...prev, contentBlocks: newBlocks }));
+    } else {
+      setSubmission(prev => ({ 
+        ...prev, 
+        contentBlocks: [...prev.contentBlocks, newBlock] 
+      }));
+    }
+
+    setShowImageBrowser(false);
+    setInsertAfterBlockId(undefined);
   };
 
-  const removeImage = (index: number) => {
-    setSubmission(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
+  const handleImageInsert = (afterBlockId?: string) => {
+    setInsertAfterBlockId(afterBlockId);
+    setShowImageBrowser(true);
   };
+
+
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -381,139 +437,112 @@ export function CopywriterAssignment() {
 
           {/* Content Editor - Main Area */}
           <div className="col-span-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Content Editor
-                  </div>
-                  {isDraft && assignment.status === "in_progress" && (
-                    <Badge variant="secondary">Draft Saved</Badge>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Content Area */}
-                <div>
-                  <Label htmlFor="content" className="text-sm font-medium">
-                    Content *
-                  </Label>
-                  <Textarea
-                    id="content"
-                    placeholder="Write your content here..."
-                    value={submission.content}
-                    onChange={(e) => setSubmission(prev => ({ ...prev, content: e.target.value }))}
-                    className="min-h-[400px] mt-2"
-                    disabled={isSubmitted}
-                  />
-                </div>
-
-                {/* Image Upload Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <Label className="text-sm font-medium">Images</Label>
-                    {!isSubmitted && (
-                      <ObjectUploader
-                        onUploadComplete={(result: any) => {
-                          if (result.successful && result.successful.length > 0) {
-                            const newImages = result.successful.map((file: any, index: number) => ({
-                              url: file.uploadURL,
-                              type: 'inline' as const,
-                              caption: `Image ${submission.images.length + index + 1}`
-                            }));
-                            setSubmission(prev => ({
-                              ...prev,
-                              images: [...prev.images, ...newImages]
-                            }));
-                            toast({
-                              title: "Images Uploaded",
-                              description: `${result.successful.length} images uploaded successfully.`,
-                            });
-                          }
-                        }}
-                      >
-                        <Button variant="outline" size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Images
-                        </Button>
-                      </ObjectUploader>
-                    )}
-                  </div>
-
-                  {submission.images.length > 0 && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {submission.images.map((image, index) => (
-                        <div key={index} className="relative group border rounded-lg p-2">
-                          <img 
-                            src={image.url} 
-                            alt={image.caption || `Image ${index + 1}`}
-                            className="w-full h-32 object-cover rounded"
-                          />
-                          <div className="mt-2">
-                            <input
-                              type="text"
-                              placeholder="Add caption..."
-                              value={image.caption || ""}
-                              onChange={(e) => {
-                                const newImages = [...submission.images];
-                                newImages[index] = { ...newImages[index], caption: e.target.value };
-                                setSubmission(prev => ({ ...prev, images: newImages }));
-                              }}
-                              className="w-full text-xs border rounded px-2 py-1"
-                              disabled={isSubmitted}
-                            />
-                          </div>
-                          {!isSubmitted && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => removeImage(index)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Content Editor
                     </div>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2">
+                      {isDraft && assignment.status === "in_progress" && (
+                        <Badge variant="secondary">Draft Saved</Badge>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowImageBrowser(true)}
+                        disabled={isSubmitted}
+                      >
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Browse CDN
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DragDropContentEditor
+                    content={submission.contentBlocks}
+                    onChange={(blocks) => setSubmission(prev => ({ ...prev, contentBlocks: blocks }))}
+                    onImageInsert={handleImageInsert}
+                    placeholder="Start writing your assignment content..."
+                    className={isSubmitted ? "pointer-events-none opacity-75" : ""}
+                  />
+                </CardContent>
+              </Card>
 
-                {/* Notes Section */}
-                <div>
-                  <Label htmlFor="notes" className="text-sm font-medium">
-                    Notes for Editor
-                  </Label>
+              {/* Notes Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Notes for Editor</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <Textarea
-                    id="notes"
                     placeholder="Any additional notes or questions for the editor..."
                     value={submission.notes}
                     onChange={(e) => setSubmission(prev => ({ ...prev, notes: e.target.value }))}
-                    className="mt-2"
                     rows={3}
                     disabled={isSubmitted}
                   />
-                </div>
+                </CardContent>
+              </Card>
 
-                {isSubmitted && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <div>
-                        <h4 className="font-medium text-green-800">Submission Complete</h4>
-                        <p className="text-sm text-green-700">
-                          Your assignment has been submitted and is under review. You'll be notified of any feedback or approval.
-                        </p>
+              {isSubmitted && (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <div>
+                          <h4 className="font-medium text-green-800">Submission Complete</h4>
+                          <p className="text-sm text-green-700">
+                            Your assignment has been submitted and is under review. You'll be notified of any feedback or approval.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* CDN Image Browser Modal */}
+      {showImageBrowser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-6xl max-h-[90vh] flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  CDN Image Browser
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowImageBrowser(false);
+                    setInsertAfterBlockId(undefined);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden">
+              <CDNImageBrowser
+                onImageSelect={handleImageSelect}
+                onImageInsert={handleImageSelect}
+                showUpload={true}
+                className="h-full"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

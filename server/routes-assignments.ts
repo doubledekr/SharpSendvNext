@@ -335,4 +335,90 @@ router.post("/api/ai/assignments/suggest", async (req, res) => {
   }
 });
 
+// CDN Assets endpoint for copywriter image browsing
+router.get("/api/cdn/assets", async (req, res) => {
+  try {
+    // For demo purposes, provide some example financial stock images
+    const demoAssets = [
+      {
+        id: "1",
+        name: "financial-charts.jpg",
+        url: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80",
+        thumbnailUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=80",
+        type: "image",
+        size: 245760,
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "2", 
+        name: "stock-market-screen.jpg",
+        url: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&q=80",
+        thumbnailUrl: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&q=80",
+        type: "image",
+        size: 156432,
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 400,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "3",
+        name: "trading-analytics.jpg", 
+        url: "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=800&q=80",
+        thumbnailUrl: "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=400&q=80",
+        type: "image",
+        size: 198765,
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "4",
+        name: "financial-newsletter.jpg",
+        url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80",
+        thumbnailUrl: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80",
+        type: "image",
+        size: 187543,
+        mimeType: "image/jpeg",
+        width: 600,
+        height: 800,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "5",
+        name: "market-growth.jpg",
+        url: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&q=80",
+        thumbnailUrl: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=400&q=80",
+        type: "image",
+        size: 234521,
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "6",
+        name: "investment-strategy.jpg",
+        url: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&q=80",
+        thumbnailUrl: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80",
+        type: "image",
+        size: 176890,
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        createdAt: new Date().toISOString()
+      }
+    ];
+    
+    res.json(demoAssets);
+  } catch (error) {
+    console.error("Error fetching CDN assets:", error);
+    res.status(500).json({ error: "Failed to fetch CDN assets" });
+  }
+});
+
 export default router;

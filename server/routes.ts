@@ -882,6 +882,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/platform-send", platformSendRoutes);
   app.use(assignmentRoutes);
   
+  // Public object serving endpoint for CDN access  
+  app.get("/public-objects/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error searching for public object:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Image upload endpoints for assignments
   app.post("/api/assignments/upload-url", async (req, res) => {
     try {
