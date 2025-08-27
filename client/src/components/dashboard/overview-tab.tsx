@@ -42,7 +42,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import "../../styles/dashboard-improvements.css";
 import "../../styles/draft-animation.css";
 
@@ -319,27 +319,21 @@ export default function OverviewTab() {
     }
     
     try {
-      const response = await fetch('/api/assignments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await apiRequest('POST', '/api/assignments', {
+        title: `Market ${marketSentiment.sentiment} Alert - ${new Date().toLocaleDateString()}`,
+        description: `AI-detected market opportunity requiring immediate content creation`,
+        type: 'newsletter',
+        priority: urgency === 'urgent' ? 'high' : 'medium',
+        brief: {
+          objective: `Create timely content addressing current ${marketSentiment.sentiment} market conditions`,
+          angle: focus,
+          keyPoints: [
+            `VIX Level: ${marketSentiment.vixLevel.toFixed(1)} - ${marketSentiment.sentimentDescription}`,
+            `Market Sentiment: ${marketSentiment.sentiment.toUpperCase()}`,
+            `Top Performing Sectors: ${marketSentiment.topSectors?.slice(0, 3).join(', ') || 'Mixed performance'}`
+          ]
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          title: `Market ${marketSentiment.sentiment} Alert - ${new Date().toLocaleDateString()}`,
-          description: `AI-detected market opportunity requiring immediate content creation`,
-          type: 'newsletter',
-          priority: urgency === 'urgent' ? 'high' : 'medium',
-          brief: {
-            objective: `Create timely content addressing current ${marketSentiment.sentiment} market conditions`,
-            angle: focus,
-            keyPoints: [
-              `VIX Level: ${marketSentiment.vixLevel.toFixed(1)} - ${marketSentiment.sentimentDescription}`,
-              `Market Sentiment: ${marketSentiment.sentiment.toUpperCase()}`,
-              `Top Performing Sectors: ${marketSentiment.topSectors?.slice(0, 3).join(', ') || 'Mixed performance'}`
-            ]
-          },
-          notes: `Market Context:
+        notes: `Market Context:
 • Sentiment Score: ${marketSentiment.sentiment}
 • Volatility Index: ${marketSentiment.vixLevel}
 • Market Condition: ${marketSentiment.marketCondition}
@@ -348,28 +342,23 @@ export default function OverviewTab() {
 AI-Generated Content Focus: ${focus}
 
 This assignment was auto-created from market intelligence detection. Priority level reflects current market volatility and opportunity timing.`
-        })
       });
       
-      if (response.ok) {
-        const result = await response.json();
-        setGenerationProgress(100);
-        setGenerationStatus("Assignment created successfully!");
-        
-        // Refresh assignments
-        queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
-        
-        setTimeout(() => {
-          setShowGenerationModal(false);
-          toast({
-            title: "Assignment Created",
-            description: "New assignment created with market context for copywriter",
-          });
-        }, 2000);
-        return;
-      } else {
-        throw new Error('Failed to create assignment');
-      }
+      const result = await response.json();
+      setGenerationProgress(100);
+      setGenerationStatus("Assignment created successfully!");
+      
+      // Refresh assignments
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+      
+      setTimeout(() => {
+        setShowGenerationModal(false);
+        toast({
+          title: "Assignment Created",
+          description: "New assignment created with market context for copywriter",
+        });
+      }, 2000);
+      return;
       
     } catch (error) {
       console.error('Error creating assignment:', error);
@@ -433,27 +422,21 @@ Your SharpSend Team`,
   // Create assignment from specific market event with full context
   const handleCreateAssignmentFromEvent = async (event: any) => {
     try {
-      const response = await fetch('/api/assignments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await apiRequest('POST', '/api/assignments', {
+        title: `${event.title} - Content Assignment`,
+        description: event.description,
+        type: event.type === 'news' ? 'newsletter' : 'analysis',
+        priority: event.priority,
+        brief: {
+          objective: event.emailOpportunity?.template || `Create content addressing: ${event.title}`,
+          angle: event.assignment?.focus || `Market analysis perspective on ${event.type} event`,
+          keyPoints: [
+            `Event Type: ${event.type}`,
+            `Priority Level: ${event.priority}`,
+            ...(event.emailOpportunity?.segments || [])
+          ]
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          title: `${event.title} - Content Assignment`,
-          description: event.description,
-          type: event.type === 'news' ? 'newsletter' : 'analysis',
-          priority: event.priority,
-          brief: {
-            objective: event.emailOpportunity?.template || `Create content addressing: ${event.title}`,
-            angle: event.assignment?.focus || `Market analysis perspective on ${event.type} event`,
-            keyPoints: [
-              `Event Type: ${event.type}`,
-              `Priority Level: ${event.priority}`,
-              ...(event.emailOpportunity?.segments || [])
-            ]
-          },
-          notes: `Market Event Context:
+        notes: `Market Event Context:
 • Source: ${event.source || 'Market Intelligence'}
 • Event Type: ${event.type}
 • Impact Score: ${event.impactScore || 'Medium'}
@@ -471,20 +454,15 @@ Deadline: ${event.assignment?.deadline || '24 hours'}
 SharpSend AI Suggestion: ${event.aiSuggestion || 'Leverage current market conditions for timely, relevant content that drives engagement'}
 
 This assignment includes comprehensive market context to help the copywriter create informed, impactful content.`
-        })
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
-        
-        toast({
-          title: "Assignment Created",
-          description: `Assignment created from market event: ${event.title}`,
-        });
-      } else {
-        throw new Error('Failed to create assignment');
-      }
+      const result = await response.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+      
+      toast({
+        title: "Assignment Created",
+        description: `Assignment created from market event: ${event.title}`,
+      });
     } catch (error) {
       console.error('Error creating assignment from event:', error);
       toast({
