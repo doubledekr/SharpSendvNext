@@ -221,8 +221,11 @@ export function VNextAssignmentDesk() {
   // Create assignment mutation
   const createAssignmentMutation = useMutation({
     mutationFn: async (data: typeof newAssignment) => {
+      console.log("Creating assignment with data:", data);
+      
       // Validate before sending
       if (!validateForm()) {
+        console.error("Validation failed");
         throw new Error("Please fix validation errors");
       }
 
@@ -246,8 +249,16 @@ export function VNextAssignmentDesk() {
         }
       };
 
-      const response = await apiRequest("POST", "/api/assignments", payload);
-      return await response.json();
+      console.log("Making API request with payload:", payload);
+      
+      try {
+        const response = await apiRequest("POST", "/api/assignments", payload);
+        console.log("API request successful");
+        return await response.json();
+      } catch (error) {
+        console.error("API request error:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
