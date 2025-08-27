@@ -21,6 +21,10 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform desig
 - News articles now display actual MarketAux data with working article URLs when API keys are configured
 - System properly handles missing API keys and provides graceful fallback behavior
 - Successfully integrated real-time news feed showing articles from sources like pymnts.com, argaam.com, businessinsider.com
+- Fixed critical assignment creation bug by adding auto-generated UUID defaults to assignments table
+- Implemented complete assignment review workflow with approval requests automatically created when status changes to "review"
+- Enhanced approvals system to sync assignment status when approved/rejected through review queue
+- Added publisher-specific CDN access control ensuring proper multi-tenant isolation for image assets
 
 ## User Preferences
 
