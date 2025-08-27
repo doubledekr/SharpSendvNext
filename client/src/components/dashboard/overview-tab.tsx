@@ -309,7 +309,7 @@ export default function OverviewTab() {
       { progress: 40, status: "Analyzing sentiment indicators...", delay: 1000 },
       { progress: 60, status: "Generating personalized content...", delay: 1200 },
       { progress: 80, status: "Optimizing for engagement...", delay: 1000 },
-      { progress: 95, status: "Finalizing email draft...", delay: 800 }
+      { progress: 95, status: "Finalizing assignment...", delay: 800 }
     ];
     
     for (const stage of stages) {
@@ -319,27 +319,64 @@ export default function OverviewTab() {
     }
     
     try {
-      const response = await fetch('/api/assignments/create', {
+      const response = await fetch('/api/assignments', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          title: `Market ${marketSentiment.sentiment} - ${new Date().toLocaleDateString()}`,
-          urgency,
-          focus,
-          deadline: urgency === 'urgent' ? '2 hours' : '24 hours',
-          marketContext: {
-            sentiment: marketSentiment.sentiment,
-            vixLevel: marketSentiment.vixLevel,
-            topSectors: marketSentiment.topSectors
-          }
+          title: `Market ${marketSentiment.sentiment} Alert - ${new Date().toLocaleDateString()}`,
+          description: `AI-detected market opportunity requiring immediate content creation`,
+          type: 'newsletter',
+          priority: urgency === 'urgent' ? 'high' : 'medium',
+          brief: {
+            objective: `Create timely content addressing current ${marketSentiment.sentiment} market conditions`,
+            angle: focus,
+            keyPoints: [
+              `VIX Level: ${marketSentiment.vixLevel.toFixed(1)} - ${marketSentiment.sentimentDescription}`,
+              `Market Sentiment: ${marketSentiment.sentiment.toUpperCase()}`,
+              `Top Performing Sectors: ${marketSentiment.topSectors?.slice(0, 3).join(', ') || 'Mixed performance'}`
+            ]
+          },
+          notes: `Market Context:
+• Sentiment Score: ${marketSentiment.sentiment}
+• Volatility Index: ${marketSentiment.vixLevel}
+• Market Condition: ${marketSentiment.marketCondition}
+• SharpSend Suggestion: ${urgency === 'urgent' ? 'Send within 2-4 hours for maximum impact' : 'Send within 24 hours while conditions remain relevant'}
+
+AI-Generated Content Focus: ${focus}
+
+This assignment was auto-created from market intelligence detection. Priority level reflects current market volatility and opportunity timing.`
         })
       });
       
-      setGenerationProgress(100);
-      setGenerationStatus("Complete!");
+      if (response.ok) {
+        const result = await response.json();
+        setGenerationProgress(100);
+        setGenerationStatus("Assignment created successfully!");
+        
+        // Refresh assignments
+        queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+        
+        setTimeout(() => {
+          setShowGenerationModal(false);
+          toast({
+            title: "Assignment Created",
+            description: "New assignment created with market context for copywriter",
+          });
+        }, 2000);
+        return;
+      } else {
+        throw new Error('Failed to create assignment');
+      }
+      
+    } catch (error) {
+      console.error('Error creating assignment:', error);
+      toast({
+        title: "Creation Failed",
+        description: "Failed to create assignment. Creating draft instead...",
+        variant: "destructive"
+      });
       
       // Generate unique copywriter link
       const copywriterId = Math.random().toString(36).substring(2, 15);
@@ -397,6 +434,70 @@ Your SharpSend Team`,
         variant: "destructive"
       });
       setShowGenerationModal(false);
+    }
+  };
+
+  // Create assignment from specific market event with full context
+  const handleCreateAssignmentFromEvent = async (event: any) => {
+    try {
+      const response = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: `${event.title} - Content Assignment`,
+          description: event.description,
+          type: event.type === 'news' ? 'newsletter' : 'analysis',
+          priority: event.priority,
+          brief: {
+            objective: event.emailOpportunity?.template || `Create content addressing: ${event.title}`,
+            angle: event.assignment?.focus || `Market analysis perspective on ${event.type} event`,
+            keyPoints: [
+              `Event Type: ${event.type}`,
+              `Priority Level: ${event.priority}`,
+              ...(event.emailOpportunity?.segments || [])
+            ]
+          },
+          notes: `Market Event Context:
+• Source: ${event.source || 'Market Intelligence'}
+• Event Type: ${event.type}
+• Impact Score: ${event.impactScore || 'Medium'}
+• Sentiment Score: ${event.sentimentScore || 'Neutral'}
+• Article URL: ${event.url || 'Not available'}
+
+Email Opportunity Details:
+• Template Suggestion: ${event.emailOpportunity?.template || 'Not specified'}
+• Target Segments: ${event.emailOpportunity?.segments?.join(', ') || 'General audience'}
+• Urgency Level: ${event.emailOpportunity?.urgency || event.priority}
+
+Assignment Focus: ${event.assignment?.focus || 'Address market event implications'}
+Deadline: ${event.assignment?.deadline || '24 hours'}
+
+SharpSend AI Suggestion: ${event.aiSuggestion || 'Leverage current market conditions for timely, relevant content that drives engagement'}
+
+This assignment includes comprehensive market context to help the copywriter create informed, impactful content.`
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+        
+        toast({
+          title: "Assignment Created",
+          description: `Assignment created from market event: ${event.title}`,
+        });
+      } else {
+        throw new Error('Failed to create assignment');
+      }
+    } catch (error) {
+      console.error('Error creating assignment from event:', error);
+      toast({
+        title: "Creation Failed",
+        description: "Failed to create assignment from market event",
+        variant: "destructive"
+      });
     }
   };
 
@@ -824,7 +925,12 @@ Your SharpSend Team`,
                           Generate Email
                         </Button>
                         {event.assignment.needed && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-7 text-xs"
+                            onClick={() => handleCreateAssignmentFromEvent(event)}
+                          >
                             <FileEdit className="w-3 h-3 mr-1" />
                             Create Assignment
                           </Button>
