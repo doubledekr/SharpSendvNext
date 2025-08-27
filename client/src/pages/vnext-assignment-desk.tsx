@@ -80,6 +80,7 @@ export function VNextAssignmentDesk() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isRunningDetection, setIsRunningDetection] = useState(false);
+  const [formStep, setFormStep] = useState<"content" | "details" | "settings">("content");
 
   // Fetch assignments
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
@@ -495,18 +496,56 @@ export function VNextAssignmentDesk() {
               </DialogHeader>
               
               <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
-                {/* AI Prefill Section */}
-                <Collapsible open={isPrefillOpen} onOpenChange={setIsPrefillOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                      <span className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4" />
-                        Use AI to prefill from a link or pasted text
-                      </span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${isPrefillOpen ? "rotate-180" : ""}`} />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-4 pt-4">
+                {/* Progress Indicator */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      formStep === "content" ? "bg-primary text-primary-foreground" : 
+                      ["details", "settings"].includes(formStep) ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                    }`}>
+                      1
+                    </div>
+                    <span className="text-sm font-medium">Core Content</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      formStep === "details" ? "bg-primary text-primary-foreground" : 
+                      formStep === "settings" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                    }`}>
+                      2
+                    </div>
+                    <span className="text-sm font-medium">Content Details</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      formStep === "settings" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}>
+                      3
+                    </div>
+                    <span className="text-sm font-medium">Project Settings</span>
+                  </div>
+                </div>
+
+                {/* AI Quick Start - More Prominent */}
+                {formStep === "content" && (
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-900 dark:text-blue-100">AI-Assisted Quick Start</h3>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">Let AI generate your assignment from a link or text</p>
+                      </div>
+                    </div>
+                    <Collapsible open={isPrefillOpen} onOpenChange={setIsPrefillOpen}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between bg-white dark:bg-gray-800">
+                          <span>Paste URL or text to auto-generate</span>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${isPrefillOpen ? "rotate-180" : ""}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-4 pt-4">
                     <div className="grid gap-2">
                       <Label htmlFor="sourceUrl">Source URL</Label>
                       <Input
@@ -570,115 +609,160 @@ export function VNextAssignmentDesk() {
                         ))}
                       </div>
                     )}
-                  </CollapsibleContent>
-                </Collapsible>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                )}
 
-                {/* Title */}
-                <div className="grid gap-2">
-                  <Label htmlFor="assignmentTitle">Title*</Label>
-                  <Input
-                    id="assignmentTitle"
-                    value={newAssignment.title}
-                    onChange={(e) => {
-                      setNewAssignment({ ...newAssignment, title: e.target.value });
-                      setValidationErrors({ ...validationErrors, title: validateField("title", e.target.value) });
-                    }}
-                    placeholder="Assignment title"
-                    className={validationErrors.title ? "border-red-500" : ""}
-                  />
-                  {validationErrors.title && (
-                    <p className="text-sm text-red-500">{validationErrors.title}</p>
-                  )}
-                </div>
-
-                {/* Objective */}
-                <div className="grid gap-2">
-                  <Label htmlFor="assignmentObjective">Objective*</Label>
-                  <Textarea
-                    id="assignmentObjective"
-                    value={newAssignment.objective}
-                    onChange={(e) => {
-                      setNewAssignment({ ...newAssignment, objective: e.target.value });
-                      setValidationErrors({ ...validationErrors, objective: validateField("objective", e.target.value) });
-                    }}
-                    placeholder="What should this email accomplish (1-2 sentences)?"
-                    rows={2}
-                    className={validationErrors.objective ? "border-red-500" : ""}
-                  />
-                  {validationErrors.objective && (
-                    <p className="text-sm text-red-500">{validationErrors.objective}</p>
-                  )}
-                </div>
-
-                {/* Angle/Hook */}
-                <div className="grid gap-2">
-                  <Label htmlFor="assignmentAngle">Angle/Hook*</Label>
-                  <Input
-                    id="assignmentAngle"
-                    value={newAssignment.angle}
-                    onChange={(e) => {
-                      setNewAssignment({ ...newAssignment, angle: e.target.value });
-                      setValidationErrors({ ...validationErrors, angle: validateField("angle", e.target.value) });
-                    }}
-                    placeholder="What's the big idea in one line?"
-                    className={validationErrors.angle ? "border-red-500" : ""}
-                  />
-                  {validationErrors.angle && (
-                    <p className="text-sm text-red-500">{validationErrors.angle}</p>
-                  )}
-                </div>
-
-                {/* Key Points */}
-                <div className="grid gap-2">
-                  <Label htmlFor="assignmentKeypoints">Key Points* (1-3 required)</Label>
-                  <div id="assignmentKeypoints" className="space-y-2">
-                    {/* Display existing key points as chips */}
-                    {newAssignment.keyPoints.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {newAssignment.keyPoints.map((point, idx) => (
-                          <div key={idx} className="flex items-center gap-1 bg-secondary px-3 py-1 rounded-full">
-                            <span className="text-sm">{point}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeKeyPoint(idx)}
-                              className="ml-1 hover:text-destructive"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex gap-2">
+                {/* Step 1: Core Content */}
+                {formStep === "content" && (
+                  <div className="space-y-4">
+                    {/* Title */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="assignmentTitle" className="text-base font-semibold">Title*</Label>
                       <Input
-                        id="keypointInput"
-                        value={keyPointInput}
-                        onChange={(e) => setKeyPointInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addKeyPoint();
-                          }
+                        id="assignmentTitle"
+                        value={newAssignment.title}
+                        onChange={(e) => {
+                          setNewAssignment({ ...newAssignment, title: e.target.value });
+                          setValidationErrors({ ...validationErrors, title: validateField("title", e.target.value) });
                         }}
-                        placeholder="Add 1-3 facts or proofs to guide the draft"
-                        disabled={newAssignment.keyPoints.length >= 3}
+                        placeholder="e.g., Weekly Market Outlook - Tech Sector Focus"
+                        className={`text-lg ${validationErrors.title ? "border-red-500" : ""}`}
+                        data-testid="input-title"
                       />
-                      <Button
-                        type="button"
-                        onClick={addKeyPoint}
-                        disabled={newAssignment.keyPoints.length >= 3}
-                      >
-                        Add
-                      </Button>
+                      {validationErrors.title && (
+                        <p className="text-sm text-red-500">{validationErrors.title}</p>
+                      )}
+                    </div>
+
+                    {/* Objective */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="assignmentObjective" className="text-base font-semibold">Objective*</Label>
+                      <p className="text-sm text-muted-foreground">What should this email accomplish?</p>
+                      <Textarea
+                        id="assignmentObjective"
+                        value={newAssignment.objective}
+                        onChange={(e) => {
+                          setNewAssignment({ ...newAssignment, objective: e.target.value });
+                          setValidationErrors({ ...validationErrors, objective: validateField("objective", e.target.value) });
+                        }}
+                        placeholder="Drive subscriber engagement with actionable market insights..."
+                        rows={3}
+                        className={validationErrors.objective ? "border-red-500" : ""}
+                        data-testid="textarea-objective"
+                      />
+                      {validationErrors.objective && (
+                        <p className="text-sm text-red-500">{validationErrors.objective}</p>
+                      )}
+                    </div>
+
+                    {/* Angle/Hook */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="assignmentAngle" className="text-base font-semibold">Angle/Hook*</Label>
+                      <p className="text-sm text-muted-foreground">What's the big idea in one line?</p>
+                      <Input
+                        id="assignmentAngle"
+                        value={newAssignment.angle}
+                        onChange={(e) => {
+                          setNewAssignment({ ...newAssignment, angle: e.target.value });
+                          setValidationErrors({ ...validationErrors, angle: validateField("angle", e.target.value) });
+                        }}
+                        placeholder="Tech stocks poised for 30% recovery amid AI breakthroughs"
+                        className={validationErrors.angle ? "border-red-500" : ""}
+                        data-testid="input-angle"
+                      />
+                      {validationErrors.angle && (
+                        <p className="text-sm text-red-500">{validationErrors.angle}</p>
+                      )}
                     </div>
                   </div>
-                  {validationErrors.keyPoints && (
-                    <p className="text-sm text-red-500">{validationErrors.keyPoints}</p>
-                  )}
-                </div>
+                )}
 
-                {/* Type and Priority */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Step 2: Content Details */}
+                {formStep === "details" && (
+                  <div className="space-y-4">
+                    {/* Key Points */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="assignmentKeypoints" className="text-base font-semibold">Key Points* (1-3 required)</Label>
+                      <div id="assignmentKeypoints" className="space-y-2">
+                        {/* Display existing key points as chips */}
+                        {newAssignment.keyPoints.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {newAssignment.keyPoints.map((point, idx) => (
+                              <div key={idx} className="flex items-center gap-1 bg-secondary px-3 py-1 rounded-full">
+                                <span className="text-sm">{point}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeKeyPoint(idx)}
+                                  className="ml-1 hover:text-destructive"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Input
+                            id="keypointInput"
+                            value={keyPointInput}
+                            onChange={(e) => setKeyPointInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addKeyPoint();
+                              }
+                            }}
+                            placeholder="Add 1-3 facts or proofs to guide the draft"
+                            disabled={newAssignment.keyPoints.length >= 3}
+                          />
+                          <Button
+                            type="button"
+                            onClick={addKeyPoint}
+                            disabled={newAssignment.keyPoints.length >= 3}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                      {validationErrors.keyPoints && (
+                        <p className="text-sm text-red-500">{validationErrors.keyPoints}</p>
+                      )}
+                    </div>
+
+                    {/* CTA Section */}
+                    <div className="grid gap-3">
+                      <Label className="text-base font-semibold">Call-to-Action (Optional)</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid gap-2">
+                          <Label htmlFor="assignmentCtaLabel">CTA Label</Label>
+                          <Input
+                            id="assignmentCtaLabel"
+                            value={newAssignment.ctaLabel}
+                            onChange={(e) => setNewAssignment({ ...newAssignment, ctaLabel: e.target.value })}
+                            placeholder="e.g., Get Free Report"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="assignmentCtaUrl">CTA URL</Label>
+                          <Input
+                            id="assignmentCtaUrl"
+                            value={newAssignment.ctaUrl}
+                            onChange={(e) => setNewAssignment({ ...newAssignment, ctaUrl: e.target.value })}
+                            placeholder="https://..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Project Settings */}
+                {formStep === "settings" && (
+                  <div className="space-y-4">
+                    {/* Type and Priority */}
+                    <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="assignmentType">Type</Label>
                     <Select
@@ -725,201 +809,89 @@ export function VNextAssignmentDesk() {
                   />
                 </div>
 
-                {/* CTA */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="ctaLabel">CTA Label (optional)</Label>
-                    <Input
-                      id="ctaLabel"
-                      value={newAssignment.ctaLabel}
-                      onChange={(e) => setNewAssignment({ ...newAssignment, ctaLabel: e.target.value })}
-                      placeholder="Button or link text (optional)"
-                    />
+                    {/* Notes */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="assignmentNotes">Notes (Optional)</Label>
+                      <Textarea
+                        id="assignmentNotes"
+                        value={newAssignment.notes}
+                        onChange={(e) => setNewAssignment({ ...newAssignment, notes: e.target.value })}
+                        placeholder="Additional context or requirements..."
+                        rows={3}
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="ctaUrl">CTA URL (optional)</Label>
-                    <Input
-                      id="ctaUrl"
-                      value={newAssignment.ctaUrl}
-                      onChange={(e) => {
-                        setNewAssignment({ ...newAssignment, ctaUrl: e.target.value });
-                        if (e.target.value) {
-                          setValidationErrors({ ...validationErrors, ctaUrl: validateField("ctaUrl", e.target.value) });
+                )}
+
+                {/* Step Navigation */}
+                <div className="flex justify-between pt-4 border-t">
+                  {formStep !== "content" ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (formStep === "details") setFormStep("content");
+                        if (formStep === "settings") setFormStep("details");
+                      }}
+                    >
+                      Back
+                    </Button>
+                  ) : (
+                    <div></div>
+                  )}
+
+                  {formStep !== "settings" ? (
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (formStep === "content") {
+                          // Validate core content before proceeding
+                          const coreErrors = {
+                            title: validateField("title", newAssignment.title),
+                            objective: validateField("objective", newAssignment.objective),
+                            angle: validateField("angle", newAssignment.angle)
+                          };
+                          
+                          if (Object.values(coreErrors).some(error => error)) {
+                            setValidationErrors(coreErrors);
+                            toast({
+                              title: "Please complete required fields",
+                              description: "Title, objective, and angle are required to continue.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          setFormStep("details");
+                        }
+                        if (formStep === "details") {
+                          // Validate key points before proceeding
+                          const keyPointsError = validateField("keyPoints", newAssignment.keyPoints);
+                          if (keyPointsError) {
+                            setValidationErrors({ keyPoints: keyPointsError });
+                            toast({
+                              title: "Please add key points",
+                              description: "At least 1 key point is required to continue.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          setFormStep("settings");
                         }
                       }}
-                      placeholder="https://example.com/landing-page (optional)"
-                      className={validationErrors.ctaUrl ? "border-red-500" : ""}
-                    />
-                    {validationErrors.ctaUrl && (
-                      <p className="text-sm text-red-500">{validationErrors.ctaUrl}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Notes */}
-                {/* Image Upload Section */}
-                <div className="space-y-3">
-                  <Label>Images & Media</Label>
-                  <div className="space-y-2">
-                    {/* Hero Image Upload */}
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Image className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">Hero Image</p>
-                          <p className="text-xs text-muted-foreground">Main featured image</p>
-                        </div>
-                      </div>
-                      <ObjectUploader
-                        maxNumberOfFiles={1}
-                        onGetUploadParameters={async () => {
-                          const response = await fetch("/api/assignments/upload-url", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ type: "hero" }),
-                          });
-                          const data = await response.json();
-                          return { method: "PUT" as const, url: data.uploadURL };
-                        }}
-                        onComplete={async (result) => {
-                          if (result.successful && result.successful.length > 0) {
-                            const uploadUrl = result.successful[0].uploadURL;
-                            const response = await fetch("/api/assignments/process-image", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ 
-                                uploadUrl,
-                                imageType: "hero",
-                                assignmentId: "temp"
-                              }),
-                            });
-                            const data = await response.json();
-                            setNewAssignment({
-                              ...newAssignment,
-                              images: [...newAssignment.images, { url: data.cdnUrl, type: "hero" }]
-                            });
-                            toast({
-                              title: "Hero image uploaded",
-                              description: "Image indexed and ready for CDN delivery",
-                            });
-                          }
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Upload Hero
-                      </ObjectUploader>
-                    </div>
-
-                    {/* Inline Images Upload */}
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Image className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">Inline Images</p>
-                          <p className="text-xs text-muted-foreground">Content body images</p>
-                        </div>
-                      </div>
-                      <ObjectUploader
-                        maxNumberOfFiles={5}
-                        onGetUploadParameters={async () => {
-                          const response = await fetch("/api/assignments/upload-url", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ type: "inline" }),
-                          });
-                          const data = await response.json();
-                          return { method: "PUT" as const, url: data.uploadURL };
-                        }}
-                        onComplete={async (result) => {
-                          if (result.successful) {
-                            for (const file of result.successful) {
-                              const response = await fetch("/api/assignments/process-image", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ 
-                                  uploadUrl: file.uploadURL,
-                                  imageType: "inline",
-                                  assignmentId: "temp"
-                                }),
-                              });
-                              const data = await response.json();
-                              setNewAssignment({
-                                ...newAssignment,
-                                images: [...newAssignment.images, { url: data.cdnUrl, type: "inline" }]
-                              });
-                            }
-                            toast({
-                              title: "Inline images uploaded", 
-                              description: `${result.successful.length} images indexed for CDN`,
-                            });
-                          }
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Inline
-                      </ObjectUploader>
-                    </div>
-
-                    {/* Display uploaded images */}
-                    {newAssignment.images.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-sm font-medium">Uploaded Images</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {newAssignment.images.map((img, idx) => (
-                            <div key={idx} className="relative group">
-                              <img 
-                                src={img.url} 
-                                alt={`${img.type} image`}
-                                className="w-full h-20 object-cover rounded-lg border"
-                              />
-                              <Badge 
-                                className="absolute top-1 left-1 text-xs"
-                                variant={img.type === "hero" ? "default" : "secondary"}
-                              >
-                                {img.type}
-                              </Badge>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => {
-                                  setNewAssignment({
-                                    ...newAssignment,
-                                    images: newAssignment.images.filter((_, i) => i !== idx)
-                                  });
-                                }}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="assignmentNotes">Notes</Label>
-                  <Textarea
-                    id="assignmentNotes"
-                    value={newAssignment.notes}
-                    onChange={(e) => setNewAssignment({ ...newAssignment, notes: e.target.value })}
-                    placeholder="Additional notes..."
-                    rows={2}
-                  />
+                    >
+                      Continue
+                    </Button>
+                  ) : (
+                    <Button
+                      id="btnCreateAssignment"
+                      onClick={() => createAssignmentMutation.mutate(newAssignment)}
+                      disabled={createAssignmentMutation.isPending}
+                    >
+                      {createAssignmentMutation.isPending ? "Creating..." : "Create Assignment"}
+                    </Button>
+                  )}
                 </div>
               </div>
-              
-              <DialogFooter>
-                <Button
-                  id="btnCreateAssignment"
-                  onClick={() => createAssignmentMutation.mutate(newAssignment)}
-                  disabled={createAssignmentMutation.isPending}
-                >
-                  Create Assignment
-                </Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
