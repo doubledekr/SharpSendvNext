@@ -29,11 +29,6 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform desig
 - Enhanced web scraping with robust error handling and intelligent fallbacks using URL structure analysis
 - Fixed character length constraints for assignment angle (max 120 chars) and objective (max 150 chars) fields
 - **RESOLVED assignment workflow issues** - Fixed PATCH route for assignment updates to work for both authenticated publisher access and shareable link copywriter access, ensuring proper assignment status transitions from creation to review queue
-- **MAJOR WORKFLOW SIMPLIFICATION (January 2025)** - Redesigned assignment workflow from 8+ statuses to 6 clear statuses (draft → in_progress → review → approved → ready → sent)
-- Consolidated assignment UI from 5+ tabs to 3 intuitive sections: "Active Work", "Ready to Send", "Campaign History"
-- Eliminated confusing "unassigned" status and merged approvals directly into assignment desk for streamlined user experience
-- Created new `assignment-desk-simplified.tsx` component with cleaner card-based interface showing relevant actions for each status
-- Simplified mental model: Create → Write → Review → Send, removing unnecessary complexity that confused users
 
 ## User Preferences
 
