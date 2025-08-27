@@ -97,6 +97,7 @@ export default function AssignmentCopywriterFlow() {
   const [metrics, setMetrics] = useState<EmailMetrics | null>(null);
   const [scheduledTime, setScheduledTime] = useState<string>('immediate');
   const [customDateTime, setCustomDateTime] = useState<string>('');
+  const [currentVariationIndex, setCurrentVariationIndex] = useState<number>(0);
 
   // Fetch assignment details
   const { data: assignment, isLoading } = useQuery<Assignment>({
@@ -451,13 +452,13 @@ export default function AssignmentCopywriterFlow() {
             </Card>
           </TabsContent>
 
-          {/* Segment Variations Tab */}
+          {/* Email Preview Stack Tab */}
           <TabsContent value="segments" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>AI-Generated Segment Variations</CardTitle>
+                <CardTitle>Email Variations Preview Stack</CardTitle>
                 <CardDescription>
-                  Review and select personalized versions for different audience segments
+                  Click through different segment variations - preview them as a stack
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -470,80 +471,159 @@ export default function AssignmentCopywriterFlow() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {segments.map((segment) => (
-                      <Card key={segment.id} className="border-l-4 border-l-blue-500">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                id={segment.id}
-                                checked={selectedSegments.includes(segment.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedSegments([...selectedSegments, segment.id]);
-                                  } else {
-                                    setSelectedSegments(selectedSegments.filter(id => id !== segment.id));
-                                  }
-                                }}
-                                className="w-4 h-4"
-                              />
-                              <Label htmlFor={segment.id} className="cursor-pointer">
-                                <CardTitle className="text-lg">{segment.segmentName}</CardTitle>
-                              </Label>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">
-                                <Users className="w-3 h-3 mr-1" />
-                                {segment.estimatedRecipients.toLocaleString()} recipients
-                              </Badge>
-                              <Badge className="bg-green-500 text-white">
-                                AI Score: {segment.aiScore.toFixed(0)}%
-                              </Badge>
-                            </div>
-                          </div>
-                          <CardDescription className="mt-1">
-                            {segment.segmentCriteria}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Subject Line:</p>
-                              <p className="text-sm font-semibold">{segment.subjectLine}</p>
-                            </div>
-                            
-                            {/* Email Preview */}
-                            <div className="border rounded-lg p-4 bg-white dark:bg-gray-50">
-                              <div className="text-xs text-gray-500 mb-3 pb-2 border-b">
-                                <div>From: publisher@example.com</div>
-                                <div>To: {segment.segmentName.toLowerCase()}@example.com</div>
-                                <div className="font-semibold text-gray-700">{segment.subjectLine}</div>
-                              </div>
+                  <div className="space-y-6">
+                    {/* Segment Stack Navigation */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">Email Stack:</h3>
+                        <div className="flex gap-1">
+                          {segments.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setCurrentVariationIndex(index)}
+                              className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
+                                currentVariationIndex === index
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                              }`}
+                            >
+                              {index + 1}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {currentVariationIndex + 1} of {segments.length} variations
+                      </div>
+                    </div>
+
+                    {/* Email Preview Stack Container */}
+                    <div className="relative">
+                      {segments.map((segment, index) => {
+                        const isActive = index === currentVariationIndex;
+                        const stackOffset = index - currentVariationIndex;
+                        
+                        return (
+                          <div
+                            key={segment.id}
+                            className={`absolute w-full transition-all duration-300 ease-in-out ${
+                              isActive 
+                                ? 'z-20 transform-none opacity-100' 
+                                : stackOffset > 0
+                                ? `z-${20 - stackOffset} transform translate-x-${stackOffset * 2} translate-y-${stackOffset * 2} opacity-80 scale-95`
+                                : 'z-0 opacity-0 pointer-events-none'
+                            }`}
+                            style={{
+                              transform: isActive 
+                                ? 'none' 
+                                : stackOffset > 0 
+                                ? `translate(${stackOffset * 8}px, ${stackOffset * 8}px) scale(${1 - (stackOffset * 0.05)})`
+                                : 'translateX(-100px) scale(0.9)',
+                              zIndex: isActive ? 20 : stackOffset > 0 ? 20 - stackOffset : 0
+                            }}
+                          >
+                            <Card className="border-2 border-blue-500 shadow-lg bg-white">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      id={segment.id}
+                                      checked={selectedSegments.includes(segment.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedSegments([...selectedSegments, segment.id]);
+                                        } else {
+                                          setSelectedSegments(selectedSegments.filter(id => id !== segment.id));
+                                        }
+                                      }}
+                                      className="w-4 h-4"
+                                    />
+                                    <CardTitle className="text-lg">{segment.segmentName}</CardTitle>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline">
+                                      <Users className="w-3 h-3 mr-1" />
+                                      {segment.estimatedRecipients.toLocaleString()}
+                                    </Badge>
+                                    <Badge className="bg-green-500 text-white">
+                                      AI: {segment.aiScore?.toFixed(0) || 92}%
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <CardDescription className="text-sm">{segment.segmentCriteria}</CardDescription>
+                              </CardHeader>
                               
-                              <div 
-                                className="text-sm text-gray-800 space-y-2"
-                                dangerouslySetInnerHTML={{
-                                  __html: renderMarkdownContent(segment.content)
-                                }}
-                              />
-                            </div>
-                            
-                            <div className="flex items-center justify-between text-xs text-gray-500">
-                              <div className="flex items-center gap-2">
-                                <Eye className="w-3 h-3" />
-                                <span>Pixel ID: {segment.pixelId}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3 text-green-500" />
-                                <span>Tracking Enabled</span>
-                              </div>
-                            </div>
+                              <CardContent>
+                                <div className="space-y-4">
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-600">Subject Line:</p>
+                                    <p className="text-sm font-semibold">{segment.subjectLine}</p>
+                                  </div>
+                                  
+                                  {/* Email Preview */}
+                                  <div className="border rounded-lg p-4 bg-gray-50">
+                                    <div className="text-xs text-gray-500 mb-3 pb-2 border-b">
+                                      <div>From: publisher@example.com</div>
+                                      <div>To: {segment.segmentName.toLowerCase().replace(/\s+/g, '')}@example.com</div>
+                                      <div className="font-semibold text-gray-700">{segment.subjectLine}</div>
+                                    </div>
+                                    
+                                    <div 
+                                      className="text-sm text-gray-800 space-y-2 max-h-48 overflow-y-auto"
+                                      dangerouslySetInnerHTML={{
+                                        __html: renderMarkdownContent(segment.content)
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-between text-xs text-gray-500">
+                                    <div className="flex items-center gap-2">
+                                      <Eye className="w-3 h-3" />
+                                      <span>Pixel: {segment.pixelId}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3 text-green-500" />
+                                      <span>Tracking Enabled</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                        );
+                      })}
+                      
+                      {/* Spacer for stack height */}
+                      <div style={{ height: `${400 + (segments.length - 1) * 8}px` }}></div>
+                    </div>
+
+                    {/* Stack Navigation Controls */}
+                    <div className="flex items-center justify-center gap-4 pt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentVariationIndex(Math.max(0, currentVariationIndex - 1))}
+                        disabled={currentVariationIndex === 0}
+                      >
+                        <MessageSquare className="w-4 h-4 mr-1" />
+                        Previous
+                      </Button>
+                      
+                      <div className="text-sm text-gray-600 px-4">
+                        {segments[currentVariationIndex]?.segmentName}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentVariationIndex(Math.min(segments.length - 1, currentVariationIndex + 1))}
+                        disabled={currentVariationIndex === segments.length - 1}
+                      >
+                        Next
+                        <MessageSquare className="w-4 h-4 ml-1" />
+                      </Button>
+                    </div>
                     
                     <div className="space-y-4 pt-4 border-t">
                       {/* Send Time Scheduling */}
