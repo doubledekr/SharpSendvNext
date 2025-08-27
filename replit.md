@@ -2,7 +2,7 @@
 
 SharpSend is a multi-tenant AI-powered newsletter personalization platform designed for financial publishers. It offers publisher-specific subdomains, automated pixel management, and comprehensive workflow tools for content planning and approvals. The platform provides a unified dashboard for subscriber management, AI-powered content generation, A/B testing, performance analysis, and revenue impact calculation. It integrates with various email marketing services and uses advanced analytics to optimize content and engagement. The business vision is a B2B SaaS model aiming for scalable growth through AI-driven personalization, email fatigue management, real-time market event integration, and a hierarchical tracking pixel system. It includes advanced email intelligence features like a Smart Pixel Engine with context-aware tracking and behavioral predictions, an AI-powered segmentation engine, and a real-time behavioral intelligence loop.
 
-## Recent Changes (January 2025)
+## Recent Changes (January 2025 - Latest Updates)
 - Enhanced market sentiment component to allow creating assignments directly from opportunities
 - Added "Create Assignment" functionality to all proactive campaign suggestions
 - Implemented clickable news headlines and external link buttons for article access
@@ -29,6 +29,16 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform desig
 - Enhanced web scraping with robust error handling and intelligent fallbacks using URL structure analysis
 - Fixed character length constraints for assignment angle (max 120 chars) and objective (max 150 chars) fields
 - **RESOLVED assignment workflow issues** - Fixed PATCH route for assignment updates to work for both authenticated publisher access and shareable link copywriter access, ensuring proper assignment status transitions from creation to review queue
+- **Enhanced Assignment Creation Workflow (5-Step Process)** - Upgraded assignment creation from 3 to 5 steps:
+  - Step 1: Core Content (Title, Objective, Angle)
+  - Step 2: Content Details (Key Points, CTA)
+  - Step 3: Target Segments (NEW) - Select audience segments with subscriber counts
+  - Step 4: Collaboration & Review (NEW) - Assign reviewers with roles and deadlines
+  - Step 5: Project Settings (Type, Priority, Due Date)
+- **Unified Assignment-to-Broadcast Pipeline** - Integrated complete workflow from assignment creation to broadcast management
+- **Enhanced Dashboard with Status Overview** - Added 5-stage status cards (Draft, In Review, Approved, Queued, Sent) with color-coded indicators
+- **Database Schema Updates** - Added enhanced workflow fields: targetSegments, emailPlatform, reviewers, reviewDeadline, reviewNotes, autoGenerateVariations, workflowStage, progressPercentage, broadcastSettings
+- **Automatic Review Workflow** - When reviewers are assigned, assignments automatically move to "In Review" status with progress tracking
 
 ## User Preferences
 

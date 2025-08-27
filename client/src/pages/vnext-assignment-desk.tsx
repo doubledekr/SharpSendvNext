@@ -33,6 +33,16 @@ interface Assignment {
   tags?: string[];
   shareableSlug?: string;
   shareableUrl?: string;
+  // Enhanced workflow fields
+  targetSegments?: Array<{ segmentId: string; segmentName: string; subscriberCount: number; platform: string }>;
+  emailPlatform?: string;
+  reviewers?: Array<{ userId: string; name: string; role: string; status: string; comments?: string[]; reviewedAt?: string }>;
+  reviewDeadline?: string;
+  reviewNotes?: string;
+  autoGenerateVariations?: boolean;
+  workflowStage?: string;
+  progressPercentage?: number;
+  broadcastSettings?: { sendTime?: string; pixelTracking?: boolean; campaignIds?: string[] };
   createdAt: string;
   updatedAt: string;
 }
@@ -69,6 +79,13 @@ export function VNextAssignmentDesk() {
     tags: [] as string[],
     images: [] as { url: string; type: 'hero' | 'inline' | 'attachment'; caption?: string }[],
     opportunityId: null as string | null,
+    // New fields for enhanced workflow
+    targetSegments: [] as { segmentId: string; segmentName: string; subscriberCount: number; platform: string }[],
+    emailPlatform: "auto-detect" as string,
+    reviewers: [] as { userId: string; name: string; role: string; status: string }[],
+    reviewDeadline: "",
+    reviewNotes: "",
+    autoGenerateVariations: true,
   });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
@@ -81,7 +98,7 @@ export function VNextAssignmentDesk() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isRunningDetection, setIsRunningDetection] = useState(false);
-  const [formStep, setFormStep] = useState<"content" | "details" | "settings">("content");
+  const [formStep, setFormStep] = useState<"content" | "details" | "segments" | "review" | "settings">("content");
 
   // Fetch assignments
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
@@ -287,6 +304,12 @@ export function VNextAssignmentDesk() {
         tags: [],
         images: [],
         opportunityId: null,
+        targetSegments: [],
+        emailPlatform: "auto-detect",
+        reviewers: [],
+        reviewDeadline: "",
+        reviewNotes: "",
+        autoGenerateVariations: true,
       });
       setValidationErrors({});
       toast({
@@ -509,32 +532,55 @@ export function VNextAssignmentDesk() {
               
               <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
                 {/* Progress Indicator */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                {/* Enhanced 5-Step Progress Indicator */}
+                <div className="flex items-center justify-between mb-4 px-2 overflow-x-auto">
+                  <div className="flex items-center gap-1">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
                       formStep === "content" ? "bg-primary text-primary-foreground" : 
-                      ["details", "settings"].includes(formStep) ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                      ["details", "segments", "review", "settings"].includes(formStep) ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
                     }`}>
                       1
                     </div>
-                    <span className="text-sm font-medium">Core Content</span>
+                    <span className="text-xs font-medium">Content</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  <div className="flex-1 h-0.5 mx-1 bg-gray-200" />
+                  <div className="flex items-center gap-1">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
                       formStep === "details" ? "bg-primary text-primary-foreground" : 
-                      formStep === "settings" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                      ["segments", "review", "settings"].includes(formStep) ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
                     }`}>
                       2
                     </div>
-                    <span className="text-sm font-medium">Content Details</span>
+                    <span className="text-xs font-medium">Details</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      formStep === "settings" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  <div className="flex-1 h-0.5 mx-1 bg-gray-200" />
+                  <div className="flex items-center gap-1">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+                      formStep === "segments" ? "bg-primary text-primary-foreground" : 
+                      ["review", "settings"].includes(formStep) ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
                     }`}>
                       3
                     </div>
-                    <span className="text-sm font-medium">Project Settings</span>
+                    <span className="text-xs font-medium">Segments</span>
+                  </div>
+                  <div className="flex-1 h-0.5 mx-1 bg-gray-200" />
+                  <div className="flex items-center gap-1">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+                      formStep === "review" ? "bg-primary text-primary-foreground" : 
+                      formStep === "settings" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                    }`}>
+                      4
+                    </div>
+                    <span className="text-xs font-medium">Review</span>
+                  </div>
+                  <div className="flex-1 h-0.5 mx-1 bg-gray-200" />
+                  <div className="flex items-center gap-1">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+                      formStep === "settings" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}>
+                      5
+                    </div>
+                    <span className="text-xs font-medium">Settings</span>
                   </div>
                 </div>
 
@@ -770,7 +816,177 @@ export function VNextAssignmentDesk() {
                   </div>
                 )}
 
-                {/* Step 3: Project Settings */}
+                {/* Step 3: Target Segments - NEW */}
+                {formStep === "segments" && (
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label className="text-base font-semibold">Select Target Segments*</Label>
+                      <p className="text-sm text-muted-foreground">Choose which audience segments will receive this content</p>
+                      <div className="space-y-2">
+                        {[
+                          { id: "growth_investors", name: "Growth Investors", count: 2450, description: "Focus on growth stocks and emerging markets" },
+                          { id: "conservative_investors", name: "Conservative Investors", count: 1890, description: "Focus on stable, dividend-paying stocks" },
+                          { id: "day_traders", name: "Day Traders", count: 890, description: "Active traders looking for short-term opportunities" },
+                          { id: "crypto_enthusiasts", name: "Crypto Enthusiasts", count: 1200, description: "Interested in cryptocurrency and digital assets" },
+                          { id: "income_focused", name: "Income Focused", count: 3200, description: "Focus on dividend yields and fixed income" }
+                        ].map(segment => (
+                          <label 
+                            key={segment.id} 
+                            className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-1"
+                              checked={newAssignment.targetSegments.some(s => s.segmentId === segment.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNewAssignment({
+                                    ...newAssignment,
+                                    targetSegments: [...newAssignment.targetSegments, {
+                                      segmentId: segment.id,
+                                      segmentName: segment.name,
+                                      subscriberCount: segment.count,
+                                      platform: newAssignment.emailPlatform
+                                    }]
+                                  });
+                                } else {
+                                  setNewAssignment({
+                                    ...newAssignment,
+                                    targetSegments: newAssignment.targetSegments.filter(s => s.segmentId !== segment.id)
+                                  });
+                                }
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">{segment.name}</span>
+                                <Badge variant="secondary">{segment.count.toLocaleString()} subscribers</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">{segment.description}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Email Platform Source */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="emailPlatform">Email Platform Source</Label>
+                      <Select
+                        value={newAssignment.emailPlatform}
+                        onValueChange={(value) => setNewAssignment({ ...newAssignment, emailPlatform: value })}
+                      >
+                        <SelectTrigger id="emailPlatform">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto-detect">Auto-Detect</SelectItem>
+                          <SelectItem value="mailchimp">Mailchimp</SelectItem>
+                          <SelectItem value="constant-contact">Constant Contact</SelectItem>
+                          <SelectItem value="hubspot">HubSpot</SelectItem>
+                          <SelectItem value="convertkit">ConvertKit</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Segment Preview */}
+                    {newAssignment.targetSegments.length > 0 && (
+                      <div className="p-3 bg-accent/50 rounded-lg">
+                        <p className="text-sm font-medium">
+                          Total Audience: {newAssignment.targetSegments.reduce((sum, s) => sum + s.subscriberCount, 0).toLocaleString()} subscribers across {newAssignment.targetSegments.length} segments
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Step 4: Collaboration & Review - NEW */}
+                {formStep === "review" && (
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label className="text-base font-semibold">Assign Reviewers</Label>
+                      <p className="text-sm text-muted-foreground">Select team members to review this assignment</p>
+                      <div className="space-y-2">
+                        {[
+                          { id: "sarah.editor", name: "Sarah (Editor)", role: "Content Review" },
+                          { id: "mike.compliance", name: "Mike (Compliance)", role: "Regulatory Review" },
+                          { id: "lisa.manager", name: "Lisa (Manager)", role: "Final Approval" }
+                        ].map(reviewer => (
+                          <label 
+                            key={reviewer.id} 
+                            className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={newAssignment.reviewers.some(r => r.userId === reviewer.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNewAssignment({
+                                    ...newAssignment,
+                                    reviewers: [...newAssignment.reviewers, {
+                                      userId: reviewer.id,
+                                      name: reviewer.name,
+                                      role: reviewer.role,
+                                      status: "pending"
+                                    }]
+                                  });
+                                } else {
+                                  setNewAssignment({
+                                    ...newAssignment,
+                                    reviewers: newAssignment.reviewers.filter(r => r.userId !== reviewer.id)
+                                  });
+                                }
+                              }}
+                            />
+                            <div className="flex-1">
+                              <span className="font-medium">{reviewer.name}</span>
+                              <Badge variant="outline" className="ml-2">{reviewer.role}</Badge>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Review Deadline */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="reviewDeadline">Review Deadline</Label>
+                      <Input
+                        id="reviewDeadline"
+                        type="datetime-local"
+                        value={newAssignment.reviewDeadline}
+                        onChange={(e) => setNewAssignment({ ...newAssignment, reviewDeadline: e.target.value })}
+                      />
+                    </div>
+
+                    {/* Review Notes */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="reviewNotes">Review Notes (Optional)</Label>
+                      <Textarea
+                        id="reviewNotes"
+                        value={newAssignment.reviewNotes}
+                        onChange={(e) => setNewAssignment({ ...newAssignment, reviewNotes: e.target.value })}
+                        placeholder="Special instructions for reviewers..."
+                        rows={3}
+                      />
+                    </div>
+
+                    {/* Auto-Generate Variations */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="autoGenerateVariations"
+                        checked={newAssignment.autoGenerateVariations}
+                        onChange={(e) => setNewAssignment({ ...newAssignment, autoGenerateVariations: e.target.checked })}
+                      />
+                      <Label htmlFor="autoGenerateVariations" className="cursor-pointer">
+                        Automatically generate segment-specific content after approval
+                      </Label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 5: Project Settings */}
                 {formStep === "settings" && (
                   <div className="space-y-4">
                     {/* Type and Priority */}
@@ -835,7 +1051,7 @@ export function VNextAssignmentDesk() {
                   </div>
                 )}
 
-                {/* Step Navigation */}
+                {/* Enhanced Step Navigation for 5-step form */}
                 <div className="flex justify-between pt-4 border-t">
                   {formStep !== "content" ? (
                     <Button
@@ -843,7 +1059,9 @@ export function VNextAssignmentDesk() {
                       variant="outline"
                       onClick={() => {
                         if (formStep === "details") setFormStep("content");
-                        if (formStep === "settings") setFormStep("details");
+                        if (formStep === "segments") setFormStep("details");
+                        if (formStep === "review") setFormStep("segments");
+                        if (formStep === "settings") setFormStep("review");
                       }}
                     >
                       Back
@@ -874,8 +1092,7 @@ export function VNextAssignmentDesk() {
                             return;
                           }
                           setFormStep("details");
-                        }
-                        if (formStep === "details") {
+                        } else if (formStep === "details") {
                           // Validate key points before proceeding
                           const keyPointsError = validateField("keyPoints", newAssignment.keyPoints);
                           if (keyPointsError) {
@@ -887,6 +1104,19 @@ export function VNextAssignmentDesk() {
                             });
                             return;
                           }
+                          setFormStep("segments");
+                        } else if (formStep === "segments") {
+                          // Validate target segments
+                          if (newAssignment.targetSegments.length === 0) {
+                            toast({
+                              title: "Please select target segments",
+                              description: "At least 1 segment must be selected.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          setFormStep("review");
+                        } else if (formStep === "review") {
                           setFormStep("settings");
                         }
                       }}
@@ -911,43 +1141,57 @@ export function VNextAssignmentDesk() {
       {/* Conditional Content based on View */}
       {activeView === "assignments" ? (
         <>
-        {/* Assignment Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <Card>
-            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Assignments</CardTitle>
+        {/* Enhanced Assignment Status Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+          <Card className="border-l-4 border-l-gray-400">
+            <CardHeader className="pb-2 px-4">
+              <CardTitle className="text-xs font-medium text-gray-600">Draft</CardTitle>
             </CardHeader>
-            <CardContent className="px-3 sm:px-6">
-              <div className="text-xl sm:text-2xl font-bold">{assignments.length}</div>
+            <CardContent className="px-4">
+              <div className="text-2xl font-bold">{assignments.filter(a => a.status === "unassigned").length}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Unassigned</CardTitle>
+          
+          <Card className="border-l-4 border-l-yellow-400">
+            <CardHeader className="pb-2 px-4">
+              <CardTitle className="text-xs font-medium text-gray-600">In Review</CardTitle>
             </CardHeader>
-            <CardContent className="px-3 sm:px-6">
-              <div className="text-xl sm:text-2xl font-bold text-yellow-600">
-                {assignments.filter(a => a.status === "unassigned").length}
+            <CardContent className="px-4">
+              <div className="text-2xl font-bold text-yellow-600">
+                {assignments.filter(a => a.status === "review").length}
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">In Progress</CardTitle>
+          
+          <Card className="border-l-4 border-l-green-400">
+            <CardHeader className="pb-2 px-4">
+              <CardTitle className="text-xs font-medium text-gray-600">Approved</CardTitle>
             </CardHeader>
-            <CardContent className="px-3 sm:px-6">
-              <div className="text-xl sm:text-2xl font-bold text-blue-600">
-                {assignments.filter(a => ["assigned", "in_progress"].includes(a.status)).length}
+            <CardContent className="px-4">
+              <div className="text-2xl font-bold text-green-600">
+                {assignments.filter(a => a.status === "approved").length}
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Completed</CardTitle>
+          
+          <Card className="border-l-4 border-l-blue-400">
+            <CardHeader className="pb-2 px-4">
+              <CardTitle className="text-xs font-medium text-gray-600">Queued</CardTitle>
             </CardHeader>
-            <CardContent className="px-3 sm:px-6">
-              <div className="text-xl sm:text-2xl font-bold text-green-600">
-                {assignments.filter(a => ["approved", "completed", "published"].includes(a.status)).length}
+            <CardContent className="px-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {assignments.filter(a => ["queued", "broadcasting"].includes(a.status)).length}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-l-4 border-l-purple-400">
+            <CardHeader className="pb-2 px-4">
+              <CardTitle className="text-xs font-medium text-gray-600">Sent</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {assignments.filter(a => ["completed", "published"].includes(a.status)).length}
               </div>
             </CardContent>
           </Card>

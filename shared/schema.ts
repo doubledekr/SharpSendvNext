@@ -325,7 +325,7 @@ export const assignments = pgTable("assignments", {
   title: varchar("title").notNull(),
   description: text("description"),
   priority: varchar("priority").default("medium"), // low, medium, high, urgent
-  status: varchar("status").notNull().default("unassigned"), // unassigned, assigned, in_progress, review, approved, published
+  status: varchar("status").notNull().default("unassigned"), // unassigned, assigned, in_progress, review, approved, published, variations_generated, queued, broadcasting, completed
   dueDate: timestamp("due_date"),
   assignmentLink: varchar("assignment_link"), // Keep existing field
   copywriterId: varchar("copywriter_id"), // Keep existing field  
@@ -357,6 +357,32 @@ export const assignments = pgTable("assignments", {
   notes: text("notes"),
   tags: text("tags").array(),
   shareableSlug: varchar("shareable_slug").unique(), // Unique slug for public sharing
+  // New enhanced workflow fields
+  targetSegments: jsonb("target_segments").$type<Array<{
+    segmentId: string;
+    segmentName: string;
+    subscriberCount: number;
+    platform: string;
+  }>>(),
+  emailPlatform: varchar("email_platform").default("auto-detect"),
+  reviewers: jsonb("reviewers").$type<Array<{
+    userId: string;
+    name: string;
+    role: string;
+    status: string; // pending, approved, rejected, changes_requested
+    comments?: string[];
+    reviewedAt?: string;
+  }>>(),
+  reviewDeadline: timestamp("review_deadline"),
+  reviewNotes: text("review_notes"),
+  autoGenerateVariations: boolean("auto_generate_variations").default(true),
+  workflowStage: varchar("workflow_stage").default("creation"), // creation, review, approval, variation, broadcast
+  progressPercentage: integer("progress_percentage").default(0),
+  broadcastSettings: jsonb("broadcast_settings").$type<{
+    sendTime?: string;
+    pixelTracking?: boolean;
+    campaignIds?: string[];
+  }>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

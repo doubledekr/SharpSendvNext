@@ -114,7 +114,7 @@ router.get("/api/public/assignment/:slug", async (req, res) => {
   }
 });
 
-// Create a new assignment with unique shareable link
+// Create a new assignment with unique shareable link and enhanced workflow fields
 router.post("/api/assignments", async (req, res) => {
   try {
     // Check if the user is authenticated
@@ -128,7 +128,11 @@ router.post("/api/assignments", async (req, res) => {
       publisherId = user.publisher.id;
     }
     
-    const { title, description, type, priority, dueDate, notes, tags, brief, opportunityId } = req.body;
+    const { 
+      title, description, type, priority, dueDate, notes, tags, brief, opportunityId,
+      // New enhanced workflow fields
+      targetSegments, emailPlatform, reviewers, reviewDeadline, reviewNotes, autoGenerateVariations
+    } = req.body;
     
     // Generate unique shareable slug
     const shareableSlug = generateShareableSlug();
@@ -170,6 +174,17 @@ router.post("/api/assignments", async (req, res) => {
       }
     }
     
+    // Determine initial status and workflow stage
+    let initialStatus = "unassigned";
+    let initialStage = "creation";
+    let progressPct = 20;
+    
+    if (reviewers && reviewers.length > 0) {
+      initialStatus = "review";
+      initialStage = "review";
+      progressPct = 40;
+    }
+    
     const [newAssignment] = await db
       .insert(assignments)
       .values({
@@ -183,7 +198,16 @@ router.post("/api/assignments", async (req, res) => {
         tags: tags || [],
         brief: enhancedBrief,
         shareableSlug,
-        status: "unassigned",
+        status: initialStatus,
+        // Enhanced workflow fields
+        targetSegments: targetSegments || [],
+        emailPlatform: emailPlatform || 'auto-detect',
+        reviewers: reviewers || [],
+        reviewDeadline: reviewDeadline ? new Date(reviewDeadline) : undefined,
+        reviewNotes,
+        autoGenerateVariations: autoGenerateVariations !== false,
+        workflowStage: initialStage,
+        progressPercentage: progressPct,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
