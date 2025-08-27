@@ -272,14 +272,18 @@ export const assignmentAssets = pgTable("assignment_assets", {
 export const assignments = pgTable("assignments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   publisherId: varchar("publisher_id").notNull(),
-  title: text("title").notNull(),
+  title: varchar("title").notNull(),
   description: text("description"),
-  type: text("type").notNull(), // newsletter, article, research, analysis
-  status: text("status").notNull().default("unassigned"), // unassigned, assigned, in_progress, review, approved, published
-  priority: text("priority").default("medium"), // low, medium, high, urgent
+  priority: varchar("priority").default("medium"), // low, medium, high, urgent
+  status: varchar("status").notNull().default("unassigned"), // unassigned, assigned, in_progress, review, approved, published
+  dueDate: timestamp("due_date"),
+  assignmentLink: varchar("assignment_link"), // Keep existing field
+  copywriterId: varchar("copywriter_id"), // Keep existing field  
+  marketContext: jsonb("market_context"), // Keep existing field
+  // New fields to match frontend expectations
+  type: text("type").default("newsletter"), // newsletter, article, research, analysis
   assignedTo: varchar("assigned_to"),
   assignedBy: varchar("assigned_by"),
-  dueDate: timestamp("due_date"),
   content: text("content"),
   brief: jsonb("brief").$type<{
     objective?: string;

@@ -120,8 +120,18 @@ router.get("/api/assignments/:id", async (req, res) => {
 // Create a new assignment with unique shareable link
 router.post("/api/assignments", async (req, res) => {
   try {
-    const publisherId = "demo-publisher";
-    const { title, description, type, priority, dueDate, notes, tags } = req.body;
+    // Check if the user is authenticated
+    const user = (req as any).session?.user;
+    let publisherId = "demo-publisher";
+    
+    // Use actual publisher ID if available
+    if (user?.publisherId) {
+      publisherId = user.publisherId;
+    } else if (user?.publisher?.id) {
+      publisherId = user.publisher.id;
+    }
+    
+    const { title, description, type, priority, dueDate, notes, tags, brief } = req.body;
     
     // Generate unique shareable slug
     const shareableSlug = generateShareableSlug();
@@ -137,6 +147,7 @@ router.post("/api/assignments", async (req, res) => {
         dueDate: dueDate ? new Date(dueDate) : undefined,
         notes,
         tags,
+        brief,
         shareableSlug,
         status: "unassigned",
         createdAt: new Date(),
