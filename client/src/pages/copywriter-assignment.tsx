@@ -476,15 +476,40 @@ export function CopywriterAssignment() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <DragDropContentEditor
-                    content={submission.contentBlocks}
-                    onChange={(blocks) => setSubmission(prev => ({ ...prev, contentBlocks: blocks }))}
-                    onImageInsert={handleImageInsert}
-                    placeholder="Start writing your assignment content..."
-                    className={isSubmitted ? "pointer-events-none opacity-75" : ""}
-                  />
+                  {isSubmitted ? (
+                    <div className="bg-muted/30 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-2">This assignment has been submitted for review.</p>
+                      <div className="text-sm">
+                        <strong>Status:</strong> {assignment?.status === 'review' ? 'Under Review' : 'Submitted'}
+                      </div>
+                    </div>
+                  ) : (
+                    <DragDropContentEditor
+                      content={submission.contentBlocks}
+                      onChange={(blocks) => setSubmission(prev => ({ ...prev, contentBlocks: blocks }))}
+                      onImageInsert={handleImageInsert}
+                      placeholder="Start writing your assignment content..."
+                    />
+                  )}
                 </CardContent>
               </Card>
+
+              {/* Submitted Content Display */}
+              {isSubmitted && assignment?.content && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      Submitted Content
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none dark:prose-invert">
+                      <div className="whitespace-pre-wrap text-sm">{assignment.content}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Notes Section */}
               <Card>
