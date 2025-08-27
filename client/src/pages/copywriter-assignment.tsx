@@ -121,6 +121,12 @@ export function CopywriterAssignment() {
     enabled: !!(slug || assignmentId),
   });
 
+  // Fetch email variations for completed assignments
+  const { data: variationsData } = useQuery({
+    queryKey: [`/api/assignments/${assignmentId}/variations`],
+    enabled: !!assignmentId && assignment?.status === "completed",
+  });
+
   // Load existing submission if any
   React.useEffect(() => {
     if (assignment?.masterDraft?.blocks) {
@@ -701,6 +707,72 @@ export function CopywriterAssignment() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Email Variations Section for Completed Assignments */}
+      {assignment?.status === "completed" && variationsData?.variations && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-blue-600" />
+              Email Variations
+              <Badge variant="outline" className="ml-2">
+                {variationsData.variations.length} Segments
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6">
+              {variationsData.variations.map((variation: any) => (
+                <Card key={variation.id} className="border-l-4 border-l-blue-500">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{variation.segmentIcon}</span>
+                        <div>
+                          <CardTitle className="text-lg">{variation.segmentName}</CardTitle>
+                          <p className="text-sm text-gray-600 mt-1">{variation.segmentDescription}</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">
+                        ~{variation.estimatedReach?.toLocaleString()} subscribers
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Subject Line</Label>
+                        <div className="mt-1 p-3 bg-gray-50 rounded-md border">
+                          <p className="font-medium">{variation.subjectLine}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Email Content Preview</Label>
+                        <ScrollArea className="h-32 mt-1 p-3 bg-gray-50 rounded-md border">
+                          <div className="whitespace-pre-wrap text-sm">
+                            {variation.content}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="h-5 w-5 text-blue-600" />
+                <h4 className="font-medium text-blue-900">Assignment Complete</h4>
+              </div>
+              <p className="text-sm text-blue-700">
+                This assignment has been completed and email variations have been generated for {variationsData.variations.length} different investor segments. 
+                Each variation is optimized for the specific interests and communication preferences of that audience segment.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

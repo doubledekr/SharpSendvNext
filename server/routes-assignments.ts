@@ -851,4 +851,55 @@ function generateContentForSegment(content: string, segment: any): string {
   return `${intro}\n\n${baseContent}`;
 }
 
+// Get email variations for a specific assignment
+router.get("/api/assignments/:id/variations", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const publisherId = "demo-publisher";
+    
+    // Get the assignment
+    const [assignment] = await db
+      .select()
+      .from(assignments)
+      .where(and(
+        eq(assignments.id, id),
+        eq(assignments.publisherId, publisherId)
+      ))
+      .limit(1);
+    
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+    
+    if (assignment.status !== "completed") {
+      return res.json({ variations: [], message: "No variations available for non-completed assignments" });
+    }
+    
+    // Generate the same variations as when completing the assignment
+    const segments = [
+      { id: "growth-investors", name: "Growth Investors", description: "Focus on growth stocks and emerging markets", icon: "🚀" },
+      { id: "conservative-investors", name: "Conservative Investors", description: "Focus on stable, dividend-paying stocks", icon: "🛡️" },
+      { id: "day-traders", name: "Day Traders", description: "Active traders looking for short-term opportunities", icon: "⚡" },
+      { id: "crypto-enthusiasts", name: "Crypto Enthusiasts", description: "Interested in cryptocurrency and digital assets", icon: "₿" }
+    ];
+    
+    const variations = segments.map(segment => ({
+      id: `${id}-${segment.id}`,
+      segmentId: segment.id,
+      segmentName: segment.name,
+      segmentDescription: segment.description,
+      segmentIcon: segment.icon,
+      subjectLine: generateSubjectLineForSegment(assignment.title, segment),
+      content: generateContentForSegment(assignment.content || assignment.description, segment),
+      estimatedReach: Math.floor(Math.random() * 5000) + 1000,
+      createdAt: assignment.updatedAt || assignment.createdAt
+    }));
+    
+    res.json({ variations, assignment });
+  } catch (error) {
+    console.error("Error fetching email variations:", error);
+    res.status(500).json({ error: "Failed to fetch email variations" });
+  }
+});
+
 export default router;
