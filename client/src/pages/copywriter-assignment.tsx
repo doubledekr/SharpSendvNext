@@ -13,7 +13,8 @@ import {
   X, 
   ExternalLink,
   Upload,
-  Loader2
+  Loader2,
+  Mail
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -125,6 +126,12 @@ export function CopywriterAssignment() {
   const { data: variationsData } = useQuery({
     queryKey: [`/api/assignments/${assignmentId}/variations`],
     enabled: !!assignmentId && assignment?.status === "completed",
+  });
+
+  // Fetch tracked images for the assignment
+  const { data: assignmentImages } = useQuery({
+    queryKey: [`/api/assignments/${assignmentId}/images`],
+    enabled: !!assignmentId,
   });
 
   // Load existing submission if any
@@ -770,6 +777,26 @@ export function CopywriterAssignment() {
                 This assignment has been completed and email variations have been generated for {variationsData.variations.length} different investor segments. 
                 Each variation is optimized for the specific interests and communication preferences of that audience segment.
               </p>
+              {assignmentImages?.images && assignmentImages.images.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <h5 className="font-medium text-blue-900 mb-2">Tracked Images ({assignmentImages.images.length})</h5>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {assignmentImages.images.map((image: any) => (
+                      <div key={image.id} className="bg-white rounded border p-2">
+                        <img 
+                          src={image.imageUrl} 
+                          alt={image.altText || 'Assignment image'} 
+                          className="w-full h-16 object-cover rounded mb-1"
+                        />
+                        <p className="text-xs text-gray-600 truncate">{image.caption || 'No caption'}</p>
+                        <Badge variant="outline" className="text-xs mt-1">
+                          Pixel ID: {image.pixelTrackingId}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

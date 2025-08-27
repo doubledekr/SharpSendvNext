@@ -268,6 +268,56 @@ export const assignmentAssets = pgTable("assignment_assets", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Email Variations table to track generated variations
+export const emailVariations = pgTable("email_variations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  assignmentId: varchar("assignment_id").notNull(),
+  publisherId: varchar("publisher_id").notNull(),
+  segmentId: varchar("segment_id", { length: 100 }).notNull(),
+  segmentName: varchar("segment_name", { length: 255 }).notNull(),
+  segmentDescription: text("segment_description"),
+  segmentIcon: varchar("segment_icon", { length: 10 }),
+  subjectLine: varchar("subject_line", { length: 500 }).notNull(),
+  content: text("content").notNull(),
+  estimatedReach: integer("estimated_reach"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Image attachments tracking table
+export const imageAttachments = pgTable("image_attachments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id", { length: 255 }).notNull(),
+  assignmentId: varchar("assignment_id"),
+  emailVariationId: varchar("email_variation_id"),
+  imageUrl: varchar("image_url", { length: 1000 }).notNull(),
+  imagePath: varchar("image_path", { length: 500 }),
+  caption: text("caption"),
+  altText: varchar("alt_text", { length: 500 }),
+  placement: varchar("placement", { length: 50 }).notNull().default("inline"), // 'hero', 'inline', 'footer', 'background'
+  size: varchar("size", { length: 20 }).default("medium"), // 'small', 'medium', 'large', 'full'
+  align: varchar("align", { length: 20 }).default("center"), // 'left', 'center', 'right'
+  pixelTrackingId: varchar("pixel_tracking_id", { length: 255 }), // For tracking image views/clicks
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Pixel tracking events for images
+export const imagePixelEvents = pgTable("image_pixel_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id", { length: 255 }).notNull(),
+  imageAttachmentId: varchar("image_attachment_id").notNull(),
+  assignmentId: varchar("assignment_id"),
+  emailVariationId: varchar("email_variation_id"),
+  eventType: varchar("event_type", { length: 50 }).notNull(), // 'view', 'click', 'impression'
+  subscriberId: varchar("subscriber_id", { length: 255 }),
+  userAgent: text("user_agent"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  referrer: text("referrer"),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Assignment Desk - Content planning and management
 export const assignments = pgTable("assignments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

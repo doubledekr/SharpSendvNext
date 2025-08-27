@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "./db";
-import { assignments } from "@shared/schema";
+import { assignments, emailVariations, imageAttachments, imagePixelEvents } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
@@ -894,11 +894,170 @@ router.get("/api/assignments/:id/variations", async (req, res) => {
       estimatedReach: Math.floor(Math.random() * 5000) + 1000,
       createdAt: assignment.updatedAt || assignment.createdAt
     }));
+
+    // Store variations in database for tracking
+    for (const variation of variations) {
+      await db.insert(emailVariations).values({
+        assignmentId: assignment.id,
+        publisherId: assignment.publisherId,
+        segmentId: variation.segmentId,
+        segmentName: variation.segmentName,
+        segmentDescription: variation.segmentDescription,
+        segmentIcon: variation.segmentIcon,
+        subjectLine: variation.subjectLine,
+        content: variation.content,
+        estimatedReach: variation.estimatedReach,
+      }).onConflictDoNothing();
+    }
+
+    // Extract and track images from assignment content
+    if (assignment.content || assignment.masterDraft) {
+      await trackAssignmentImages(assignment.id, assignment.publisherId, assignment.content, assignment.masterDraft);
+    }
     
     res.json({ variations, assignment });
   } catch (error) {
     console.error("Error fetching email variations:", error);
     res.status(500).json({ error: "Failed to fetch email variations" });
+  }
+});
+
+// Helper function to track images in assignments and variations
+async function trackAssignmentImages(assignmentId: string, publisherId: string, content?: string, masterDraft?: any) {
+  try {
+    const imageUrls: string[] = [];
+    
+    // Extract images from content
+    if (content) {
+      const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      let match;
+      while ((match = imageRegex.exec(content)) !== null) {
+        imageUrls.push(match[2]);
+      }
+    }
+    
+    // Extract images from masterDraft blocks
+    if (masterDraft?.blocks) {
+      for (const block of masterDraft.blocks) {
+        if (block.type === 'image' && block.assetId) {
+          imageUrls.push(block.assetId);
+        }
+      }
+    }
+    
+    // Track each unique image
+    for (const imageUrl of [...new Set(imageUrls)]) {
+      const pixelTrackingId = `img_${randomBytes(8).toString('hex')}`;
+      
+      await db.insert(imageAttachments).values({
+        publisherId,
+        assignmentId,
+        imageUrl,
+        imagePath: extractImagePath(imageUrl),
+        pixelTrackingId,
+        placement: 'inline',
+        isActive: true,
+      }).onConflictDoNothing();
+    }
+  } catch (error) {
+    console.error('Error tracking assignment images:', error);
+  }
+}
+
+// Helper function to extract image path from URL
+function extractImagePath(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.pathname;
+  } catch {
+    return url;
+  }
+}
+
+// API endpoint to get images for assignment or variation
+router.get("/api/assignments/:id/images", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const publisherId = "demo-publisher";
+    
+    const images = await db
+      .select()
+      .from(imageAttachments)
+      .where(and(
+        eq(imageAttachments.assignmentId, id),
+        eq(imageAttachments.publisherId, publisherId),
+        eq(imageAttachments.isActive, true)
+      ))
+      .orderBy(desc(imageAttachments.createdAt));
+    
+    res.json({ images });
+  } catch (error) {
+    console.error("Error fetching assignment images:", error);
+    res.status(500).json({ error: "Failed to fetch assignment images" });
+  }
+});
+
+// API endpoint to track image pixel events
+router.post("/api/image-pixel-event", async (req, res) => {
+  try {
+    const { imageAttachmentId, eventType, subscriberId, metadata } = req.body;
+    const publisherId = "demo-publisher";
+    
+    await db.insert(imagePixelEvents).values({
+      publisherId,
+      imageAttachmentId,
+      eventType,
+      subscriberId,
+      userAgent: req.get('user-agent'),
+      ipAddress: req.ip,
+      referrer: req.get('referer'),
+      metadata,
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error tracking image pixel event:", error);
+    res.status(500).json({ error: "Failed to track image event" });
+  }
+});
+
+// API endpoint to search images by assignment or email variation
+router.get("/api/images/search", async (req, res) => {
+  try {
+    const { assignmentId, emailVariationId, query } = req.query;
+    const publisherId = "demo-publisher";
+    
+    let whereClause = eq(imageAttachments.publisherId, publisherId);
+    
+    if (assignmentId) {
+      whereClause = and(whereClause, eq(imageAttachments.assignmentId, assignmentId as string));
+    }
+    
+    if (emailVariationId) {
+      whereClause = and(whereClause, eq(imageAttachments.emailVariationId, emailVariationId as string));
+    }
+    
+    const images = await db
+      .select()
+      .from(imageAttachments)
+      .where(whereClause)
+      .orderBy(desc(imageAttachments.createdAt));
+    
+    // Filter by text query if provided
+    let filteredImages = images;
+    if (query) {
+      const searchTerm = (query as string).toLowerCase();
+      filteredImages = images.filter(img => 
+        img.caption?.toLowerCase().includes(searchTerm) ||
+        img.altText?.toLowerCase().includes(searchTerm) ||
+        img.imagePath?.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    res.json({ images: filteredImages });
+  } catch (error) {
+    console.error("Error searching images:", error);
+    res.status(500).json({ error: "Failed to search images" });
   }
 });
 
