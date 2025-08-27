@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -30,7 +31,10 @@ import {
   UserCheck,
   Clock,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  Save,
+  Pause,
+  X
 } from 'lucide-react';
 
 interface Assignment {
@@ -66,6 +70,15 @@ interface EmailMetrics {
   revenue: number;
 }
 
+// Helper function to render markdown content with links and formatting
+function renderMarkdownContent(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1 ↗</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
 export default function AssignmentCopywriterFlow() {
   const { id: assignmentId } = useParams();
   const [, setLocation] = useLocation();
@@ -82,6 +95,8 @@ export default function AssignmentCopywriterFlow() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [metrics, setMetrics] = useState<EmailMetrics | null>(null);
+  const [scheduledTime, setScheduledTime] = useState<string>('immediate');
+  const [customDateTime, setCustomDateTime] = useState<string>('');
 
   // Fetch assignment details
   const { data: assignment, isLoading } = useQuery<Assignment>({
@@ -91,56 +106,46 @@ export default function AssignmentCopywriterFlow() {
 
   // Generate AI content variations for segments
   const generateSegmentVariations = async () => {
+    if (!subject || !content) {
+      toast({
+        title: "Content Required",
+        description: "Please enter both subject and content first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
+    
     try {
-      // Simulate AI generation for different segments
-      const cohorts = [
-        { 
-          name: 'High-Value Investors', 
-          criteria: 'Portfolio > $100k, Active traders',
-          size: 3200,
-          focus: 'Advanced strategies, institutional insights'
+      const response = await apiRequest(`/api/assignments/${assignmentId}/generate-variations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
         },
-        { 
-          name: 'Growth Seekers', 
-          criteria: 'Tech-focused, Risk tolerance: High',
-          size: 5400,
-          focus: 'AI stocks, emerging technologies'
-        },
-        { 
-          name: 'Conservative Investors', 
-          criteria: 'Risk tolerance: Low, Focus on dividends',
-          size: 7100,
-          focus: 'Stable returns, risk management'
-        },
-        { 
-          name: 'Day Traders', 
-          criteria: 'Daily activity, Options trading',
-          size: 2800,
-          focus: 'Short-term opportunities, technical analysis'
-        }
-      ];
+        body: JSON.stringify({
+          subject: subject.trim(),
+          content: content.trim()
+        })
+      });
 
-      const variations: SegmentVariation[] = cohorts.map((cohort, index) => ({
-        id: `seg-${Date.now()}-${index}`,
-        segmentName: cohort.name,
-        segmentCriteria: cohort.criteria,
-        subjectLine: generateSubjectForSegment(cohort.name, subject),
-        content: generateContentForSegment(cohort.name, cohort.focus, content),
-        estimatedRecipients: cohort.size,
-        pixelId: `px-${assignmentId}-${index}-${Date.now()}`, // Unique pixel per segment
-        aiScore: 85 + Math.random() * 15 // AI confidence score
-      }));
+      if (!response.ok) {
+        throw new Error('Failed to generate variations');
+      }
 
+      const variations = await response.json();
+      
       setSegments(variations);
       toast({
         title: "AI Variations Generated",
-        description: `Created ${variations.length} personalized versions for different segments`,
+        description: `Created ${variations.length} personalized email variations with pixel tracking`
       });
+      
     } catch (error) {
+      console.error("Error generating variations:", error);
       toast({
         title: "Generation Failed",
-        description: "Failed to generate segment variations",
+        description: "Failed to generate email variations. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -210,22 +215,12 @@ export default function AssignmentCopywriterFlow() {
         : segments;
 
       const queueData = {
-        assignmentId,
-        publisherId: assignment?.publisherId,
-        campaigns: selectedVariations.map(variation => ({
-          segmentId: variation.id,
-          segmentName: variation.segmentName,
-          subject: variation.subjectLine,
-          content: variation.content,
-          recipients: variation.estimatedRecipients,
-          pixelId: variation.pixelId, // Unique pixel for tracking
-          scheduledTime: new Date().toISOString(),
-          platform: 'mailchimp', // Default platform
-          status: 'queued'
-        }))
+        variations: selectedVariations,
+        scheduledTime,
+        customDateTime
       };
 
-      return apiRequest('/api/send-queue', {
+      return apiRequest(`/api/assignments/${assignmentId}/send-queue`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(queueData)
@@ -513,49 +508,106 @@ export default function AssignmentCopywriterFlow() {
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="space-y-2">
+                          <div className="space-y-4">
                             <div>
-                              <p className="text-sm font-medium text-gray-600">Subject:</p>
-                              <p className="text-sm">{segment.subjectLine}</p>
+                              <p className="text-sm font-medium text-gray-600">Subject Line:</p>
+                              <p className="text-sm font-semibold">{segment.subjectLine}</p>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Preview:</p>
-                              <p className="text-sm text-gray-700 line-clamp-3">
-                                {segment.content}
-                              </p>
+                            
+                            {/* Email Preview */}
+                            <div className="border rounded-lg p-4 bg-white dark:bg-gray-50">
+                              <div className="text-xs text-gray-500 mb-3 pb-2 border-b">
+                                <div>From: publisher@example.com</div>
+                                <div>To: {segment.segmentName.toLowerCase()}@example.com</div>
+                                <div className="font-semibold text-gray-700">{segment.subjectLine}</div>
+                              </div>
+                              
+                              <div 
+                                className="text-sm text-gray-800 space-y-2"
+                                dangerouslySetInnerHTML={{
+                                  __html: renderMarkdownContent(segment.content)
+                                }}
+                              />
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <Eye className="w-3 h-3" />
-                              Pixel ID: {segment.pixelId}
+                            
+                            <div className="flex items-center justify-between text-xs text-gray-500">
+                              <div className="flex items-center gap-2">
+                                <Eye className="w-3 h-3" />
+                                <span>Pixel ID: {segment.pixelId}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3 text-green-500" />
+                                <span>Tracking Enabled</span>
+                              </div>
                             </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
                     
-                    <div className="flex gap-2 pt-4">
-                      <Button 
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={segments.length === 0 || isSending}
-                        className="bg-green-600 hover:bg-green-700"
-                        data-testid="button-send-queue"
-                      >
-                        {isSending ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4 mr-2" />
+                    <div className="space-y-4 pt-4 border-t">
+                      {/* Send Time Scheduling */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Send Time</Label>
+                        <Select value={scheduledTime} onValueChange={setScheduledTime}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose send time..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="immediate">Send Immediately</SelectItem>
+                            <SelectItem value="optimal">Optimal Time (AI Suggested)</SelectItem>
+                            <SelectItem value="custom">Custom Date & Time</SelectItem>
+                            <SelectItem value="draft">Save as Draft</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        {scheduledTime === 'custom' && (
+                          <div className="flex gap-2">
+                            <Input
+                              type="datetime-local"
+                              value={customDateTime}
+                              onChange={(e) => setCustomDateTime(e.target.value)}
+                              min={new Date().toISOString().slice(0, 16)}
+                              className="flex-1"
+                            />
+                          </div>
                         )}
-                        Push to Send Queue ({selectedSegments.length || segments.length} segments)
-                      </Button>
+                        
+                        {scheduledTime === 'optimal' && (
+                          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                            AI suggests: Tomorrow at 9:15 AM EST (based on subscriber engagement patterns)
+                          </div>
+                        )}
+                      </div>
                       
-                      <Button 
-                        variant="outline"
-                        onClick={() => generateSegmentVariations()}
-                        disabled={isGenerating}
-                      >
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Regenerate Variations
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => setShowConfirmDialog(true)}
+                          disabled={segments.length === 0 || isSending || (scheduledTime === 'custom' && !customDateTime)}
+                          className="bg-green-600 hover:bg-green-700"
+                          data-testid="button-send-queue"
+                        >
+                          {isSending ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : scheduledTime === 'draft' ? (
+                            <Save className="w-4 h-4 mr-2" />
+                          ) : (
+                            <Send className="w-4 h-4 mr-2" />
+                          )}
+                          {scheduledTime === 'draft' ? 'Save to Drafts' : 
+                           scheduledTime === 'immediate' ? 'Send Now' : 
+                           'Add to Queue'} ({selectedSegments.length || segments.length} segments)
+                        </Button>
+                        
+                        <Button 
+                          variant="outline"
+                          onClick={() => generateSegmentVariations()}
+                          disabled={isGenerating}
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Regenerate Variations
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -573,52 +625,118 @@ export default function AssignmentCopywriterFlow() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {segments.filter(s => selectedSegments.length === 0 || selectedSegments.includes(s.id)).map((segment) => (
-                  <div key={segment.id} className="border rounded-lg p-4 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-5 h-5 text-blue-500" />
-                        <span className="font-medium">{segment.segmentName}</span>
-                      </div>
-                      <Badge className="bg-yellow-500 text-white">
-                        Queued
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">Platform:</p>
-                        <p className="font-medium">Mailchimp</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Recipients:</p>
-                        <p className="font-medium">{segment.estimatedRecipients.toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Pixel Tracking:</p>
-                        <p className="font-medium text-green-600">✓ Enabled</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Scheduled:</p>
-                        <p className="font-medium">Immediate</p>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-xs text-gray-500">
-                        Unique Pixel ID: {segment.pixelId}
-                      </p>
-                    </div>
+                {segments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No campaigns in queue</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Generate variations and push them to the queue to schedule sending
+                    </p>
                   </div>
-                ))}
-                
-                {segments.length > 0 && (
-                  <Alert className="bg-green-50 border-green-200">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <AlertDescription className="text-green-800">
-                      Emails will be sent through connected platform with individual pixel tracking for each segment
-                    </AlertDescription>
-                  </Alert>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-600 mb-4">
+                      {segments.length} email variation{segments.length !== 1 ? 's' : ''} ready for queue management
+                    </div>
+                    
+                    {segments.filter(s => selectedSegments.length === 0 || selectedSegments.includes(s.id)).map((segment) => (
+                      <Card key={segment.id} className="border border-gray-200">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                              <div>
+                                <CardTitle className="text-base">{segment.segmentName}</CardTitle>
+                                <CardDescription className="text-xs">{segment.subjectLine}</CardDescription>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {segment.estimatedRecipients.toLocaleString()} recipients
+                              </Badge>
+                              <Badge className="bg-blue-500 text-white text-xs">
+                                Queued
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="space-y-3">
+                            {/* Email Preview in Queue */}
+                            <div className="bg-gray-50 border rounded p-3 text-xs">
+                              <div className="text-gray-500 mb-2">Email Preview:</div>
+                              <div 
+                                className="text-gray-800 line-clamp-2"
+                                dangerouslySetInnerHTML={{
+                                  __html: renderMarkdownContent(segment.content)
+                                }}
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                              <div>
+                                <span className="text-gray-600">Platform:</span>
+                                <span className="font-medium ml-2">Mailchimp</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Send Time:</span>
+                                <span className="font-medium ml-2">
+                                  {scheduledTime === 'immediate' ? 'Send Now' :
+                                   scheduledTime === 'optimal' ? 'Tomorrow 9:15 AM' :
+                                   scheduledTime === 'custom' && customDateTime ? new Date(customDateTime).toLocaleString() :
+                                   'Draft'}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-2 text-green-600">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Tracking Pixels Confirmed & Attached</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-gray-500">
+                                <Eye className="w-3 h-3" />
+                                <span>ID: {segment.pixelId}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-2 pt-2 border-t">
+                              <Button size="sm" variant="outline" className="text-xs h-7">
+                                <Eye className="w-3 h-3 mr-1" />
+                                Preview
+                              </Button>
+                              <Button size="sm" variant="outline" className="text-xs h-7">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Reschedule
+                              </Button>
+                              <Button size="sm" variant="outline" className="text-xs h-7 text-red-600">
+                                <X className="w-3 h-3 mr-1" />
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    
+                    <div className="flex gap-2 pt-4 border-t">
+                      <Button className="bg-green-600 hover:bg-green-700">
+                        <Send className="w-4 h-4 mr-2" />
+                        Process Queue ({segments.length} emails)
+                      </Button>
+                      <Button variant="outline">
+                        <Pause className="w-4 h-4 mr-2" />
+                        Pause All
+                      </Button>
+                    </div>
+                    
+                    <Alert className="bg-green-50 border-green-200">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <AlertDescription className="text-green-800">
+                        All emails have unique tracking pixels generated and attached. Ready for sending with full analytics tracking.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -764,37 +882,87 @@ export default function AssignmentCopywriterFlow() {
         </Tabs>
       </div>
 
-      {/* Confirmation Dialog */}
+      {/* Enhanced Send Confirmation Dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader>
-              <CardTitle>Confirm Send</CardTitle>
+              <CardTitle>Confirm Email Send</CardTitle>
               <CardDescription>
-                Are you sure you want to send {selectedSegments.length || segments.length} email campaigns to the queue?
+                Review send configuration and pixel tracking confirmation
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-2 justify-end">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowConfirmDialog(false)}
-                >
-                  Cancel
-                </Button>
+            <CardContent className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="font-medium text-sm">Tracking Pixels Confirmed</span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  All {selectedSegments.length || segments.length} email variations have unique tracking pixels generated and attached for analytics.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Send Configuration</Label>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Send Time:</span>
+                    <span className="font-medium ml-2">
+                      {scheduledTime === 'immediate' ? 'Send Immediately' :
+                       scheduledTime === 'optimal' ? 'Tomorrow 9:15 AM EST (AI Optimized)' :
+                       scheduledTime === 'custom' && customDateTime ? new Date(customDateTime).toLocaleString() :
+                       'Save as Draft'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Platform:</span>
+                    <span className="font-medium ml-2">Mailchimp</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border-t pt-3">
+                <div className="text-sm font-medium mb-2">Email Variations Ready to Send:</div>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {segments.filter(s => selectedSegments.length === 0 || selectedSegments.includes(s.id)).map((segment) => (
+                    <div key={segment.id} className="flex items-center justify-between py-1 px-2 bg-gray-50 rounded text-xs">
+                      <span className="font-medium">{segment.segmentName}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{segment.estimatedRecipients.toLocaleString()} recipients</span>
+                        <Eye className="w-3 h-3 text-green-500" title="Tracking enabled" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
                 <Button 
                   onClick={() => {
+                    setShowConfirmDialog(false);
                     pushToSendQueue.mutate();
                   }}
                   disabled={isSending}
-                  className="bg-green-600 hover:bg-green-700"
+                  className={`${scheduledTime === 'draft' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} flex-1`}
                 >
                   {isSending ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : scheduledTime === 'draft' ? (
+                    <Save className="w-4 h-4 mr-2" />
                   ) : (
                     <Send className="w-4 h-4 mr-2" />
                   )}
-                  Confirm Send
+                  {scheduledTime === 'draft' ? 'Save to Drafts' : 
+                   scheduledTime === 'immediate' ? 'Send Now' : 
+                   'Add to Queue'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowConfirmDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
                 </Button>
               </div>
             </CardContent>

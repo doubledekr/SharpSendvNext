@@ -1085,4 +1085,97 @@ router.get("/api/images/search", async (req, res) => {
   }
 });
 
+// Generate email variations for an assignment
+router.post("/api/assignments/:id/generate-variations", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subject, content } = req.body;
+    
+    // For demo purposes, create sample variations with unique pixel IDs
+    const demoVariations = [
+      {
+        id: `var-${id}-growth-${Date.now()}`,
+        segmentId: "growth-investors",
+        segmentName: "Growth Investors 🚀",
+        segmentCriteria: "Investors focused on high-growth opportunities",
+        subjectLine: `${subject} - Growth Opportunity Alert`,
+        content: `${content}\n\nThis opportunity aligns with your growth investment strategy. High potential for rapid expansion.`,
+        estimatedRecipients: 2485,
+        pixelId: `pixel-${id}-growth-${Date.now()}`
+      },
+      {
+        id: `var-${id}-conservative-${Date.now()}`,
+        segmentId: "conservative-investors", 
+        segmentName: "Conservative Investors 🛡️",
+        segmentCriteria: "Risk-averse investors seeking stability",
+        subjectLine: `${subject} - Stable Investment Insight`,
+        content: `${content}\n\nThis presents a measured approach with steady returns. Low-risk profile with consistent performance.`,
+        estimatedRecipients: 3241,
+        pixelId: `pixel-${id}-conservative-${Date.now()}`
+      },
+      {
+        id: `var-${id}-daytraders-${Date.now()}`,
+        segmentId: "day-traders",
+        segmentName: "Day Traders ⚡",
+        segmentCriteria: "Active traders seeking quick opportunities",
+        subjectLine: `URGENT: ${subject} - Trading Signal`,
+        content: `${content}\n\n⚡ QUICK MOVE OPPORTUNITY: Perfect for your active trading strategy. Time-sensitive action required.`,
+        estimatedRecipients: 1654,
+        pixelId: `pixel-${id}-daytraders-${Date.now()}`
+      },
+      {
+        id: `var-${id}-crypto-${Date.now()}`,
+        segmentId: "crypto-enthusiasts",
+        segmentName: "Crypto Enthusiasts ₿",
+        segmentCriteria: "Digital asset and blockchain investors",
+        subjectLine: `${subject} - Blockchain Innovation`,
+        content: `${content}\n\n₿ Digital asset correlation: This opportunity intersects with blockchain trends. Future of finance potential.`,
+        estimatedRecipients: 1987,
+        pixelId: `pixel-${id}-crypto-${Date.now()}`
+      }
+    ];
+    
+    res.json(demoVariations);
+  } catch (error) {
+    console.error("Error generating email variations:", error);
+    res.status(500).json({ error: "Failed to generate email variations" });
+  }
+});
+
+// Push email variations to send queue
+router.post("/api/assignments/:id/send-queue", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { variations, scheduledTime, customDateTime } = req.body;
+    
+    // For demo - simulate pushing to queue
+    console.log(`Pushing ${variations?.length || 0} variations to send queue for assignment ${id}`);
+    console.log(`Schedule: ${scheduledTime}, Custom time: ${customDateTime}`);
+    
+    // Simulate queue processing
+    const queueEntries = variations?.map((v: any) => ({
+      id: `queue-${v.id}-${Date.now()}`,
+      assignmentId: id,
+      variationId: v.id,
+      segmentName: v.segmentName,
+      status: 'queued',
+      scheduledTime: scheduledTime === 'immediate' ? new Date() : 
+                     scheduledTime === 'optimal' ? new Date(Date.now() + 24 * 60 * 60 * 1000) :
+                     scheduledTime === 'custom' && customDateTime ? new Date(customDateTime) :
+                     null,
+      pixelId: v.pixelId,
+      platform: 'Mailchimp'
+    })) || [];
+    
+    res.json({ 
+      success: true, 
+      message: `${queueEntries.length} email variations added to send queue`,
+      queueEntries 
+    });
+  } catch (error) {
+    console.error("Error pushing to send queue:", error);
+    res.status(500).json({ error: "Failed to push to send queue" });
+  }
+});
+
 export default router;
