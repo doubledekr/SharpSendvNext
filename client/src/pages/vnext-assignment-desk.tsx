@@ -771,7 +771,7 @@ export function VNextAssignmentDesk() {
                           return { method: "PUT" as const, url: data.uploadURL };
                         }}
                         onComplete={async (result) => {
-                          if (result.successful.length > 0) {
+                          if (result.successful && result.successful.length > 0) {
                             const uploadUrl = result.successful[0].uploadURL;
                             const response = await fetch("/api/assignments/process-image", {
                               method: "POST",
@@ -820,26 +820,28 @@ export function VNextAssignmentDesk() {
                           return { method: "PUT" as const, url: data.uploadURL };
                         }}
                         onComplete={async (result) => {
-                          for (const file of result.successful) {
-                            const response = await fetch("/api/assignments/process-image", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ 
-                                uploadUrl: file.uploadURL,
-                                imageType: "inline",
-                                assignmentId: "temp"
-                              }),
-                            });
-                            const data = await response.json();
-                            setNewAssignment({
-                              ...newAssignment,
-                              images: [...newAssignment.images, { url: data.cdnUrl, type: "inline" }]
+                          if (result.successful) {
+                            for (const file of result.successful) {
+                              const response = await fetch("/api/assignments/process-image", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ 
+                                  uploadUrl: file.uploadURL,
+                                  imageType: "inline",
+                                  assignmentId: "temp"
+                                }),
+                              });
+                              const data = await response.json();
+                              setNewAssignment({
+                                ...newAssignment,
+                                images: [...newAssignment.images, { url: data.cdnUrl, type: "inline" }]
+                              });
+                            }
+                            toast({
+                              title: "Inline images uploaded", 
+                              description: `${result.successful.length} images indexed for CDN`,
                             });
                           }
-                          toast({
-                            title: "Inline images uploaded",
-                            description: `${result.successful.length} images indexed for CDN`,
-                          });
                         }}
                       >
                         <Plus className="h-4 w-4 mr-1" />
@@ -1245,7 +1247,7 @@ export function VNextAssignmentDesk() {
                               {opportunity.type}
                             </Badge>
                             {/* Show AI badge if source is ai_detected or metadata contains aiGenerated */}
-                            {(opportunity.source === "ai_detected" || 
+                            {((opportunity as any).source === "ai_detected" || 
                               (opportunity as any)?.metadata?.aiGenerated) && (
                               <Badge variant="secondary" className="gap-1 text-xs">
                                 <Sparkles className="h-3 w-3" />

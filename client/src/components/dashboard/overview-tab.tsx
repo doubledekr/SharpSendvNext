@@ -422,7 +422,7 @@ Your SharpSend Team`,
   // Create assignment from specific market event with full context
   const handleCreateAssignmentFromEvent = async (event: any) => {
     try {
-      const response = await apiRequest('POST', '/api/assignments', {
+      const response = await apiRequest("POST", "/api/assignments", {
         title: `${event.title} - Content Assignment`,
         description: event.description,
         type: event.type === 'news' ? 'newsletter' : 'analysis',
