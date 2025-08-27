@@ -16,6 +16,7 @@ import {
   Loader2,
   Mail
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,8 +77,15 @@ interface ContentBlock {
 }
 
 interface CopywriterSubmission {
+  subjectLine: string;
   contentBlocks: ContentBlock[];
   notes?: string;
+}
+
+// Helper function to render markdown-style links
+function renderMarkdownLinks(text: string): string {
+  // Convert [text](url) to HTML links
+  return text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1 <span class="text-xs">↗</span></a>');
 }
 
 export function CopywriterAssignment() {
@@ -89,6 +97,7 @@ export function CopywriterAssignment() {
   const assignmentId = idParams?.id;
   
   const [submission, setSubmission] = useState<CopywriterSubmission>({
+    subjectLine: "",
     contentBlocks: [],
     notes: ""
   });
@@ -170,6 +179,7 @@ export function CopywriterAssignment() {
     mutationFn: async (data: CopywriterSubmission) => {
       const response = await apiRequest("PATCH", `/api/assignments/${assignment?.id}`, {
         content: data.contentBlocks.map(block => block.content || '').join('\n\n'),
+        subjectLine: data.subjectLine,
         status: "in_progress",
         masterDraft: {
           blocks: data.contentBlocks.map(block => ({
@@ -199,6 +209,7 @@ export function CopywriterAssignment() {
     mutationFn: async (data: CopywriterSubmission) => {
       const response = await apiRequest("PATCH", `/api/assignments/${assignment?.id}`, {
         content: data.contentBlocks.map(block => block.content || '').join('\n\n'),
+        subjectLine: data.subjectLine,
         status: "review",
         masterDraft: {
           blocks: data.contentBlocks.map(block => ({
@@ -516,6 +527,25 @@ export function CopywriterAssignment() {
           {/* Content Editor - Main Area */}
           <div className="col-span-8">
             <div className="space-y-4">
+              {/* Subject Line */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Email Subject Line
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Input
+                    placeholder="Enter compelling email subject line..."
+                    value={submission.subjectLine}
+                    onChange={(e) => setSubmission(prev => ({ ...prev, subjectLine: e.target.value }))}
+                    className="text-lg font-medium"
+                    data-testid="input-subject-line"
+                  />
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -582,13 +612,20 @@ export function CopywriterAssignment() {
                       <div className="email-header border-b border-gray-200 pb-4 mb-6">
                         <div className="text-sm text-gray-500 mb-2">From: publisher@example.com</div>
                         <div className="text-sm text-gray-500 mb-2">To: subscribers@example.com</div>
-                        <h1 className="text-xl font-bold text-gray-900">{assignment.title}</h1>
+                        <h1 className="text-xl font-bold text-gray-900">
+                          {submission.subjectLine || assignment.title}
+                        </h1>
                       </div>
                       <div className="email-content space-y-4">
                         {submission.contentBlocks.map((block, index) => (
                           <div key={block.id} className="content-block">
                             {block.type === 'paragraph' && (
-                              <p className="text-gray-800 leading-relaxed">{block.content}</p>
+                              <div 
+                                className="text-gray-800 leading-relaxed" 
+                                dangerouslySetInnerHTML={{
+                                  __html: renderMarkdownLinks(block.content || '')
+                                }}
+                              />
                             )}
                             {block.type === 'heading' && (
                               <h2 className="text-lg font-semibold text-gray-900 mt-6 mb-3">{block.content}</h2>

@@ -75,6 +75,8 @@ export default function AssignmentCopywriterFlow() {
   const [activeTab, setActiveTab] = useState('write');
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showEditor, setShowEditor] = useState(true);
   const [segments, setSegments] = useState<SegmentVariation[]>([]);
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -234,6 +236,10 @@ export default function AssignmentCopywriterFlow() {
         title: "Added to Send Queue",
         description: `${segments.length} campaigns queued for sending`,
       });
+      
+      // Close confirm dialog and editor after submission
+      setShowConfirmDialog(false);
+      setShowEditor(false);
       
       // Simulate initial metrics
       setTimeout(() => {
@@ -407,12 +413,19 @@ export default function AssignmentCopywriterFlow() {
                   <Label htmlFor="content">Email Content</Label>
                   <Textarea
                     id="content"
-                    placeholder="Write your email content..."
+                    placeholder="Write your email content... Use [link text](url) for hyperlinks, ![alt text](image-url) for images"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     className="min-h-[300px]"
                     data-testid="textarea-content"
                   />
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p><strong>Formatting Tips:</strong></p>
+                    <p>• Links: [Click here](https://example.com)</p>
+                    <p>• Images: ![Description](image-url)</p>
+                    <p>• Bold: **bold text**</p>
+                    <p>• Italic: *italic text*</p>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
@@ -522,7 +535,7 @@ export default function AssignmentCopywriterFlow() {
                     
                     <div className="flex gap-2 pt-4">
                       <Button 
-                        onClick={() => pushToSendQueue.mutate()}
+                        onClick={() => setShowConfirmDialog(true)}
                         disabled={segments.length === 0 || isSending}
                         className="bg-green-600 hover:bg-green-700"
                         data-testid="button-send-queue"
@@ -750,6 +763,57 @@ export default function AssignmentCopywriterFlow() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Confirm Send</CardTitle>
+              <CardDescription>
+                Are you sure you want to send {selectedSegments.length || segments.length} email campaigns to the queue?
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowConfirmDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    pushToSendQueue.mutate();
+                  }}
+                  disabled={isSending}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isSending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Confirm Send
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Success Message After Sending */}
+      {!showEditor && metrics && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white p-4 rounded-lg shadow-lg">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" />
+            <div>
+              <p className="font-medium">Emails Sent Successfully!</p>
+              <p className="text-sm">Editor closed. Check tracking tab for metrics.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
