@@ -354,65 +354,173 @@ router.post("/api/ai/assignments/suggest", async (req, res) => {
     if (source_url && !raw_text) {
       try {
         console.log(`Fetching article content from: ${source_url}`);
+        
+        // Enhanced fetch with timeout and better headers
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         const response = await fetch(source_url, {
+          signal: controller.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
+            'User-Agent': 'Mozilla/5.0 (compatible; SharpSend/1.0; +https://sharpsend.io)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+          },
+          redirect: 'follow',
         });
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const html = await response.text();
+        console.log(`Fetched ${html.length} characters of HTML`);
         
-        // Extract meaningful content from HTML (basic extraction)
-        // Remove HTML tags and extract text content
-        const textContent = html
+        // Enhanced content extraction
+        let textContent = html;
+        
+        // Remove scripts, styles, and other non-content elements
+        textContent = textContent
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+          .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
+          .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+          .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, '')
+          .replace(/<!--[\s\S]*?-->/g, '');
+        
+        // Try to extract title from multiple sources
+        let titleMatches = [
+          html.match(/<title[^>]*>([^<]+)<\/title>/i),
+          html.match(/<h1[^>]*>([^<]+)<\/h1>/i),
+          html.match(/<meta[^>]*property=["\']og:title["\'][^>]*content=["\']([^"\']+)["\'][^>]*>/i),
+          html.match(/<meta[^>]*name=["\']title["\'][^>]*content=["\']([^"\']+)["\'][^>]*>/i)
+        ];
+        
+        for (let match of titleMatches) {
+          if (match && match[1]) {
+            sourceTitle = match[1].trim();
+            break;
+          }
+        }
+        
+        // Try to extract article content from common patterns
+        const articlePatterns = [
+          /<article[^>]*>([\s\S]*?)<\/article>/i,
+          /<div[^>]*class=["\'][^"\']*article[^"\']*["\'][^>]*>([\s\S]*?)<\/div>/i,
+          /<div[^>]*class=["\'][^"\']*content[^"\']*["\'][^>]*>([\s\S]*?)<\/div>/i,
+          /<main[^>]*>([\s\S]*?)<\/main>/i
+        ];
+        
+        let articleContent = "";
+        for (let pattern of articlePatterns) {
+          const match = textContent.match(pattern);
+          if (match && match[1] && match[1].length > 200) {
+            articleContent = match[1];
+            break;
+          }
+        }
+        
+        // If no article content found, use the whole processed HTML
+        if (!articleContent) {
+          articleContent = textContent;
+        }
+        
+        // Clean up and extract final text
+        const finalText = articleContent
           .replace(/<[^>]*>/g, ' ')
           .replace(/\s+/g, ' ')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
           .trim();
-          
-        // Try to extract title from HTML
-        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-        sourceTitle = titleMatch ? titleMatch[1].trim() : '';
         
-        contentToAnalyze = textContent.slice(0, 3000); // Limit content length
-        console.log(`Extracted ${contentToAnalyze.length} characters from article`);
+        contentToAnalyze = finalText.slice(0, 4000); // Increased limit
+        console.log(`Extracted ${contentToAnalyze.length} characters from article. Title: "${sourceTitle}"`);
+        console.log(`Content preview: ${contentToAnalyze.slice(0, 200)}...`);
+        
       } catch (fetchError) {
-        console.error("Error fetching URL content:", fetchError);
-        // Fall back to mock suggestions if URL fetch fails
+        const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+        console.error("Error fetching URL content:", errorMessage);
+        console.log("Falling back to URL-aware mock suggestions");
+        // Extract domain for contextual fallback
+        try {
+          const urlObj = new URL(source_url);
+          sourceTitle = `Article from ${urlObj.hostname}`;
+        } catch {
+          sourceTitle = "Financial Article";
+        }
         contentToAnalyze = "";
       }
     }
     
-    // If we have content to analyze, use OpenAI to generate suggestions
-    if (contentToAnalyze && contentToAnalyze.length > 100) {
+    // Enhanced URL analysis - extract key information from URL even if content fetch fails
+    let urlContext = "";
+    if (source_url && !contentToAnalyze) {
       try {
-        const openai = require('openai');
-        const client = new openai.OpenAI({
+        const urlObj = new URL(source_url);
+        const hostname = urlObj.hostname;
+        const pathname = urlObj.pathname;
+        
+        // Extract meaningful information from URL structure
+        const pathSegments = pathname.split('/').filter(seg => seg && seg.length > 2);
+        const urlKeywords = pathSegments.join(' ').replace(/-/g, ' ');
+        
+        urlContext = `URL Analysis:
+Source: ${hostname}
+Topic keywords from URL: ${urlKeywords}
+Article URL: ${source_url}
+Title extracted: ${sourceTitle || 'Not available'}
+
+This appears to be a financial news article. Please generate assignment suggestions based on this URL context and any extracted title information.`;
+
+        contentToAnalyze = urlContext;
+        console.log("Using URL-based analysis for content generation");
+      } catch (urlError) {
+        console.error("Error parsing URL:", urlError);
+      }
+    }
+
+    // If we have content to analyze (either scraped or URL-based), use OpenAI to generate suggestions
+    if (contentToAnalyze && contentToAnalyze.length > 50) {
+      try {
+        const { OpenAI } = await import('openai');
+        const client = new OpenAI({
           apiKey: process.env.OPENAI_API_KEY
         });
         
-        const prompt = `Analyze this financial news article and generate 2 assignment suggestions for a financial newsletter copywriter:
+        const prompt = `Analyze this financial news article and generate 2 specific assignment suggestions for a financial newsletter copywriter:
 
+Article Title: ${sourceTitle}
 Article Content: ${contentToAnalyze}
 Source URL: ${source_url || 'Text input'}
-Type Hint: ${type_hint || 'auto'}
+Content Type: ${type_hint || 'auto'}
+
+Based on the ACTUAL CONTENT above, create 2 distinct assignment suggestions that:
+- Reference specific facts, numbers, or events mentioned in the article
+- Target different subscriber segments (e.g., income investors vs growth investors)
+- Include actionable insights from the source material
+- Create urgency around the specific developments mentioned
 
 For each suggestion, provide:
-1. A compelling title (8-12 words)
-2. Clear objective (what the assignment should accomplish)
-3. Unique angle (how to approach the story)
-4. 3-4 key points to cover
-5. Call-to-action label and URL suggestion
-6. Due date (2-5 days from now)
+1. Title: Reference specific companies, events, or data from the article (8-12 words)
+2. Objective: What this assignment should accomplish for subscribers
+3. Angle: Unique perspective based on the article's key insights
+4. Key Points: 3-4 specific points that directly reference article content
+5. CTA: Action-oriented label and relevant URL
+6. Due Date: 2-5 days from now
 
-Focus on financial newsletter content that drives subscriber engagement and action. Make suggestions actionable for copywriters.
+IMPORTANT: Make sure each suggestion clearly demonstrates you read and understood the specific article content. Include actual company names, figures, or events mentioned.
 
-Return response as JSON array with this structure:
+Return only valid JSON:
 {
   "suggestions": [
     {
@@ -430,12 +538,15 @@ Return response as JSON array with this structure:
   ]
 }`;
 
+        console.log("Sending request to OpenAI with content length:", contentToAnalyze.length);
+        console.log("OpenAI API Key available:", !!process.env.OPENAI_API_KEY);
+        
         const completion = await client.chat.completions.create({
           model: "gpt-4o",
           messages: [
             {
               role: "system", 
-              content: "You are a financial newsletter strategist. Generate assignment suggestions based on market news and events. Always return valid JSON."
+              content: "You are a financial newsletter strategist. Generate assignment suggestions based on market news and events. Always return valid JSON with the exact structure requested."
             },
             {
               role: "user",
@@ -446,14 +557,38 @@ Return response as JSON array with this structure:
           max_tokens: 1500
         });
         
+        console.log("OpenAI response received, choice count:", completion.choices?.length || 0);
+        
         const aiResponse = completion.choices[0]?.message?.content;
         if (aiResponse) {
           try {
-            const parsedResponse = JSON.parse(aiResponse);
+            // Clean up the response - remove markdown code blocks if present
+            let cleanedResponse = aiResponse.trim();
+            
+            // Remove any leading/trailing backticks and code block markers
+            cleanedResponse = cleanedResponse
+              .replace(/^`+/g, '')  // Remove leading backticks
+              .replace(/`+$/g, '')  // Remove trailing backticks  
+              .replace(/^```(?:json)?\s*/gm, '')  // Remove opening code blocks
+              .replace(/\s*```$/gm, '')  // Remove closing code blocks
+              .trim();
+            
+            // Extract the JSON object - find the outermost braces
+            const firstBrace = cleanedResponse.indexOf('{');
+            const lastBrace = cleanedResponse.lastIndexOf('}');
+            
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              cleanedResponse = cleanedResponse.substring(firstBrace, lastBrace + 1);
+            }
+            
+            const parsedResponse = JSON.parse(cleanedResponse);
             console.log("AI generated suggestions based on article content");
+            console.log("Suggestions generated:", parsedResponse.suggestions?.length || 0);
             return res.json(parsedResponse);
           } catch (parseError) {
             console.error("Error parsing AI response:", parseError);
+            console.log("Raw AI response (first 500 chars):", aiResponse.slice(0, 500));
+            console.log("Cleaned response (first 500 chars):", cleanedResponse.slice(0, 500));
             // Fall through to mock suggestions
           }
         }
