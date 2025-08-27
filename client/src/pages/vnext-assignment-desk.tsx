@@ -272,7 +272,14 @@ export function VNextAssignmentDesk() {
             label: data.ctaLabel,
             url: data.ctaUrl || undefined
           } : undefined,
-        }
+        },
+        // Enhanced workflow fields
+        targetSegments: data.targetSegments || [],
+        emailPlatform: data.emailPlatform || 'auto-detect',
+        reviewers: data.reviewers || [],
+        reviewDeadline: data.reviewDeadline || undefined,
+        reviewNotes: data.reviewNotes || undefined,
+        autoGenerateVariations: data.autoGenerateVariations !== false
       };
 
       console.log("Making API request with payload:", payload);
