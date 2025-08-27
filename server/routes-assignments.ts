@@ -48,13 +48,14 @@ router.get("/api/assignments", async (req, res) => {
   }
 });
 
-// Get single assignment
+// Get single assignment (by ID or slug)
 router.get("/api/assignments/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const publisherId = "demo-publisher";
     
-    const [assignment] = await db
+    // First try to find by ID
+    let assignment = await db
       .select()
       .from(assignments)
       .where(and(
@@ -63,19 +64,30 @@ router.get("/api/assignments/:id", async (req, res) => {
       ))
       .limit(1);
     
-    if (!assignment) {
+    // If not found by ID, try to find by shareable slug
+    if (!assignment || assignment.length === 0) {
+      assignment = await db
+        .select()
+        .from(assignments)
+        .where(eq(assignments.shareableSlug, id))
+        .limit(1);
+    }
+    
+    if (!assignment || assignment.length === 0) {
       return res.status(404).json({ error: "Assignment not found" });
     }
+    
+    const assignmentData = assignment[0];
     
     // Add shareable URL
     const host = req.get('host') || 'sharpsend.io';
     const protocol = req.protocol || 'https';
-    const shareableUrl = assignment.shareableSlug 
-      ? `${protocol}://${host}/assignment/${assignment.shareableSlug}`
+    const shareableUrl = assignmentData.shareableSlug 
+      ? `${protocol}://${host}/assignment/${assignmentData.shareableSlug}`
       : null;
     
     res.json({
-      ...assignment,
+      ...assignmentData,
       shareableUrl
     });
   } catch (error) {

@@ -82,7 +82,8 @@ function renderMarkdownContent(text: string): string {
 }
 
 function AssignmentCopywriterFlow() {
-  const { id: assignmentId } = useParams();
+  const params = useParams<{ id?: string; slug?: string }>();
+  const assignmentId = params.id || params.slug;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
