@@ -198,7 +198,7 @@ export function VNextAssignmentDesk() {
 
   // Use AI suggestion
   const useSuggestion = (suggestion: any) => {
-    setNewAssignment({
+    const updatedAssignment = {
       ...newAssignment,
       title: suggestion.title || newAssignment.title,
       objective: suggestion.objective || newAssignment.objective,
@@ -210,7 +210,13 @@ export function VNextAssignmentDesk() {
         new Date(suggestion.due_at_suggestion).toISOString().split('T')[0] : 
         newAssignment.dueDate,
       assignee: suggestion.assignee || newAssignment.assignee,
-    });
+    };
+    
+    setNewAssignment(updatedAssignment);
+    
+    // Clear validation errors after applying suggestion
+    setValidationErrors({});
+    
     setIsPrefillOpen(false);
     setSuggestions([]);
     toast({
