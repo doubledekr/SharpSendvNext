@@ -50,11 +50,11 @@ router.get("/api/assignments", async (req, res) => {
       ]);
     }
     
-    // For real users, use their actual publisher ID or return empty
+    // For real users, use their actual publisher ID
     const publisherId = user?.publisherId || user?.publisher?.id;
     
-    if (!publisherId || publisherId === "demo-publisher") {
-      // Return empty array for non-demo accounts without proper publisher
+    if (!publisherId) {
+      // Return empty array if no publisher ID is available
       return res.json([]);
     }
     
