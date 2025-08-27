@@ -34,7 +34,9 @@ import {
   MessageSquare,
   Save,
   Pause,
-  X
+  X,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 
 interface Assignment {
@@ -119,7 +121,7 @@ export default function AssignmentCopywriterFlow() {
     setIsGenerating(true);
     
     try {
-      const response = await apiRequest(`/api/assignments/${assignmentId}/generate-variations`, {
+      const response = await fetch(`/api/assignments/${assignmentId}/generate-variations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -185,7 +187,7 @@ export default function AssignmentCopywriterFlow() {
         createdAt: new Date().toISOString()
       };
       
-      return apiRequest('/api/drafts', {
+      return fetch('/api/drafts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draftData)
@@ -221,7 +223,7 @@ export default function AssignmentCopywriterFlow() {
         customDateTime
       };
 
-      return apiRequest(`/api/assignments/${assignmentId}/send-queue`, {
+      return fetch(`/api/assignments/${assignmentId}/send-queue`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(queueData)
@@ -384,72 +386,338 @@ export default function AssignmentCopywriterFlow() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Write Content Tab */}
+          {/* Write Content & Variations Tab */}
           <TabsContent value="write" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create Email Content</CardTitle>
-                <CardDescription>
-                  Write your base content that will be personalized for different segments
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="subject">Subject Line</Label>
-                  <Input
-                    id="subject"
-                    placeholder="Enter compelling subject line..."
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    data-testid="input-subject"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="content">Email Content</Label>
-                  <Textarea
-                    id="content"
-                    placeholder="Write your email content... Use [link text](url) for hyperlinks, ![alt text](image-url) for images"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    className="min-h-[300px]"
-                    data-testid="textarea-content"
-                  />
-                  <div className="mt-2 text-sm text-gray-600">
-                    <p><strong>Formatting Tips:</strong></p>
-                    <p>• Links: [Click here](https://example.com)</p>
-                    <p>• Images: ![Description](image-url)</p>
-                    <p>• Bold: **bold text**</p>
-                    <p>• Italic: *italic text*</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Master Email Editor */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Master Email Content</CardTitle>
+                  <CardDescription>Write your master email - variations will be generated from this</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="subject">Subject Line</Label>
+                    <Input
+                      id="subject"
+                      placeholder="Enter compelling subject line..."
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      data-testid="input-subject"
+                    />
                   </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => generateSegmentVariations()}
-                    disabled={!subject || !content || isGenerating}
-                    data-testid="button-generate-ai"
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Brain className="w-4 h-4 mr-2" />
-                    )}
-                    Generate AI Variations
-                  </Button>
                   
-                  <Button 
-                    variant="outline"
-                    onClick={() => saveToDrafts.mutate()}
-                    disabled={!subject || !content}
-                    data-testid="button-save-draft"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Save to Drafts
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <div>
+                    <Label htmlFor="content">Email Content</Label>
+                    <Textarea
+                      id="content"
+                      placeholder="Write your email content... Use [link text](url) for hyperlinks, **bold** for emphasis"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      className="min-h-[300px]"
+                      data-testid="textarea-content"
+                    />
+                    <div className="mt-2 text-sm text-gray-600">
+                      <p><strong>Formatting Tips:</strong></p>
+                      <p>• Links: [Click here](https://example.com)</p>
+                      <p>• Bold: **bold text** • Italic: *italic text*</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => generateSegmentVariations()}
+                      disabled={!subject || !content || isGenerating}
+                      data-testid="button-generate-ai"
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Brain className="w-4 h-4 mr-2" />
+                      )}
+                      Generate AI Variations
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={() => saveToDrafts.mutate()}
+                      disabled={!subject || !content}
+                      data-testid="button-save-draft"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Save to Drafts
+                    </Button>
+                  </div>
+
+                  {/* Master Email Preview */}
+                  {(subject || content) && (
+                    <Card className="bg-gray-50 border-2 border-dashed">
+                      <CardHeader>
+                        <CardTitle className="text-base">Master Email Preview</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="border rounded p-4 bg-white">
+                          <div className="text-xs text-gray-500 mb-3 pb-2 border-b">
+                            <div>From: publisher@example.com</div>
+                            <div>Subject: {subject || 'No subject'}</div>
+                          </div>
+                          
+                          <div 
+                            className="text-sm text-gray-800 space-y-2"
+                            dangerouslySetInnerHTML={{
+                              __html: renderMarkdownContent(content || 'No content')
+                            }}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Email Variations Side Panel */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Generated Variations</CardTitle>
+                      <CardDescription>AI-generated segment-specific versions from master email</CardDescription>
+                    </div>
+                    {segments.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateSegmentVariations}
+                        disabled={isGenerating}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-1" />
+                        Regenerate
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {segments.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-base">No variations generated yet</p>
+                      <p className="text-sm mt-2">Write master content and click "Generate AI Variations"</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Variation Navigation */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-1">
+                          {segments.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setCurrentVariationIndex(index)}
+                              className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
+                                currentVariationIndex === index
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                              }`}
+                            >
+                              {index + 1}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {currentVariationIndex + 1} of {segments.length}
+                        </div>
+                      </div>
+
+                      {/* Current Variation Display */}
+                      {segments[currentVariationIndex] && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-base">{segments[currentVariationIndex].segmentName}</h4>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                <Users className="w-3 h-3 mr-1" />
+                                {segments[currentVariationIndex].estimatedRecipients.toLocaleString()}
+                              </Badge>
+                              <Badge className="bg-green-500 text-white text-xs">
+                                AI: {segments[currentVariationIndex].aiScore?.toFixed(0) || 92}%
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-gray-600">{segments[currentVariationIndex].segmentCriteria}</p>
+
+                          {/* Editable Variation Fields */}
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm font-medium">Variation Subject:</Label>
+                              <Input
+                                value={segments[currentVariationIndex].subjectLine}
+                                onChange={(e) => {
+                                  const newSegments = [...segments];
+                                  newSegments[currentVariationIndex].subjectLine = e.target.value;
+                                  setSegments(newSegments);
+                                }}
+                                className="text-sm mt-1"
+                              />
+                            </div>
+
+                            <div>
+                              <Label className="text-sm font-medium">Variation Content:</Label>
+                              <Textarea
+                                value={segments[currentVariationIndex].content}
+                                onChange={(e) => {
+                                  const newSegments = [...segments];
+                                  newSegments[currentVariationIndex].content = e.target.value;
+                                  setSegments(newSegments);
+                                }}
+                                className="h-32 mt-1 resize-none"
+                              />
+                            </div>
+
+                            {/* Variation Preview */}
+                            <Card className="bg-gray-50">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm">Variation Preview</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="border rounded p-3 bg-white">
+                                  <div className="text-xs text-gray-500 mb-2 pb-2 border-b">
+                                    <div>From: publisher@example.com</div>
+                                    <div>Subject: {segments[currentVariationIndex].subjectLine}</div>
+                                  </div>
+                                  
+                                  <div 
+                                    className="text-xs text-gray-800 space-y-1 max-h-32 overflow-y-auto"
+                                    dangerouslySetInnerHTML={{
+                                      __html: renderMarkdownContent(segments[currentVariationIndex].content)
+                                    }}
+                                  />
+                                </div>
+                                
+                                <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                                  <div className="flex items-center gap-1">
+                                    <Eye className="w-3 h-3" />
+                                    <span>Pixel: {segments[currentVariationIndex].pixelId}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3 text-green-500" />
+                                    <span>Tracking Ready</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+
+                          {/* Navigation Controls */}
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentVariationIndex(Math.max(0, currentVariationIndex - 1))}
+                              disabled={currentVariationIndex === 0}
+                            >
+                              <ArrowLeft className="w-4 h-4 mr-1" />
+                              Previous
+                            </Button>
+                            
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                id={segments[currentVariationIndex].id}
+                                checked={selectedSegments.includes(segments[currentVariationIndex].id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedSegments([...selectedSegments, segments[currentVariationIndex].id]);
+                                  } else {
+                                    setSelectedSegments(selectedSegments.filter(id => id !== segments[currentVariationIndex].id));
+                                  }
+                                }}
+                                className="w-4 h-4"
+                              />
+                              <Label htmlFor={segments[currentVariationIndex].id} className="text-sm cursor-pointer">
+                                Select for sending
+                              </Label>
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentVariationIndex(Math.min(segments.length - 1, currentVariationIndex + 1))}
+                              disabled={currentVariationIndex === segments.length - 1}
+                            >
+                              Next
+                              <ArrowRight className="w-4 h-4 ml-1" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Send Options */}
+            {segments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Send Options</CardTitle>
+                  <CardDescription>Configure sending schedule for selected variations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Send Time</Label>
+                      <Select value={scheduledTime} onValueChange={setScheduledTime}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose send time..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="immediate">Send Immediately</SelectItem>
+                          <SelectItem value="optimal">Optimal Time (AI Suggested)</SelectItem>
+                          <SelectItem value="custom">Custom Date & Time</SelectItem>
+                          <SelectItem value="draft">Save as Draft</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      {scheduledTime === 'custom' && (
+                        <Input
+                          type="datetime-local"
+                          value={customDateTime}
+                          onChange={(e) => setCustomDateTime(e.target.value)}
+                          min={new Date().toISOString().slice(0, 16)}
+                        />
+                      )}
+                      
+                      {scheduledTime === 'optimal' && (
+                        <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                          AI suggests: Tomorrow at 9:15 AM EST (based on subscriber patterns)
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-end">
+                      <Button 
+                        onClick={() => setShowConfirmDialog(true)}
+                        disabled={segments.length === 0 || isSending || (scheduledTime === 'custom' && !customDateTime)}
+                        className="bg-green-600 hover:bg-green-700"
+                        data-testid="button-send-queue"
+                      >
+                        {isSending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : scheduledTime === 'draft' ? (
+                          <Save className="w-4 h-4 mr-2" />
+                        ) : (
+                          <Send className="w-4 h-4 mr-2" />
+                        )}
+                        {scheduledTime === 'draft' ? 'Save to Drafts' : 
+                         scheduledTime === 'immediate' ? 'Send Now' : 
+                         'Add to Queue'} ({selectedSegments.length || segments.length})
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Email Preview Stack Tab */}
