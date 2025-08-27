@@ -232,6 +232,8 @@ export function CopywriterAssignment() {
           title: "Email Variations Generated",
           description: "Email variations have been created for different segments.",
         });
+        // Refresh assignments list to show updated status
+        queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
       } catch (error) {
         toast({
           title: "Variations Generation Failed",

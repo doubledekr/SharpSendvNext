@@ -86,6 +86,7 @@ export function VNextAssignmentDesk() {
   // Fetch assignments
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
     queryKey: ["/api/assignments"],
+    refetchInterval: 5000, // Auto-refresh every 5 seconds to catch status updates
   });
 
   // Fetch opportunities
@@ -955,8 +956,19 @@ export function VNextAssignmentDesk() {
         {/* Assignments List */}
         <Card>
           <CardHeader>
-            <CardTitle>Assignments</CardTitle>
-            <CardDescription>View and manage all content assignments</CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Assignments</CardTitle>
+                <CardDescription>View and manage all content assignments</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/assignments"] })}
+              >
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Tabs value={selectedTab} onValueChange={setSelectedTab}>
