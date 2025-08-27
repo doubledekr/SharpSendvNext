@@ -128,23 +128,60 @@ router.post("/api/assignments", async (req, res) => {
       publisherId = user.publisher.id;
     }
     
-    const { title, description, type, priority, dueDate, notes, tags, brief } = req.body;
+    const { title, description, type, priority, dueDate, notes, tags, brief, opportunityId } = req.body;
     
     // Generate unique shareable slug
     const shareableSlug = generateShareableSlug();
+
+    // If creating from opportunity, fetch opportunity data to populate assignment
+    let enhancedBrief = brief;
+    let enhancedDescription = description;
+    let relatedAssignmentId = null;
+
+    if (opportunityId) {
+      try {
+        const { opportunities } = await import("../shared/schema");
+        const [opportunity] = await db
+          .select()
+          .from(opportunities)
+          .where(eq(opportunities.id, opportunityId))
+          .limit(1);
+
+        if (opportunity) {
+          // Populate assignment content from opportunity
+          enhancedDescription = opportunity.description || description;
+          enhancedBrief = {
+            ...brief,
+            objective: opportunity.title,
+            angle: opportunity.description,
+            keyPoints: opportunity.notes ? [opportunity.notes] : [],
+            opportunity: {
+              type: opportunity.type,
+              potentialValue: opportunity.potentialValue,
+              probability: opportunity.probability,
+              source: opportunity.source
+            }
+          };
+          relatedAssignmentId = opportunityId;
+        }
+      } catch (error) {
+        console.error("Error fetching opportunity data:", error);
+        // Continue with assignment creation even if opportunity fetch fails
+      }
+    }
     
     const [newAssignment] = await db
       .insert(assignments)
       .values({
         publisherId,
         title,
-        description,
+        description: enhancedDescription,
         type: type || "newsletter",
         priority: priority || "medium",
         dueDate: dueDate ? new Date(dueDate) : undefined,
         notes,
         tags: tags || [],
-        brief,
+        brief: enhancedBrief,
         shareableSlug,
         status: "unassigned",
         createdAt: new Date(),

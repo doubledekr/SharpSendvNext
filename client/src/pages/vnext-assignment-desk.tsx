@@ -67,6 +67,7 @@ export function VNextAssignmentDesk() {
     notes: "",
     tags: [] as string[],
     images: [] as { url: string; type: 'hero' | 'inline' | 'attachment'; caption?: string }[],
+    opportunityId: null as string | null,
   });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
@@ -233,6 +234,7 @@ export function VNextAssignmentDesk() {
         dueDate: data.dueDate || undefined,
         notes: data.notes,
         tags: data.tags,
+        opportunityId: data.opportunityId,
         brief: {
           objective: data.objective,
           angle: data.angle,
@@ -264,6 +266,7 @@ export function VNextAssignmentDesk() {
         notes: "",
         tags: [],
         images: [],
+        opportunityId: null,
       });
       setValidationErrors({});
       toast({
@@ -377,6 +380,21 @@ export function VNextAssignmentDesk() {
   };
 
   const filteredAssignments = filterAssignments(assignments);
+
+  // Create assignment from opportunity
+  const handleCreateAssignmentFromOpportunity = (opportunity: Opportunity) => {
+    setNewAssignment({
+      ...newAssignment,
+      title: opportunity.title || "",
+      objective: opportunity.description || "",
+      angle: opportunity.description || "",
+      keyPoints: opportunity.description ? [opportunity.description] : [],
+      priority: opportunity.probability && opportunity.probability > 70 ? "high" : "medium",
+      notes: `Created from opportunity: ${opportunity.title}`,
+      opportunityId: opportunity.id,
+    });
+    setIsCreateDialogOpen(true);
+  };
 
   // Run AI opportunity detection
   const handleRunDetection = async () => {
@@ -1271,6 +1289,15 @@ export function VNextAssignmentDesk() {
                       </div>
                       
                       <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCreateAssignmentFromOpportunity(opportunity)}
+                          className="text-xs sm:text-sm"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Create Assignment
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
