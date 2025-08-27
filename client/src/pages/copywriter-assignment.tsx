@@ -95,6 +95,7 @@ export function CopywriterAssignment() {
   const [isDraft, setIsDraft] = useState(true);
   const [showImageBrowser, setShowImageBrowser] = useState(false);
   const [insertAfterBlockId, setInsertAfterBlockId] = useState<string | undefined>();
+  const [viewMode, setViewMode] = useState<'edit' | 'email'>('edit');
 
   // Fetch assignment by slug or ID
   const { data: assignment, isLoading, error } = useQuery<Assignment>({
@@ -465,6 +466,24 @@ export function CopywriterAssignment() {
                       {isDraft && assignment.status === "in_progress" && (
                         <Badge variant="secondary">Draft Saved</Badge>
                       )}
+                      <div className="flex items-center border border-gray-300 rounded-sm overflow-hidden">
+                        <Button
+                          variant={viewMode === 'edit' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('edit')}
+                          className="rounded-none border-0"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant={viewMode === 'email' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('email')}
+                          className="rounded-none border-0"
+                        >
+                          Email Preview
+                        </Button>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -478,7 +497,7 @@ export function CopywriterAssignment() {
                 </CardHeader>
                 <CardContent>
                   {isSubmitted && (
-                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-sm p-3 mb-4">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-blue-600" />
                         <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
@@ -490,12 +509,77 @@ export function CopywriterAssignment() {
                       </p>
                     </div>
                   )}
-                  <DragDropContentEditor
-                    content={submission.contentBlocks}
-                    onChange={(blocks) => setSubmission(prev => ({ ...prev, contentBlocks: blocks }))}
-                    onImageInsert={handleImageInsert}
-                    placeholder="Start writing your assignment content..."
-                  />
+                  {viewMode === 'edit' ? (
+                    <DragDropContentEditor
+                      content={submission.contentBlocks}
+                      onChange={(blocks) => setSubmission(prev => ({ ...prev, contentBlocks: blocks }))}
+                      onImageInsert={handleImageInsert}
+                      placeholder="Start writing your assignment content..."
+                    />
+                  ) : (
+                    <div className="email-preview bg-white dark:bg-gray-50 border border-gray-200 rounded-sm p-6 max-w-2xl mx-auto shadow-sm">
+                      <div className="email-header border-b border-gray-200 pb-4 mb-6">
+                        <div className="text-sm text-gray-500 mb-2">From: publisher@example.com</div>
+                        <div className="text-sm text-gray-500 mb-2">To: subscribers@example.com</div>
+                        <h1 className="text-xl font-bold text-gray-900">{assignment.title}</h1>
+                      </div>
+                      <div className="email-content space-y-4">
+                        {submission.contentBlocks.map((block, index) => (
+                          <div key={block.id} className="content-block">
+                            {block.type === 'paragraph' && (
+                              <p className="text-gray-800 leading-relaxed">{block.content}</p>
+                            )}
+                            {block.type === 'heading' && (
+                              <h2 className="text-lg font-semibold text-gray-900 mt-6 mb-3">{block.content}</h2>
+                            )}
+                            {block.type === 'image' && block.imageUrl && (
+                              <div className={`image-block text-${block.imageAlign || 'center'} my-4`}>
+                                <img 
+                                  src={block.imageUrl} 
+                                  alt={block.imageCaption || ''} 
+                                  className={`${
+                                    block.imageSize === 'small' ? 'max-w-xs' :
+                                    block.imageSize === 'medium' ? 'max-w-md' :
+                                    block.imageSize === 'large' ? 'max-w-lg' :
+                                    'max-w-full'
+                                  } h-auto mx-auto`}
+                                />
+                                {block.imageCaption && (
+                                  <p className="text-sm text-gray-600 mt-2 italic">{block.imageCaption}</p>
+                                )}
+                              </div>
+                            )}
+                            {block.type === 'list' && (
+                              <ul className="list-disc list-inside text-gray-800 space-y-1">
+                                {block.content?.split('\n').map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            )}
+                            {block.type === 'quote' && (
+                              <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-700">
+                                {block.content}
+                              </blockquote>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {assignment.brief?.offer && (
+                        <div className="email-footer mt-8 pt-6 border-t border-gray-200">
+                          <div className="text-center">
+                            <a 
+                              href={assignment.brief.offer.url}
+                              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-sm font-medium hover:bg-blue-700 transition-colors"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {assignment.brief.offer.label}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -510,6 +594,7 @@ export function CopywriterAssignment() {
                     value={submission.notes}
                     onChange={(e) => setSubmission(prev => ({ ...prev, notes: e.target.value }))}
                     rows={3}
+                    className="border-gray-300 focus:border-blue-500 rounded-sm"
                   />
                 </CardContent>
               </Card>
