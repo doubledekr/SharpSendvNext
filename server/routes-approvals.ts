@@ -8,7 +8,7 @@ const router = Router();
 // Get all approvals for a publisher
 router.get("/api/approvals", async (req, res) => {
   try {
-    const publisherId = "demo-publisher";
+    const publisherId = req.tenant?.id || "demo-publisher";
     
     const result = await db
       .select()
@@ -16,12 +16,35 @@ router.get("/api/approvals", async (req, res) => {
       .where(eq(approvals.publisherId, publisherId))
       .orderBy(desc(approvals.requestedAt));
     
-    // Add mock entity details for demo
-    const approvalsWithDetails = result.map(approval => ({
-      ...approval,
-      entityTitle: `Sample ${approval.entityType} Content`,
-      entityContent: "This is a sample content preview for the approval workflow.",
-      requestedByName: "John Doe",
+    // Fetch assignment details for approval requests
+    const { assignments } = await import("@shared/schema");
+    const approvalsWithDetails = await Promise.all(result.map(async (approval) => {
+      let entityTitle = `${approval.entityType} Content`;
+      let entityContent = "Content preview unavailable";
+      
+      if (approval.entityType === "assignment" && approval.entityId) {
+        try {
+          const [assignment] = await db
+            .select()
+            .from(assignments)
+            .where(eq(assignments.id, approval.entityId))
+            .limit(1);
+          
+          if (assignment) {
+            entityTitle = assignment.title;
+            entityContent = assignment.description || "No description available";
+          }
+        } catch (error) {
+          console.error("Error fetching assignment details:", error);
+        }
+      }
+      
+      return {
+        ...approval,
+        entityTitle,
+        entityContent,
+        requestedByName: "Copywriter", // In production, get from users table
+      };
     }));
     
     res.json(approvalsWithDetails);
@@ -36,7 +59,7 @@ router.post("/api/approvals/:id/approve", async (req, res) => {
   try {
     const { id } = req.params;
     const { feedback } = req.body;
-    const publisherId = "demo-publisher";
+    const publisherId = req.tenant?.id || "demo-publisher";
     
     const [updated] = await db
       .update(approvals)
@@ -55,6 +78,22 @@ router.post("/api/approvals/:id/approve", async (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: "Approval not found" });
     }
+
+    // Also update the assignment status to approved if this is an assignment approval
+    if (updated.entityType === "assignment") {
+      try {
+        const { assignments } = await import("@shared/schema");
+        await db
+          .update(assignments)
+          .set({
+            status: "approved",
+            updatedAt: new Date(),
+          })
+          .where(eq(assignments.id, updated.entityId));
+      } catch (error) {
+        console.error("Error updating assignment status:", error);
+      }
+    }
     
     res.json(updated);
   } catch (error) {
@@ -68,7 +107,7 @@ router.post("/api/approvals/:id/reject", async (req, res) => {
   try {
     const { id } = req.params;
     const { feedback } = req.body;
-    const publisherId = "demo-publisher";
+    const publisherId = req.tenant?.id || "demo-publisher";
     
     const [updated] = await db
       .update(approvals)
@@ -86,6 +125,22 @@ router.post("/api/approvals/:id/reject", async (req, res) => {
     
     if (!updated) {
       return res.status(404).json({ error: "Approval not found" });
+    }
+
+    // Also update the assignment status back to in_progress if this is an assignment rejection
+    if (updated.entityType === "assignment") {
+      try {
+        const { assignments } = await import("@shared/schema");
+        await db
+          .update(assignments)
+          .set({
+            status: "in_progress",
+            updatedAt: new Date(),
+          })
+          .where(eq(assignments.id, updated.entityId));
+      } catch (error) {
+        console.error("Error updating assignment status:", error);
+      }
     }
     
     res.json(updated);

@@ -171,7 +171,7 @@ router.post("/api/assignments", async (req, res) => {
 router.patch("/api/assignments/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const publisherId = "demo-publisher";
+    const publisherId = req.tenant?.id || "demo-publisher";
     const updates = req.body;
     
     const [updated] = await db
@@ -188,6 +188,25 @@ router.patch("/api/assignments/:id", async (req, res) => {
     
     if (!updated) {
       return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    // If status is being changed to "review", create an approval request
+    if (updates.status === "review") {
+      try {
+        const { approvals } = await import("@shared/schema");
+        await db.insert(approvals).values({
+          publisherId: publisherId,
+          entityType: "assignment",
+          entityId: id,
+          status: "pending",
+          requestedBy: "copywriter", // In production, get from auth
+          requestedAt: new Date(),
+        });
+        console.log(`Created approval request for assignment ${id}`);
+      } catch (approvalError) {
+        console.error("Error creating approval request:", approvalError);
+        // Don't fail the main update if approval creation fails
+      }
     }
     
     // Add shareable URL to response
@@ -335,13 +354,19 @@ router.post("/api/ai/assignments/suggest", async (req, res) => {
   }
 });
 
-// CDN Assets endpoint for copywriter image browsing
+// CDN Assets endpoint for copywriter image browsing - Publisher-specific
 router.get("/api/cdn/assets", async (req, res) => {
   try {
-    // For demo purposes, provide some example financial stock images
+    // Get publisher ID from auth token or tenant context
+    const publisherId = req.tenant?.id || 'demo-publisher';
+    
+    // In production, this would query the object storage for publisher-specific assets
+    // For now, provide publisher-specific demo assets with unique IDs per publisher
+    const publisherAssetPrefix = publisherId.slice(0, 8); // Use first 8 chars of publisher ID
+    
     const demoAssets = [
       {
-        id: "1",
+        id: `${publisherAssetPrefix}-1`,
         name: "financial-charts.jpg",
         url: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80",
         thumbnailUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=80",
@@ -350,10 +375,11 @@ router.get("/api/cdn/assets", async (req, res) => {
         mimeType: "image/jpeg",
         width: 800,
         height: 600,
+        publisherId: publisherId,
         createdAt: new Date().toISOString()
       },
       {
-        id: "2", 
+        id: `${publisherAssetPrefix}-2`, 
         name: "stock-market-screen.jpg",
         url: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&q=80",
         thumbnailUrl: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&q=80",
@@ -362,10 +388,11 @@ router.get("/api/cdn/assets", async (req, res) => {
         mimeType: "image/jpeg",
         width: 800,
         height: 400,
+        publisherId: publisherId,
         createdAt: new Date().toISOString()
       },
       {
-        id: "3",
+        id: `${publisherAssetPrefix}-3`,
         name: "trading-analytics.jpg", 
         url: "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=800&q=80",
         thumbnailUrl: "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=400&q=80",
@@ -374,10 +401,11 @@ router.get("/api/cdn/assets", async (req, res) => {
         mimeType: "image/jpeg",
         width: 800,
         height: 600,
+        publisherId: publisherId,
         createdAt: new Date().toISOString()
       },
       {
-        id: "4",
+        id: `${publisherAssetPrefix}-4`,
         name: "financial-newsletter.jpg",
         url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80",
         thumbnailUrl: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80",
@@ -386,10 +414,11 @@ router.get("/api/cdn/assets", async (req, res) => {
         mimeType: "image/jpeg",
         width: 600,
         height: 800,
+        publisherId: publisherId,
         createdAt: new Date().toISOString()
       },
       {
-        id: "5",
+        id: `${publisherAssetPrefix}-5`,
         name: "market-growth.jpg",
         url: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&q=80",
         thumbnailUrl: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=400&q=80",
@@ -398,10 +427,11 @@ router.get("/api/cdn/assets", async (req, res) => {
         mimeType: "image/jpeg",
         width: 800,
         height: 600,
+        publisherId: publisherId,
         createdAt: new Date().toISOString()
       },
       {
-        id: "6",
+        id: `${publisherAssetPrefix}-6`,
         name: "investment-strategy.jpg",
         url: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&q=80",
         thumbnailUrl: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80",
@@ -410,11 +440,15 @@ router.get("/api/cdn/assets", async (req, res) => {
         mimeType: "image/jpeg",
         width: 800,
         height: 600,
+        publisherId: publisherId,
         createdAt: new Date().toISOString()
       }
     ];
     
-    res.json(demoAssets);
+    // Filter assets by publisher to ensure proper access control
+    const publisherAssets = demoAssets.filter(asset => asset.publisherId === publisherId);
+    
+    res.json(publisherAssets);
   } catch (error) {
     console.error("Error fetching CDN assets:", error);
     res.status(500).json({ error: "Failed to fetch CDN assets" });

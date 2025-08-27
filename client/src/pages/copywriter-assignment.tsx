@@ -111,7 +111,7 @@ export function CopywriterAssignment() {
     if (assignment?.masterDraft?.blocks) {
       setSubmission(prev => ({
         ...prev,
-        contentBlocks: assignment.masterDraft.blocks.map((block: any) => ({
+        contentBlocks: assignment.masterDraft!.blocks.map((block: any) => ({
           id: Math.random().toString(36).substr(2, 9),
           type: block.type,
           content: block.md,
