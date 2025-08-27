@@ -81,8 +81,11 @@ interface CopywriterSubmission {
 
 export function CopywriterAssignment() {
   const { toast } = useToast();
-  const [, params] = useRoute("/assignment/:slug");
-  const slug = params?.slug;
+  // Support both slug-based (public) and ID-based (internal) routes
+  const [, slugParams] = useRoute("/assignment/:slug");
+  const [, idParams] = useRoute("/assignments/:id");
+  const slug = slugParams?.slug;
+  const assignmentId = idParams?.id;
   
   const [submission, setSubmission] = useState<CopywriterSubmission>({
     contentBlocks: [],
@@ -93,17 +96,28 @@ export function CopywriterAssignment() {
   const [showImageBrowser, setShowImageBrowser] = useState(false);
   const [insertAfterBlockId, setInsertAfterBlockId] = useState<string | undefined>();
 
-  // Fetch assignment by slug
+  // Fetch assignment by slug or ID
   const { data: assignment, isLoading, error } = useQuery<Assignment>({
-    queryKey: ["/api/public/assignment", slug],
+    queryKey: assignmentId ? ["/api/assignments", assignmentId] : ["/api/public/assignment", slug],
     queryFn: async () => {
-      const response = await fetch(`/api/public/assignment/${slug}`);
-      if (!response.ok) {
-        throw new Error("Assignment not found");
+      if (assignmentId) {
+        // Internal route - fetch by ID
+        const response = await fetch(`/api/assignments/${assignmentId}`);
+        if (!response.ok) {
+          throw new Error("Assignment not found");
+        }
+        return response.json();
+      } else if (slug) {
+        // Public route - fetch by slug
+        const response = await fetch(`/api/public/assignment/${slug}`);
+        if (!response.ok) {
+          throw new Error("Assignment not found");
+        }
+        return response.json();
       }
-      return response.json();
+      throw new Error("No assignment identifier provided");
     },
-    enabled: !!slug,
+    enabled: !!(slug || assignmentId),
   });
 
   // Load existing submission if any

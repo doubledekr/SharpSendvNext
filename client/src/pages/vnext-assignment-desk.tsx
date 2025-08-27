@@ -976,7 +976,7 @@ export function VNextAssignmentDesk() {
                     {filteredAssignments.map((assignment) => (
                       <div
                         key={assignment.id}
-                        className="border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                        className="border rounded-lg p-3 sm:p-4 hover:bg-muted/50 hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer"
                         onClick={() => {
                           // Navigate to assignment detail page using the assignment ID
                           setLocation(`/assignments/${assignment.id}`);
