@@ -17,45 +17,12 @@ router.get("/api/assignments", async (req, res) => {
     // Check if the user is authenticated
     const user = (req as any).session?.user;
     
-    // For demo users, return demo assignments
-    if (user?.id === 'demo-user' || user?.id === 'demo-user-id') {
-      const host = req.get('host') || 'sharpsend.io';
-      const protocol = req.protocol || 'https';
-      
-      return res.json([
-        {
-          id: "demo-1",
-          title: "Q1 Market Analysis Report",
-          description: "Comprehensive analysis of market trends for Q1",
-          type: "newsletter",
-          status: "in_progress",
-          priority: "high",
-          shareableSlug: "demo-q1-analysis",
-          shareableUrl: `${protocol}://${host}/assignment/demo-q1-analysis`,
-          createdAt: new Date("2025-01-15"),
-          updatedAt: new Date("2025-01-20")
-        },
-        {
-          id: "demo-2",
-          title: "Crypto Investment Guide",
-          description: "Essential guide for crypto investments",
-          type: "analysis",
-          status: "unassigned",
-          priority: "medium",
-          shareableSlug: "demo-crypto-guide",
-          shareableUrl: `${protocol}://${host}/assignment/demo-crypto-guide`,
-          createdAt: new Date("2025-01-10"),
-          updatedAt: new Date("2025-01-10")
-        }
-      ]);
-    }
+    // Determine the publisher ID
+    let publisherId = user?.publisherId || user?.publisher?.id;
     
-    // For real users, use their actual publisher ID
-    const publisherId = user?.publisherId || user?.publisher?.id;
-    
-    if (!publisherId) {
-      // Return empty array if no publisher ID is available
-      return res.json([]);
+    // For demo users or if no specific publisher ID, use demo-publisher
+    if (!publisherId || user?.id === 'demo-user' || user?.id === 'demo-user-id') {
+      publisherId = "demo-publisher";
     }
     
     const result = await db
