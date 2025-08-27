@@ -208,19 +208,30 @@ router.post("/api/assignments", async (req, res) => {
 router.patch("/api/assignments/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const publisherId = req.tenant?.id || "demo-publisher";
     const updates = req.body;
     
+    // First, check if assignment exists
+    console.log(`Looking for assignment with ID: ${id}`);
+    const [existingAssignment] = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.id, id))
+      .limit(1);
+    
+    console.log(`Assignment found:`, existingAssignment ? existingAssignment.id : 'None');
+    
+    if (!existingAssignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+    
+    // Use the assignment's publisherId for the update
     const [updated] = await db
       .update(assignments)
       .set({
         ...updates,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(assignments.id, id),
-        eq(assignments.publisherId, publisherId)
-      ))
+      .where(eq(assignments.id, id))
       .returning();
     
     if (!updated) {
@@ -232,7 +243,7 @@ router.patch("/api/assignments/:id", async (req, res) => {
       try {
         const { approvals } = await import("@shared/schema");
         await db.insert(approvals).values({
-          publisherId: publisherId,
+          publisherId: existingAssignment.publisherId,
           entityType: "assignment",
           entityId: id,
           status: "pending",
@@ -592,7 +603,6 @@ Return only valid JSON:
           } catch (parseError) {
             console.error("Error parsing AI response:", parseError);
             console.log("Raw AI response (first 500 chars):", aiResponse.slice(0, 500));
-            console.log("Cleaned response (first 500 chars):", cleanedResponse.slice(0, 500));
             // Fall through to mock suggestions
           }
         }
