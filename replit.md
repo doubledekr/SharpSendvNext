@@ -25,6 +25,9 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform desig
 - Implemented complete assignment review workflow with approval requests automatically created when status changes to "review"
 - Enhanced approvals system to sync assignment status when approved/rejected through review queue
 - Added publisher-specific CDN access control ensuring proper multi-tenant isolation for image assets
+- **Implemented real URL content analysis with OpenAI integration** - System now fetches actual article content, analyzes it with AI, and generates tailored assignment suggestions based on specific article details rather than generic templates
+- Enhanced web scraping with robust error handling and intelligent fallbacks using URL structure analysis
+- Fixed character length constraints for assignment angle (max 120 chars) and objective (max 150 chars) fields
 
 ## User Preferences
 

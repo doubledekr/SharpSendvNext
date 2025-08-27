@@ -512,13 +512,17 @@ Based on the ACTUAL CONTENT above, create 2 distinct assignment suggestions that
 
 For each suggestion, provide:
 1. Title: Reference specific companies, events, or data from the article (8-12 words)
-2. Objective: What this assignment should accomplish for subscribers
-3. Angle: Unique perspective based on the article's key insights
+2. Objective: What this assignment should accomplish for subscribers (max 150 characters)
+3. Angle: Unique perspective based on the article's key insights (max 120 characters)
 4. Key Points: 3-4 specific points that directly reference article content
 5. CTA: Action-oriented label and relevant URL
 6. Due Date: 2-5 days from now
 
-IMPORTANT: Make sure each suggestion clearly demonstrates you read and understood the specific article content. Include actual company names, figures, or events mentioned.
+IMPORTANT: 
+- Make sure each suggestion clearly demonstrates you read and understood the specific article content
+- Include actual company names, figures, or events mentioned
+- Keep the "angle" field under 120 characters
+- Keep the "objective" field under 150 characters
 
 Return only valid JSON:
 {
