@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { MasterNavigation } from "@/components/master-navigation";
 import VNextDashboard from "@/pages/vnext-dashboard";
 import { VNextAssignmentDesk } from "@/pages/vnext-assignment-desk";
+import { AssignmentDeskSimplified } from "@/pages/assignment-desk-simplified";
 import { VNextApprovals } from "@/pages/vnext-approvals";
 import { VNextSegments } from "@/pages/vnext-segments";
 import { ABTestingDashboard } from "@/pages/ab-testing";
@@ -61,7 +62,9 @@ function Router() {
           {/* Always start on login page */}
           <Route path="/" component={() => <PublicRoute component={Login} />} />
           <Route path="/dashboard" component={() => <ProtectedRoute component={VNextDashboard} />} />
-          <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
+          <Route path="/assignments" component={() => <ProtectedRoute component={AssignmentDeskSimplified} />} />
+          <Route path="/vnext-assignment-desk" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
+          <Route path="/assignment-desk-simplified" component={() => <ProtectedRoute component={AssignmentDeskSimplified} />} />
           <Route path="/assignments/:id" component={() => <ProtectedRoute component={CopywriterAssignment} />} />
           <Route path="/assignments/:id/edit" component={() => <ProtectedRoute component={AssignmentEditorPage} />} />
           <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />

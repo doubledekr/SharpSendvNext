@@ -325,7 +325,7 @@ export const assignments = pgTable("assignments", {
   title: varchar("title").notNull(),
   description: text("description"),
   priority: varchar("priority").default("medium"), // low, medium, high, urgent
-  status: varchar("status").notNull().default("unassigned"), // unassigned, assigned, in_progress, review, approved, published
+  status: varchar("status").notNull().default("draft"), // draft, in_progress, review, approved, ready, sent
   dueDate: timestamp("due_date"),
   assignmentLink: varchar("assignment_link"), // Keep existing field
   copywriterId: varchar("copywriter_id"), // Keep existing field  
