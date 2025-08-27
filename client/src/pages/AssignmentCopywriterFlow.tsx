@@ -134,7 +134,12 @@ export default function AssignmentCopywriterFlow() {
         },
         body: JSON.stringify({
           assignmentId: assignment.id,
-          brief: assignment.brief,
+          brief: assignment.brief || {
+            objective: assignment.description || assignment.title,
+            angle: '',
+            keyPoints: [],
+            offer: { label: '', url: '' }
+          },
           marketContext: assignment.marketContext,
           existingSubject: subject,
           existingContent: content
@@ -904,104 +909,103 @@ export default function AssignmentCopywriterFlow() {
                     </div>
 
                     {/* Email Preview Stack Container */}
-                    <div className="relative">
+                    <div className="relative min-h-[500px]">
                       {segments.map((segment, index) => {
                         const isActive = index === currentVariationIndex;
-                        const stackOffset = index - currentVariationIndex;
+                        const stackOffset = Math.max(0, index - currentVariationIndex);
                         
                         return (
                           <div
                             key={segment.id}
-                            className={`absolute w-full transition-all duration-300 ease-in-out ${
+                            onClick={() => setCurrentVariationIndex(index)}
+                            className={`absolute w-full transition-all duration-300 ease-in-out cursor-pointer hover:shadow-lg ${
                               isActive 
-                                ? 'z-20 transform-none opacity-100' 
-                                : stackOffset > 0
-                                ? `z-${20 - stackOffset} transform translate-x-${stackOffset * 2} translate-y-${stackOffset * 2} opacity-80 scale-95`
-                                : 'z-0 opacity-0 pointer-events-none'
+                                ? 'z-30 opacity-100' 
+                                : 'opacity-75 hover:opacity-90'
                             }`}
                             style={{
                               transform: isActive 
-                                ? 'none' 
-                                : stackOffset > 0 
-                                ? `translate(${stackOffset * 8}px, ${stackOffset * 8}px) scale(${1 - (stackOffset * 0.05)})`
-                                : 'translateX(-100px) scale(0.9)',
-                              zIndex: isActive ? 20 : stackOffset > 0 ? 20 - stackOffset : 0
+                                ? 'translateX(0px) translateY(0px) scale(1)' 
+                                : `translateX(${stackOffset * 8}px) translateY(${stackOffset * 8}px) scale(${1 - stackOffset * 0.05})`,
+                              zIndex: 30 - stackOffset
                             }}
                           >
-                            <Card className="border-2 border-blue-500 shadow-lg bg-white">
+                            <Card className={`border-2 ${isActive ? 'border-blue-500 shadow-xl' : 'border-gray-200 shadow-md'}`}>
                               <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="checkbox"
-                                      id={segment.id}
-                                      checked={selectedSegments.includes(segment.id)}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedSegments([...selectedSegments, segment.id]);
-                                        } else {
-                                          setSelectedSegments(selectedSegments.filter(id => id !== segment.id));
-                                        }
-                                      }}
-                                      className="w-4 h-4"
-                                    />
-                                    <CardTitle className="text-lg">{segment.segmentName}</CardTitle>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline">
-                                      <Users className="w-3 h-3 mr-1" />
-                                      {segment.estimatedRecipients.toLocaleString()}
-                                    </Badge>
-                                    <Badge className="bg-green-500 text-white">
-                                      AI: {segment.aiScore?.toFixed(0) || 92}%
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <CardDescription className="text-sm">{segment.segmentCriteria}</CardDescription>
-                              </CardHeader>
-                              
-                              <CardContent>
-                                <div className="space-y-4">
                                   <div>
-                                    <p className="text-sm font-medium text-gray-600">Subject Line:</p>
-                                    <p className="text-sm font-semibold">{segment.subjectLine}</p>
+                                    <CardTitle className="text-lg">{segment.segmentName}</CardTitle>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge variant="secondary" className="text-xs">
+                                        <Users className="w-3 h-3 mr-1" />
+                                        {segment.estimatedRecipients.toLocaleString()}
+                                      </Badge>
+                                      <Badge className="bg-green-500 text-white text-xs">
+                                        AI: {segment.aiScore?.toFixed(0) || 92}%
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  {isActive && (
+                                    <Badge className="bg-blue-600 text-white">Active</Badge>
+                                  )}
+                                </div>
+                              </CardHeader>
+                              <CardContent>
+                                {/* Email Preview */}
+                                <div className="border rounded-lg p-4 bg-white mb-4">
+                                  <div className="text-xs text-gray-500 mb-3 pb-2 border-b">
+                                    <div>From: publisher@example.com</div>
+                                    <div className="font-semibold">Subject: {segment.subjectLine}</div>
                                   </div>
                                   
-                                  {/* Email Preview */}
-                                  <div className="border rounded-lg p-4 bg-gray-50">
-                                    <div className="text-xs text-gray-500 mb-3 pb-2 border-b">
-                                      <div>From: publisher@example.com</div>
-                                      <div>To: {segment.segmentName.toLowerCase().replace(/\s+/g, '')}@example.com</div>
-                                      <div className="font-semibold text-gray-700">{segment.subjectLine}</div>
+                                  <div 
+                                    className="text-sm text-gray-800 space-y-2 max-h-32 overflow-y-auto"
+                                    dangerouslySetInnerHTML={{
+                                      __html: renderMarkdownContent(segment.content)
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Segment Info */}
+                                <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
+                                  <div className="font-medium mb-1">Target Criteria:</div>
+                                  <div>{segment.segmentCriteria}</div>
+                                </div>
+
+                                {/* Action Button */}
+                                {isActive && (
+                                  <div className="flex items-center justify-between mt-4 pt-3 border-t">
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        id={segment.id}
+                                        checked={selectedSegments.includes(segment.id)}
+                                        onChange={(e) => {
+                                          const checked = e.target.checked;
+                                          if (checked) {
+                                            setSelectedSegments([...selectedSegments, segment.id]);
+                                          } else {
+                                            setSelectedSegments(selectedSegments.filter(id => id !== segment.id));
+                                          }
+                                        }}
+                                        className="w-4 h-4"
+                                      />
+                                      <label htmlFor={segment.id} className="text-sm cursor-pointer">
+                                        Select for sending
+                                      </label>
                                     </div>
                                     
-                                    <div 
-                                      className="text-sm text-gray-800 space-y-2 max-h-48 overflow-y-auto"
-                                      dangerouslySetInnerHTML={{
-                                        __html: renderMarkdownContent(segment.content)
-                                      }}
-                                    />
+                                    <Button size="sm" variant="outline">
+                                      <Eye className="w-4 h-4 mr-1" />
+                                      Edit Variation
+                                    </Button>
                                   </div>
-                                  
-                                  <div className="flex items-center justify-between text-xs text-gray-500">
-                                    <div className="flex items-center gap-2">
-                                      <Eye className="w-3 h-3" />
-                                      <span>Pixel: {segment.pixelId}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <CheckCircle className="w-3 h-3 text-green-500" />
-                                      <span>Tracking Enabled</span>
-                                    </div>
-                                  </div>
-                                </div>
+                                )}
                               </CardContent>
                             </Card>
                           </div>
                         );
                       })}
-                      
-                      {/* Spacer for stack height */}
-                      <div style={{ height: `${400 + (segments.length - 1) * 8}px` }}></div>
                     </div>
 
                     {/* Stack Navigation Controls */}
@@ -1012,7 +1016,7 @@ export default function AssignmentCopywriterFlow() {
                         onClick={() => setCurrentVariationIndex(Math.max(0, currentVariationIndex - 1))}
                         disabled={currentVariationIndex === 0}
                       >
-                        <MessageSquare className="w-4 h-4 mr-1" />
+                        <ArrowLeft className="w-4 h-4 mr-1" />
                         Previous
                       </Button>
                       
@@ -1023,6 +1027,37 @@ export default function AssignmentCopywriterFlow() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setCurrentVariationIndex(Math.min(segments.length - 1, currentVariationIndex + 1))}
+                        disabled={currentVariationIndex === segments.length - 1}
+                      >
+                        Next
+                        <ArrowRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  } catch (error) {
+    console.error('Error in AssignmentCopywriterFlow:', error);
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error loading assignment. Please try again.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+};
+
+export default AssignmentCopywriterFlow;
                         onClick={() => setCurrentVariationIndex(Math.min(segments.length - 1, currentVariationIndex + 1))}
                         disabled={currentVariationIndex === segments.length - 1}
                       >
