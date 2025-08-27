@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
-import { Link as WouterLink } from "wouter";
+import { Link as WouterLink, useLocation } from "wouter";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +52,7 @@ interface Opportunity {
 
 export function VNextAssignmentDesk() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [activeView, setActiveView] = useState<"assignments" | "opportunities">("assignments");
   const [newAssignment, setNewAssignment] = useState({
     title: "",
@@ -975,7 +976,11 @@ export function VNextAssignmentDesk() {
                     {filteredAssignments.map((assignment) => (
                       <div
                         key={assignment.id}
-                        className="border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors"
+                        className="border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          // Navigate to assignment detail page using the assignment ID
+                          setLocation(`/assignments/${assignment.id}`);
+                        }}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                           <div className="flex-1">
@@ -1006,12 +1011,15 @@ export function VNextAssignmentDesk() {
                             </div>
                           </div>
                           
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             {/* Shareable link buttons */}
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => copyShareableLink(assignment)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyShareableLink(assignment);
+                              }}
                               title="Copy shareable link"
                               className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                             >
@@ -1021,7 +1029,10 @@ export function VNextAssignmentDesk() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => window.open(assignment.shareableUrl, '_blank')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(assignment.shareableUrl, '_blank');
+                                }}
                                 title="Open public view"
                                 className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                               >
@@ -1035,6 +1046,7 @@ export function VNextAssignmentDesk() {
                                 size="sm"
                                 variant="outline"
                                 className="text-xs sm:text-sm"
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 Edit
                               </Button>
@@ -1044,10 +1056,13 @@ export function VNextAssignmentDesk() {
                             {assignment.status === "unassigned" && (
                               <Button
                                 size="sm"
-                                onClick={() => updateAssignmentMutation.mutate({
-                                  id: assignment.id,
-                                  updates: { status: "assigned", assignedTo: "current-user" }
-                                })}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateAssignmentMutation.mutate({
+                                    id: assignment.id,
+                                    updates: { status: "assigned", assignedTo: "current-user" }
+                                  });
+                                }}
                                 className="text-xs sm:text-sm"
                               >
                                 Assign to Me
@@ -1057,10 +1072,13 @@ export function VNextAssignmentDesk() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateAssignmentMutation.mutate({
-                                  id: assignment.id,
-                                  updates: { status: "in_progress" }
-                                })}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateAssignmentMutation.mutate({
+                                    id: assignment.id,
+                                    updates: { status: "in_progress" }
+                                  });
+                                }}
                                 className="text-xs sm:text-sm"
                               >
                                 Start Work
@@ -1070,10 +1088,13 @@ export function VNextAssignmentDesk() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateAssignmentMutation.mutate({
-                                  id: assignment.id,
-                                  updates: { status: "review" }
-                                })}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateAssignmentMutation.mutate({
+                                    id: assignment.id,
+                                    updates: { status: "review" }
+                                  });
+                                }}
                                 className="text-xs sm:text-sm"
                               >
                                 Submit for Review

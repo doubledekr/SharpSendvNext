@@ -62,6 +62,7 @@ function Router() {
           <Route path="/" component={() => <PublicRoute component={Login} />} />
           <Route path="/dashboard" component={() => <ProtectedRoute component={VNextDashboard} />} />
           <Route path="/assignments" component={() => <ProtectedRoute component={VNextAssignmentDesk} />} />
+          <Route path="/assignments/:id" component={() => <ProtectedRoute component={CopywriterAssignment} />} />
           <Route path="/assignments/:id/edit" component={() => <ProtectedRoute component={AssignmentEditorPage} />} />
           <Route path="/approvals" component={() => <ProtectedRoute component={VNextApprovals} />} />
           <Route path="/segments" component={() => <ProtectedRoute component={VNextSegments} />} />
