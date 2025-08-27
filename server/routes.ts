@@ -4,6 +4,7 @@ import { registerMultiTenantRoutes } from "./routes-multitenant";
 
 import { registerEmailRoutes } from "./routes-email";
 import { aiProcessingRoutes } from "./routes-ai-processing";
+import { registerAIContentHelperRoutes } from "./routes-ai-content-helper";
 import { cohortPersonalizationRoutes } from "./routes-cohort-personalization";
 import { emailOptimizationRoutes } from "./routes-email-optimization";
 import { brevoIntegrationRoutes } from "./routes-brevo-integration";
@@ -869,6 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // platformIntegrationsRoutes(app); // Commented out to avoid conflicts
   registerEmailRoutes(app);
   app.use("/api/ai", aiProcessingRoutes);
+  registerAIContentHelperRoutes(app);
   app.use("/api/cohorts", cohortPersonalizationRoutes);
   app.use("/api/email-optimization", emailOptimizationRoutes);
   app.use("/api/brevo", brevoIntegrationRoutes);

@@ -100,12 +100,72 @@ export default function AssignmentCopywriterFlow() {
   const [scheduledTime, setScheduledTime] = useState<string>('immediate');
   const [customDateTime, setCustomDateTime] = useState<string>('');
   const [currentVariationIndex, setCurrentVariationIndex] = useState<number>(0);
+  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<{
+    subjects: string[];
+    contents: string[];
+  }>({ subjects: [], contents: [] });
 
   // Fetch assignment details
   const { data: assignment, isLoading } = useQuery<Assignment>({
     queryKey: [`/api/assignments/${assignmentId}`],
     enabled: !!assignmentId,
   });
+
+  // Generate AI content based on assignment brief
+  const generateAIContent = async () => {
+    if (!assignment) {
+      toast({
+        title: "Assignment Required",
+        description: "Assignment details are needed for AI content generation",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingContent(true);
+    
+    try {
+      const response = await fetch(`/api/ai/content-helper`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          assignmentId: assignment.id,
+          brief: assignment.brief,
+          marketContext: assignment.marketContext,
+          existingSubject: subject,
+          existingContent: content
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate AI content');
+      }
+
+      const suggestions = await response.json();
+      
+      setAiSuggestions(suggestions);
+      setShowAISuggestions(true);
+      
+      toast({
+        title: "AI Content Generated",
+        description: `Generated ${suggestions.subjects?.length || 0} subject suggestions and ${suggestions.contents?.length || 0} content options`
+      });
+      
+    } catch (error) {
+      console.error("Error generating AI content:", error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate AI content suggestions. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingContent(false);
+    }
+  };
 
   // Generate AI content variations for segments
   const generateSegmentVariations = async () => {
@@ -424,7 +484,21 @@ export default function AssignmentCopywriterFlow() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      onClick={generateAIContent}
+                      disabled={isGeneratingContent}
+                      variant="outline"
+                      data-testid="button-ai-helper"
+                    >
+                      {isGeneratingContent ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-2" />
+                      )}
+                      AI Content Helper
+                    </Button>
+                    
                     <Button 
                       onClick={() => generateSegmentVariations()}
                       disabled={!subject || !content || isGenerating}
@@ -448,6 +522,70 @@ export default function AssignmentCopywriterFlow() {
                       Save to Drafts
                     </Button>
                   </div>
+
+                  {/* AI Content Suggestions */}
+                  {showAISuggestions && (aiSuggestions.subjects.length > 0 || aiSuggestions.contents.length > 0) && (
+                    <Card className="bg-blue-50 border-2 border-blue-200">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base flex items-center">
+                            <Sparkles className="w-4 h-4 mr-2 text-blue-600" />
+                            AI Content Suggestions
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAISuggestions(false)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {aiSuggestions.subjects.length > 0 && (
+                          <div>
+                            <Label className="text-sm font-medium text-blue-800">Subject Line Suggestions:</Label>
+                            <div className="space-y-2 mt-2">
+                              {aiSuggestions.subjects.map((suggestedSubject, index) => (
+                                <div key={index} className="flex items-center gap-2 p-2 bg-white rounded border">
+                                  <span className="flex-1 text-sm">{suggestedSubject}</span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setSubject(suggestedSubject)}
+                                  >
+                                    Use This
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {aiSuggestions.contents.length > 0 && (
+                          <div>
+                            <Label className="text-sm font-medium text-blue-800">Content Suggestions:</Label>
+                            <div className="space-y-2 mt-2">
+                              {aiSuggestions.contents.map((suggestedContent, index) => (
+                                <div key={index} className="p-3 bg-white rounded border">
+                                  <div className="text-sm text-gray-800 mb-2 max-h-20 overflow-y-auto">
+                                    {suggestedContent.substring(0, 200)}...
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setContent(suggestedContent)}
+                                  >
+                                    Use This Content
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Master Email Preview */}
                   {(subject || content) && (
