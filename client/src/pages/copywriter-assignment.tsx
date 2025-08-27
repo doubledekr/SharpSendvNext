@@ -219,11 +219,26 @@ export function CopywriterAssignment() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       toast({
         title: "Assignment Approved",
-        description: "The assignment has been approved and moved to the next phase.",
+        description: "The assignment has been approved. Generating email variations for different segments...",
       });
+      
+      // Trigger email variations generation
+      try {
+        const variationsResponse = await apiRequest("POST", `/api/assignments/${assignment?.id}/variations`, {});
+        toast({
+          title: "Email Variations Generated",
+          description: "Email variations have been created for different segments.",
+        });
+      } catch (error) {
+        toast({
+          title: "Variations Generation Failed",
+          description: "Assignment approved but email variations generation failed.",
+          variant: "destructive",
+        });
+      }
     },
   });
 

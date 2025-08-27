@@ -761,4 +761,94 @@ router.get("/api/cdn/assets", async (req, res) => {
   }
 });
 
+// Generate email variations for approved assignment
+router.post("/api/assignments/:id/variations", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const publisherId = "demo-publisher";
+    
+    // Get the assignment
+    const [assignment] = await db
+      .select()
+      .from(assignments)
+      .where(and(
+        eq(assignments.id, id),
+        eq(assignments.publisherId, publisherId)
+      ))
+      .limit(1);
+    
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+    
+    // Simulate email variation generation for different segments
+    const segments = [
+      { id: "growth-investors", name: "Growth Investors", description: "Focus on growth stocks and emerging markets" },
+      { id: "conservative-investors", name: "Conservative Investors", description: "Focus on stable, dividend-paying stocks" },
+      { id: "day-traders", name: "Day Traders", description: "Active traders looking for short-term opportunities" },
+      { id: "crypto-enthusiasts", name: "Crypto Enthusiasts", description: "Interested in cryptocurrency and digital assets" }
+    ];
+    
+    const variations = segments.map(segment => ({
+      id: `${id}-${segment.id}`,
+      segmentId: segment.id,
+      segmentName: segment.name,
+      subjectLine: generateSubjectLineForSegment(assignment.title, segment),
+      content: generateContentForSegment(assignment.content || assignment.description, segment),
+      estimatedReach: Math.floor(Math.random() * 5000) + 1000,
+      createdAt: new Date().toISOString()
+    }));
+    
+    // Update assignment status to completed after generating variations
+    await db
+      .update(assignments)
+      .set({ 
+        status: "completed",
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(assignments.id, id),
+        eq(assignments.publisherId, publisherId)
+      ));
+    
+    res.json({ variations, message: "Email variations generated successfully" });
+  } catch (error) {
+    console.error("Error generating email variations:", error);
+    res.status(500).json({ error: "Failed to generate email variations" });
+  }
+});
+
+// Helper function to generate segment-specific subject lines
+function generateSubjectLineForSegment(title: string, segment: any): string {
+  const baseTitle = title || "Market Update";
+  
+  switch (segment.id) {
+    case "growth-investors":
+      return `🚀 ${baseTitle}: High-Growth Opportunities Ahead`;
+    case "conservative-investors":
+      return `🛡️ ${baseTitle}: Stable Investment Insights`;
+    case "day-traders":
+      return `⚡ ${baseTitle}: Quick Moves & Market Signals`;
+    case "crypto-enthusiasts":
+      return `₿ ${baseTitle}: Digital Asset Market Analysis`;
+    default:
+      return baseTitle;
+  }
+}
+
+// Helper function to generate segment-specific content
+function generateContentForSegment(content: string, segment: any): string {
+  const baseContent = content || "Market analysis and investment insights.";
+  
+  const segmentIntros = {
+    "growth-investors": "For growth-focused investors seeking high-potential opportunities:",
+    "conservative-investors": "For conservative investors prioritizing stability and income:",
+    "day-traders": "For active traders looking for immediate market opportunities:",
+    "crypto-enthusiasts": "For digital asset investors and crypto enthusiasts:"
+  };
+  
+  const intro = segmentIntros[segment.id as keyof typeof segmentIntros] || "";
+  return `${intro}\n\n${baseContent}`;
+}
+
 export default router;

@@ -376,6 +376,8 @@ export function VNextAssignmentDesk() {
         return <FileText className="h-4 w-4 text-purple-500" />;
       case "approved":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "completed":
+        return <TrendingUp className="h-4 w-4 text-green-600" />;
       case "published":
         return <TrendingUp className="h-4 w-4 text-indigo-500" />;
       default:
@@ -391,8 +393,10 @@ export function VNextAssignmentDesk() {
         return assignments.filter(a => ["assigned", "in_progress"].includes(a.status));
       case "review":
         return assignments.filter(a => a.status === "review");
+      case "approved":
+        return assignments.filter(a => a.status === "approved");
       case "completed":
-        return assignments.filter(a => ["approved", "published"].includes(a.status));
+        return assignments.filter(a => ["completed", "published"].includes(a.status));
       default:
         return assignments;
     }
@@ -942,7 +946,7 @@ export function VNextAssignmentDesk() {
             </CardHeader>
             <CardContent className="px-3 sm:px-6">
               <div className="text-xl sm:text-2xl font-bold text-green-600">
-                {assignments.filter(a => ["approved", "published"].includes(a.status)).length}
+                {assignments.filter(a => ["approved", "completed", "published"].includes(a.status)).length}
               </div>
             </CardContent>
           </Card>
@@ -961,6 +965,7 @@ export function VNextAssignmentDesk() {
                 <TabsTrigger value="unassigned" className="text-xs sm:text-sm">Unassigned</TabsTrigger>
                 <TabsTrigger value="in_progress" className="text-xs sm:text-sm">In Progress</TabsTrigger>
                 <TabsTrigger value="review" className="text-xs sm:text-sm">Review</TabsTrigger>
+                <TabsTrigger value="approved" className="text-xs sm:text-sm">Approved</TabsTrigger>
                 <TabsTrigger value="completed" className="text-xs sm:text-sm">Completed</TabsTrigger>
               </TabsList>
 
@@ -1098,6 +1103,23 @@ export function VNextAssignmentDesk() {
                                 className="text-xs sm:text-sm"
                               >
                                 Submit for Review
+                              </Button>
+                            )}
+                            {assignment.status === "completed" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toast({
+                                    title: "Email Variations Generated",
+                                    description: "This assignment has been processed with segment-specific email variations including Growth Investors, Conservative Investors, Day Traders, and Crypto Enthusiasts.",
+                                  });
+                                }}
+                                className="text-xs sm:text-sm text-green-600 border-green-200 hover:bg-green-50"
+                              >
+                                <Sparkles className="h-4 w-4 mr-1" />
+                                View Variations
                               </Button>
                             )}
                           </div>
