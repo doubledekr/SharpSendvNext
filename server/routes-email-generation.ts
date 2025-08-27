@@ -7,7 +7,9 @@ import { randomUUID } from 'crypto';
 import { inMemoryDemoStore, isDemoMode, useDemoData } from './services/in-memory-demo-store';
 
 const router = Router();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 // the newest OpenAI model is "gpt-4.1-mini" which works correctly. gpt-4o is not supported
 const MODEL = 'gpt-4.1-mini';

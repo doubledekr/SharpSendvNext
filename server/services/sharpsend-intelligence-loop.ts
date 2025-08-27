@@ -17,9 +17,11 @@ import { eq, and, gte, sql, desc } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 // Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    })
+  : null;
 
 // Types for behavioral patterns and optimization
 export interface BehavioralPattern {

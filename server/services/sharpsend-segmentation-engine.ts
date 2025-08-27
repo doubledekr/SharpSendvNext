@@ -10,9 +10,11 @@ import { eq, and, inArray, sql } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 // Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    })
+  : null;
 
 // Master taxonomy categories with bit positions for fingerprinting
 export interface TaxonomyCategory {

@@ -1,10 +1,12 @@
 import OpenAI from "openai";
 import { tenantStorage } from "../storage-multitenant";
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client (optional for demo)
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export interface ContentGenerationRequest {
   publisherId: string;
@@ -33,6 +35,10 @@ class OpenAIService {
    */
   async generateContent(request: ContentGenerationRequest): Promise<ContentGenerationResponse> {
     try {
+      if (!openai) {
+        throw new Error("OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.");
+      }
+
       const model = request.model || "gpt-4";
       
       // Build the system prompt based on content type

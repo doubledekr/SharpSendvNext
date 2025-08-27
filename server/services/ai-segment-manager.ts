@@ -34,9 +34,11 @@ export class AISegmentManager {
   private segments: SegmentPattern[] = [];
   
   constructor() {
-    this.openai = new OpenAI({ 
-      apiKey: process.env.OPENAI_API_KEY 
-    });
+    this.openai = process.env.OPENAI_API_KEY 
+      ? new OpenAI({ 
+          apiKey: process.env.OPENAI_API_KEY 
+        })
+      : null as any; // Will handle null checks in methods
     this.initializeDefaultSegments();
     // Start auto-detection process
     this.startTrendMonitoring();

@@ -44,9 +44,11 @@ export class PublicationDetector {
   private learningPatterns: Map<string, any> = new Map();
   
   constructor() {
-    this.openai = new OpenAI({ 
-      apiKey: process.env.OPENAI_API_KEY 
-    });
+    this.openai = process.env.OPENAI_API_KEY
+      ? new OpenAI({ 
+          apiKey: process.env.OPENAI_API_KEY 
+        })
+      : null as any; // Will handle null checks in methods
     this.crawler = new AdvancedWebCrawler();
     
     // Initialize with learned patterns for common publishers
