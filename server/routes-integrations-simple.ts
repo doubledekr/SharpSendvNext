@@ -579,13 +579,37 @@ async function syncCustomerIOData(credentials: any) {
         console.log("Campaigns error body:", errorText);
       }
 
-      // Get segments to estimate subscriber count
+      // Get segments with subscriber counts
       const segmentsResponse = await fetch(`${appApiBase}/segments`, {
         headers: {
           'Authorization': `Bearer ${app_api_key}`,
           'Content-Type': 'application/json'
         }
       });
+
+      // Also try to get total customer count from exports endpoint
+      let totalCustomers = 0;
+      try {
+        const customersResponse = await fetch(`${appApiBase}/exports`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${app_api_key}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'customers',
+            format: 'json',
+            attributes: ['id', 'email']
+          })
+        });
+        
+        if (customersResponse.ok) {
+          const exportData = await customersResponse.json();
+          console.log('Customer export initiated:', exportData);
+        }
+      } catch (exportError) {
+        console.log('Customer export not available, continuing with segment data');
+      }
 
       if (segmentsResponse.ok) {
         const segmentsData = await segmentsResponse.json();
@@ -613,6 +637,14 @@ async function syncCustomerIOData(credentials: any) {
           
           subscribers = totalMembers;
           console.log(`Found ${segmentsData.segments.length} segments with ${totalMembers} total subscribers (REAL DATA)`);
+        }
+        
+        // If segments are empty but we know there are customers, try alternative approach
+        if (subscribers === 0) {
+          console.log("All segments show 0 subscribers. This could mean:");
+          console.log("1. Segments are empty but customers exist outside segments");
+          console.log("2. New Customer.io account with no active segments");
+          console.log("3. Customers haven't been assigned to any segments yet");
         }
         
         console.log("Successfully fetched segments from Customer.io, total subscribers:", subscribers);

@@ -1,0 +1,279 @@
+# Replit Prompt: Fix Customer.io API Integration
+
+## 🚨 **URGENT: Customer.io Integration is Completely Broken**
+
+The Customer.io integration in SharpSend has **critical issues** preventing it from retrieving subscriber counts and segment data. I've identified the exact problems and need you to fix them.
+
+## 🔍 **Root Cause Analysis**
+
+**Current Status**: 
+- Integration shows "Connected" but displays 0 subscribers
+- API calls return HTML error pages instead of JSON
+- Missing critical APP API Key field in integration form
+- Backend using wrong authentication for Customer.io APIs
+
+**Real Data Available**: Customer.io account has 40 subscribers in segments, but SharpSend can't access them.
+
+## 🎯 **EXACT FIXES NEEDED**
+
+### **1. ADD MISSING APP API KEY FIELD (CRITICAL)**
+
+**Problem**: Integration form only has Track API Key field, missing APP API Key field entirely.
+
+**Location**: Integration form for Customer.io connection
+**Current Form Fields**:
+```
+- Connection Name (optional)
+- Site ID ✅
+- API Key ✅ (Track API only)
+- Region ❌ (broken dropdown)
+```
+
+**Required Form Fields**:
+```
+- Connection Name (optional)
+- Site ID ✅
+- Track API Key ✅ (rename current "API Key" field)
+- APP API Key ❌ (ADD THIS FIELD)
+- Region ✅ (fix dropdown)
+```
+
+**Implementation**:
+```javascript
+// Update integration form schema
+const customerIOSchema = z.object({
+  connectionName: z.string().optional(),
+  siteId: z.string().min(1, "Site ID is required"),
+  trackApiKey: z.string().min(1, "Track API Key is required"),
+  appApiKey: z.string().min(1, "APP API Key is required"), // NEW FIELD
+  region: z.enum(['US', 'EU'], "Please select a region")
+});
+
+// Add to form JSX
+<div>
+  <label>Track API Key*</label>
+  <input {...register('trackApiKey')} placeholder="Track API Key" />
+</div>
+<div>
+  <label>APP API Key*</label>
+  <input {...register('appApiKey')} placeholder="APP API Key" />
+  <small>Used for retrieving segments, campaigns, and subscriber data</small>
+</div>
+```
+
+### **2. FIX BACKEND API IMPLEMENTATION (CRITICAL)**
+
+**Problem**: Backend is using Track API credentials for APP API operations, causing authentication failures.
+
+**Current Broken Code** (find and replace):
+```javascript
+// WRONG - This causes HTML error responses
+fetch('https://api.customer.io/v1/segments', {
+  headers: { 
+    'Authorization': `Basic ${btoa(siteId + ':' + trackApiKey)}` 
+  }
+});
+```
+
+**Correct Implementation**:
+```javascript
+// Create separate API clients
+class CustomerIOIntegration {
+  constructor(config) {
+    this.siteId = config.siteId;
+    this.trackApiKey = config.trackApiKey;
+    this.appApiKey = config.appApiKey;
+    this.region = config.region;
+    
+    // Different base URLs for different APIs
+    this.trackBaseUrl = config.region === 'EU' 
+      ? 'https://track-eu.customer.io/api/v1' 
+      : 'https://track.customer.io/api/v1';
+    this.appBaseUrl = config.region === 'EU'
+      ? 'https://api-eu.customer.io/v1'
+      : 'https://api.customer.io/v1';
+  }
+  
+  // Use Track API for events and customer updates
+  async trackEvent(customerId, eventName, data) {
+    const response = await fetch(`${this.trackBaseUrl}/customers/${customerId}/events`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(this.siteId + ':' + this.trackApiKey)}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: eventName, data })
+    });
+    return response;
+  }
+  
+  // Use APP API for segments and campaigns
+  async getSegments() {
+    const response = await fetch(`${this.appBaseUrl}/segments`, {
+      headers: {
+        'Authorization': `Bearer ${this.appApiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  }
+  
+  async getSegmentDetails(segmentId) {
+    const response = await fetch(`${this.appBaseUrl}/segments/${segmentId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.appApiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  }
+  
+  // Test both API connections
+  async testConnection() {
+    try {
+      // Test APP API (most important for SharpSend)
+      const segmentsTest = await this.getSegments();
+      
+      // Test Track API
+      const trackTest = await fetch(`${this.trackBaseUrl}/customers/test`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Basic ${btoa(this.siteId + ':' + this.trackApiKey)}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: 'test@example.com' })
+      });
+      
+      return {
+        success: true,
+        appApi: { connected: true, segments: segmentsTest.segments?.length || 0 },
+        trackApi: { connected: trackTest.ok }
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        appApi: { connected: false },
+        trackApi: { connected: false }
+      };
+    }
+  }
+}
+```
+
+### **3. FIX REGION DROPDOWN (HIGH PRIORITY)**
+
+**Problem**: Region dropdown shows no options and is non-functional.
+
+**Fix**:
+```javascript
+// Add proper region options
+const regionOptions = [
+  { value: 'US', label: 'United States' },
+  { value: 'EU', label: 'European Union' }
+];
+
+// Fix the Select component
+<Select onValueChange={(value) => setValue('region', value)}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select Region" />
+  </SelectTrigger>
+  <SelectContent>
+    {regionOptions.map(option => (
+      <SelectItem key={option.value} value={option.value}>
+        {option.label}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
+```
+
+### **4. UPDATE SYNC FUNCTIONALITY**
+
+**Problem**: Sync shows "complete" but retrieves no data.
+
+**Fix**:
+```javascript
+async function syncCustomerIOData(integrationId) {
+  try {
+    const integration = await getIntegration(integrationId);
+    const customerIO = new CustomerIOIntegration(integration.config);
+    
+    // Get segments with subscriber counts
+    const segmentsData = await customerIO.getSegments();
+    
+    // Update integration display
+    await updateIntegration(integrationId, {
+      subscribers: segmentsData.segments.reduce((total, seg) => total + seg.member_count, 0),
+      segments: segmentsData.segments.map(seg => ({
+        id: seg.id,
+        name: seg.name,
+        subscriberCount: seg.member_count,
+        type: seg.type
+      })),
+      lastSynced: new Date().toISOString()
+    });
+    
+    return { success: true, message: 'Sync completed successfully' };
+    
+  } catch (error) {
+    console.error('Sync failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+```
+
+## 🧪 **TEST WITH REAL CREDENTIALS**
+
+Use these working Customer.io credentials for testing:
+
+```
+Site ID: dc2065fe6d3d877344ce
+Track API Key: c3de70c01cac3fa70b5a
+APP API Key: d81e4a4d305d30569f6867081bade0c9
+Region: US
+```
+
+**Expected Results After Fix**:
+- Subscriber count should show: **40 people**
+- Segments should include: "sharpsend_customerio_mock_data.csv (40 subscribers)"
+- Connection test should pass for both APIs
+
+## 🎯 **VALIDATION STEPS**
+
+1. **Add APP API Key field** to integration form
+2. **Fix region dropdown** with US/EU options
+3. **Update backend** to use correct API authentication
+4. **Test connection** with provided credentials
+5. **Verify sync** retrieves 40 subscribers
+6. **Confirm segments** display with correct counts
+
+## ⚠️ **IMPORTANT NOTES**
+
+- **DO NOT** change the existing Track API functionality - just add APP API support
+- **Customer.io has TWO different APIs** - Track API and APP API - they use different authentication
+- **The data exists** - Customer.io account has 40 real subscribers waiting to be retrieved
+- **Priority order**: APP API Key field → Backend fix → Region dropdown → Testing
+
+## 🚀 **SUCCESS CRITERIA**
+
+After implementing these fixes, the Customer.io integration should:
+- ✅ Show "40 people" as subscriber count
+- ✅ Display segments with accurate subscriber numbers
+- ✅ Pass connection tests for both APIs
+- ✅ Enable segment selection in assignment creation
+- ✅ Support real-time subscriber count updates
+
+**This is a critical integration fix - the functionality exists, it just needs proper API implementation.**
+
