@@ -15,19 +15,30 @@ router.get('/platforms', (req, res) => {
   try {
     const platforms = [
       {
-        id: "customerio",
+        id: "customer_io",
         name: "Customer.io",
-        description: "Omnichannel messaging with behavioral triggers",
+        description: "Full bidirectional integration: read segments, create campaigns, sync customer data",
         category: "Marketing Automation",
         logo: "https://customer.io/assets/images/logos/customerio-logo.svg",
         authType: "api_key",
         fields: [
-          { name: "siteId", label: "Site ID", type: "text", required: true },
-          { name: "apiKey", label: "API Key", type: "password", required: true },
-          { name: "region", label: "Region", type: "select", options: ["us", "eu"], required: true }
+          { name: "app_api_key", label: "App API Key (Bearer Token)", type: "password", required: true, description: "For reading data, managing campaigns, and segments" },
+          { name: "site_id", label: "Site ID", type: "text", required: true, description: "Used with Track API for customer events" },
+          { name: "track_api_key", label: "Track API Key", type: "password", required: true, description: "Used with Site ID for sending customer data" },
+          { name: "region", label: "Region", type: "select", required: true, options: [
+            { value: "us", label: "US (api.customer.io)" },
+            { value: "eu", label: "EU (api-eu.customer.io)" }
+          ], description: "Your Customer.io workspace region" }
         ],
         status: "available",
-        features: ["Behavioral triggers", "In-app messaging", "Journey automation", "Event tracking", "Data retrieval"]
+        features: [
+          "Read Customer.io segments and profiles", 
+          "Create and trigger campaigns from SharpSend", 
+          "Bidirectional customer data sync",
+          "Dynamic segment creation",
+          "Real-time engagement tracking",
+          "A/B testing integration"
+        ]
       },
       {
         id: "iterable",

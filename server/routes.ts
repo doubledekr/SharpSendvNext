@@ -984,7 +984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(assetRoutes);
   app.use(opportunityRoutes);
   app.use(opportunityDetectorRoutes);
-  // app.use(integrationsRoutes); // Disabled mock integrations in favor of real platform integrations
+  app.use(integrationsRoutes); // Re-enabled to provide correct Customer.io integration endpoint
   app.use(cohortsRoutes);
 
   // Market news API endpoint - fetches real articles from MarketAux
