@@ -219,6 +219,8 @@ export default function IntegrationsPage() {
   };
 
   const openConnectDialog = (platform: Platform) => {
+    console.log('Opening connect dialog for platform:', platform.name);
+    console.log('Platform fields:', platform.fields);
     setSelectedPlatform(platform);
     setCredentials({});
     setConnectionName("");
@@ -500,21 +502,29 @@ export default function IntegrationsPage() {
                     <p className="text-xs text-muted-foreground">{field.description}</p>
                   )}
                   {field.type === "select" && field.options ? (
-                    <Select
-                      value={credentials[field.name] || ""}
-                      onValueChange={(value) => handleCredentialChange(field.name, value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={`Select ${field.label}`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.options.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div>
+                      <Select
+                        value={credentials[field.name] || ""}
+                        onValueChange={(value) => handleCredentialChange(field.name, value)}
+                      >
+                        <SelectTrigger data-testid={`select-${field.name}`}>
+                          <SelectValue placeholder={`Select ${field.label}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.options.map((option) => {
+                            console.log('Rendering option:', option);
+                            return (
+                              <SelectItem key={option.value} value={option.value} data-testid={`option-${option.value}`}>
+                                {option.label}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Debug: {field.options?.length || 0} options available
+                      </div>
+                    </div>
                   ) : (
                     <Input
                       id={field.name}
