@@ -32,12 +32,12 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     if (!token && !isAutoLoginAttempted) {
       setIsAutoLoginAttempted(true);
       // Auto-login with demo credentials to access multitenant system
-      fetch('/api/multitenant/login', {
+      fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: 'demo@example.com',
-          password: 'password123',
+          password: 'demo',
           subdomain: 'demo'
         })
       })

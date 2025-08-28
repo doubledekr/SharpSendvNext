@@ -25,12 +25,12 @@ export default function VNextDashboard() {
     if (!token && !isAutoLoginAttempted) {
       setIsAutoLoginAttempted(true);
       // Auto-login with demo credentials to access multitenant analytics
-      fetch('/api/multitenant/login', {
+      fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: 'demo@example.com',
-          password: 'password123',
+          password: 'demo',
           subdomain: 'demo'
         })
       })
