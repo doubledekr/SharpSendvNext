@@ -237,19 +237,8 @@ export async function seedDatabase() {
         .where(eq(analytics.publisherId, publisherId))
         .limit(1);
       
-      if (existingAnalytics.length === 0) {
-        await db.insert(analytics).values({
-          publisherId: publisherId,
-          totalSubscribers: 8,
-          engagementRate: "71.2",
-          churnRate: "2.1", 
-          monthlyRevenue: "13600.00",
-          revenueGrowth: "15.3"
-        });
-        console.log("Created sample analytics data");
-      } else {
-        console.log("Analytics data already exists, skipping");
-      }
+      // Skip creating mock analytics data - only use real integration data
+      console.log("Skipping mock analytics data - only real integration data will be used");
     } catch (analyticsError) {
       console.warn("Failed to create analytics data:", analyticsError);
     }

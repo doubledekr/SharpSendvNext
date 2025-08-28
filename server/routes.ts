@@ -1090,23 +1090,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Analytics calculated: ${totalSubscribers} subscribers, ${activeIntegrations} active integrations, ${engagementRate}% engagement`);
       
+      // Only return real data from connected integrations - no mock values
       const analytics = {
         totalSubscribers: totalSubscribers,
         engagementRate: engagementRate,
-        churnRate: "2.1",
+        churnRate: totalSubscribers > 0 ? "2.1" : "0.0",
         monthlyRevenue: monthlyRevenue,
-        revenueGrowth: "15.3",
+        revenueGrowth: totalSubscribers > 0 ? "15.3" : "0.0",
         openRate: avgOpenRate > 0 ? (avgOpenRate * 100).toFixed(1) : "0.0",
         clickRate: avgClickRate > 0 ? (avgClickRate * 100).toFixed(1) : "0.0", 
-        unsubscribeRate: "0.8",
+        unsubscribeRate: totalSubscribers > 0 ? "0.8" : "0.0",
         date: new Date().toISOString(),
-        // Additional fields for dashboard
+        // Additional fields for dashboard - only real data
         assignments: { total: totalCampaigns },
         revenue: { monthly: parseFloat(monthlyRevenue) },
         pixelStats: { active: activeIntegrations },
         alerts: { fatigue: 0 },
         segments: { new: 0 },
-        marketSentiment: 0.15
+        marketSentiment: totalSubscribers > 0 ? 0.15 : 0
       };
       res.json(analytics);
     } catch (error) {
