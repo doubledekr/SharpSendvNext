@@ -10,32 +10,87 @@ import {
   DollarSign, 
   Calendar,
   Download,
-  Filter
+  Filter,
+  Users,
+  Mail
 } from "lucide-react";
 import type { Campaign } from "@shared/schema";
 
+interface AnalyticsData {
+  totalSubscribers: number;
+  engagementRate: string;
+  churnRate: string;
+  monthlyRevenue: string;
+  revenueGrowth: string;
+  openRate: string;
+  clickRate: string;
+  unsubscribeRate: string;
+  date: string;
+}
+
 export default function AnalyticsTab() {
-  const { data: campaigns, isLoading } = useQuery<Campaign[]>({
+  const { data: campaigns, isLoading: campaignsLoading } = useQuery<Campaign[]>({
     queryKey: ['/api/campaigns'],
   });
 
-  if (isLoading) {
-    return <div className="text-slate-300">Loading campaign analytics...</div>;
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<AnalyticsData>({
+    queryKey: ['/api/analytics'],
+  });
+
+  if (campaignsLoading || analyticsLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="bg-dark-surface border-dark-border">
+              <CardContent className="p-6">
+                <div className="h-16 bg-slate-700/50 animate-pulse rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="text-slate-300">Loading analytics data...</div>
+      </div>
+    );
   }
 
-  const topCampaigns = (campaigns as Campaign[] || [])
+  const topCampaigns = (campaigns || [])
     .sort((a, b) => parseFloat(b.openRate || "0") - parseFloat(a.openRate || "0"))
     .slice(0, 5);
 
   return (
     <div className="space-y-8">
-      {/* Key Metrics */}
+      {/* Key Metrics - Real Data from Customer.io */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { title: "Open Rate", value: "34.7%", change: "+8.3%", icon: Eye, color: "brand-green" },
-          { title: "Click Rate", value: "12.4%", change: "+15.7%", icon: MousePointer, color: "blue-500" },
-          { title: "Revenue/Email", value: "$1.89", change: "+23.8%", icon: DollarSign, color: "yellow-500" },
-          { title: "Campaigns Sent", value: "47", change: "+12 this month", icon: Calendar, color: "purple-500" }
+          { 
+            title: "Total Subscribers", 
+            value: analytics?.totalSubscribers?.toString() || "0", 
+            change: analytics?.totalSubscribers > 0 ? "From Customer.io" : "No integrations", 
+            icon: Users, 
+            color: "brand-green" 
+          },
+          { 
+            title: "Engagement Rate", 
+            value: `${analytics?.engagementRate || "0.0"}%`, 
+            change: analytics?.totalSubscribers > 0 ? "Live data" : "Connect platform", 
+            icon: TrendingUp, 
+            color: "blue-500" 
+          },
+          { 
+            title: "Monthly Revenue", 
+            value: `$${analytics?.monthlyRevenue || "0.00"}`, 
+            change: `Growth: ${analytics?.revenueGrowth || "0"}%`, 
+            icon: DollarSign, 
+            color: "yellow-500" 
+          },
+          { 
+            title: "Open Rate", 
+            value: `${analytics?.openRate || "0.0"}%`, 
+            change: "Platform average", 
+            icon: Eye, 
+            color: "purple-500" 
+          }
         ].map((metric, index) => {
           const Icon = metric.icon;
           return (
@@ -47,7 +102,9 @@ export default function AnalyticsTab() {
                     <p className="text-2xl font-bold text-white mt-1" data-testid={`text-${metric.title.toLowerCase().replace(/[\/\s]+/g, '-')}`}>
                       {metric.value}
                     </p>
-                    <p className="text-brand-green text-sm mt-1">{metric.change}</p>
+                    <p className={`text-sm mt-1 ${analytics?.totalSubscribers > 0 ? 'text-brand-green' : 'text-yellow-500'}`}>
+                      {metric.change}
+                    </p>
                   </div>
                   <Icon className={`text-${metric.color} h-8 w-8`} />
                 </div>

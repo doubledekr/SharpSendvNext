@@ -148,10 +148,17 @@ export default function IntegrationsPage() {
     }
   });
 
-  // Test connection mutation
+  // Test connection mutation - fixed to use correct endpoint
   const testMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await apiRequest("POST", `/api/integrations/${id}/test`, {});
+    mutationFn: async (integrationId: string) => {
+      // Find the integration to get credentials
+      const integration = connections.find(c => c.id === integrationId);
+      if (!integration) throw new Error('Integration not found');
+      
+      const response = await apiRequest("POST", "/api/integrations/test", {
+        platformId: integration.platformId,
+        credentials: integration.credentials
+      });
       return await response.json();
     },
     onSuccess: () => {

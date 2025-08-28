@@ -88,12 +88,16 @@ export default function VNextDashboard() {
             <CardTitle className="text-sm font-medium">Total Subscribers</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSubscribers.toLocaleString()}</div>
-            {isDemoAccount() && (
-              <p className="text-xs text-muted-foreground mt-1">
-                <span className="text-green-600">↑ 12%</span> from last month
-              </p>
-            )}
+            <div className="text-2xl font-bold" data-testid="text-total-subscribers">
+              {stats.totalSubscribers.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.totalSubscribers > 0 ? (
+                <span className="text-green-600">From Customer.io</span>
+              ) : (
+                <span className="text-yellow-600">Connect email platform</span>
+              )}
+            </p>
           </CardContent>
         </Card>
         
@@ -112,12 +116,16 @@ export default function VNextDashboard() {
             <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.monthlyRevenue > 0 ? (stats.monthlyRevenue/1000).toFixed(0) + 'K' : '0'}</div>
-            {isDemoAccount() && (
-              <p className="text-xs text-muted-foreground mt-1">
-                <span className="text-green-600">↑ 23%</span> from last month
-              </p>
-            )}
+            <div className="text-2xl font-bold" data-testid="text-monthly-revenue">
+              ${stats.monthlyRevenue > 0 ? (stats.monthlyRevenue/1000).toFixed(0) + 'K' : '0'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.totalSubscribers > 0 ? (
+                <span className="text-green-600">Based on {stats.totalSubscribers} subscribers</span>
+              ) : (
+                <span className="text-yellow-600">Awaiting subscriber data</span>
+              )}
+            </p>
           </CardContent>
         </Card>
         

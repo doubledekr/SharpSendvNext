@@ -236,7 +236,7 @@ const EMAIL_PLATFORMS = [
 ];
 
 // Mock connected integrations storage
-let connectedIntegrations: any[] = [];
+export let connectedIntegrations: any[] = [];
 
 // Initialize with demo data if needed
 function initializeConnectedIntegrations() {
