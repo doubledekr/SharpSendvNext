@@ -52,11 +52,11 @@ interface Integration {
   status: string;
   connectedAt: string;
   lastSync: string;
-  stats: {
-    subscribers: number;
-    campaigns: number;
-    openRate: string;
-    clickRate: string;
+  stats?: {
+    subscribers?: number;
+    campaigns?: number;
+    openRate?: string;
+    clickRate?: string;
   };
 }
 
@@ -291,28 +291,28 @@ export default function IntegrationsPage() {
                         <p className="text-muted-foreground">Subscribers</p>
                         <p className="font-semibold flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          {integration.stats.subscribers.toLocaleString()}
+                          {integration.stats?.subscribers?.toLocaleString() || "N/A"}
                         </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Campaigns</p>
                         <p className="font-semibold flex items-center gap-1">
                           <Mail className="h-4 w-4" />
-                          {integration.stats.campaigns}
+                          {integration.stats?.campaigns || "N/A"}
                         </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Open Rate</p>
                         <p className="font-semibold flex items-center gap-1">
                           <BarChart3 className="h-4 w-4" />
-                          {(parseFloat(integration.stats.openRate) * 100).toFixed(1)}%
+                          {integration.stats?.openRate ? (parseFloat(integration.stats.openRate) * 100).toFixed(1) + "%" : "N/A"}
                         </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Click Rate</p>
                         <p className="font-semibold flex items-center gap-1">
                           <ExternalLink className="h-4 w-4" />
-                          {(parseFloat(integration.stats.clickRate) * 100).toFixed(1)}%
+                          {integration.stats?.clickRate ? (parseFloat(integration.stats.clickRate) * 100).toFixed(1) + "%" : "N/A"}
                         </p>
                       </div>
                     </div>
