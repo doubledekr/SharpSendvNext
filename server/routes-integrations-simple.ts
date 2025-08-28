@@ -235,7 +235,11 @@ const EMAIL_PLATFORMS = [
   }
 ];
 
-// Mock connected integrations storage
+import { db } from "./db";
+import { integrations, type Integration, type InsertIntegration } from "@shared/schema";
+import { eq } from "drizzle-orm";
+
+// Mock connected integrations storage - will be replaced by database queries
 export let connectedIntegrations: any[] = [];
 
 // Initialize with demo data if needed
@@ -263,9 +267,27 @@ router.get("/api/integrations/platforms", (req, res) => {
   }
 });
 
-// Get connected integrations
-router.get("/api/integrations/connected", (req, res) => {
+// Get connected integrations - now loads from database
+router.get("/api/integrations/connected", async (req, res) => {
   try {
+    const publisherId = req.headers['x-publisher-id'] || 'demo-publisher-id';
+    
+    // Load from database
+    const dbIntegrations = await db.select()
+      .from(integrations)
+      .where(eq(integrations.publisherId, publisherId as string));
+    
+    // Convert to expected format and update in-memory cache
+    connectedIntegrations = dbIntegrations.map(integration => ({
+      id: integration.id,
+      platformId: integration.platformId,
+      name: integration.name,
+      status: integration.status,
+      credentials: integration.credentials,
+      lastSync: integration.lastSync?.toISOString(),
+      stats: integration.stats
+    }));
+    
     res.json({
       success: true,
       integrations: connectedIntegrations
@@ -343,45 +365,88 @@ router.post("/api/integrations/connect", async (req, res) => {
       }
     }
 
-    // Store connection with credentials
-    const newIntegration = {
-      id: `integration-${Date.now()}`,
+    // Store connection to database
+    const publisherId = req.headers['x-publisher-id'] || 'demo-publisher-id';
+    
+    const integrationData: InsertIntegration = {
+      publisherId: publisherId as string,
       platformId,
-      platformName: platform.name,
-      platform: platform.name,
       name: credentials.connectionName || `${platform.name} Integration`,
-      isConnected: true,
-      status: "active",
-      connectedAt: new Date().toISOString(),
-      lastSync: new Date().toISOString(),
-      credentials: credentials, // Store actual credentials for API calls
-      config: config || {},
+      status: 'connected',
+      credentials: credentials,
+      lastSync: new Date(),
       stats: {
         subscribers: 0, // Will be populated by sync endpoint with real data
+        campaigns: 0,
+        openRate: 0,
+        clickRate: 0,
+        lastUpdated: new Date().toISOString()
+      }
+    };
+
+    // Check if integration already exists in database
+    const existingIntegrations = await db.select()
+      .from(integrations)
+      .where(eq(integrations.publisherId, publisherId as string));
+    
+    const existingIntegration = existingIntegrations.find(i => 
+      i.platformId === platformId && i.name === integrationData.name
+    );
+    
+    let savedIntegration;
+    if (existingIntegration) {
+      // Update existing integration
+      [savedIntegration] = await db.update(integrations)
+        .set({ 
+          credentials: integrationData.credentials, 
+          status: 'connected',
+          lastSync: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(integrations.id, existingIntegration.id))
+        .returning();
+      console.log(`Updated existing ${platform.name} integration in database`);
+    } else {
+      // Create new integration
+      [savedIntegration] = await db.insert(integrations)
+        .values(integrationData)
+        .returning();
+      console.log(`Added new ${platform.name} integration to database`);
+    }
+
+    // Also update in-memory cache for immediate use
+    const newIntegration = {
+      id: savedIntegration.id,
+      platformId: savedIntegration.platformId,
+      platformName: platform.name,
+      platform: platform.name,
+      name: savedIntegration.name,
+      isConnected: true,
+      status: "active",
+      connectedAt: savedIntegration.createdAt?.toISOString() || new Date().toISOString(),
+      lastSync: savedIntegration.lastSync?.toISOString() || new Date().toISOString(),
+      credentials: savedIntegration.credentials,
+      config: config || {},
+      stats: savedIntegration.stats || {
+        subscribers: 0,
         campaigns: 0,
         openRate: '0.00',
         clickRate: '0.00'
       }
     };
-
-    // Check if integration already exists and update it instead of duplicating
-    const existingIndex = connectedIntegrations.findIndex(i => 
-      i.platformId === platformId && i.name === newIntegration.name
-    );
     
+    const existingIndex = connectedIntegrations.findIndex(i => i.id === savedIntegration.id);
     if (existingIndex >= 0) {
       connectedIntegrations[existingIndex] = newIntegration;
-      console.log(`Updated existing ${platform.name} integration`);
     } else {
       connectedIntegrations.push(newIntegration);
-      console.log(`Added new ${platform.name} integration to connected list`);
     }
 
     console.log(`Total connected integrations: ${connectedIntegrations.length}`);
 
     res.json({
       success: true,
-      integration: newIntegration,
+      integration: savedIntegration,
       message: `Successfully connected to ${platform.name}`
     });
   } catch (error) {

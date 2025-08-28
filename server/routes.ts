@@ -1046,11 +1046,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Legacy routes for backward compatibility (these will be deprecated)
   
-  // Enhanced analytics endpoint with integration data
+  // Enhanced analytics endpoint with real integration data from database
   app.get("/api/analytics", async (req, res) => {
     try {
-      // Import connected integrations to get real subscriber data
-      const { connectedIntegrations } = await import("./routes-integrations-simple");
+      const publisherId = req.headers['x-publisher-id'] || 'demo-publisher-id';
+      
+      // Import integrations table to get real subscriber data from database
+      const { integrations } = await import("@shared/schema");
+      const { db } = await import("./db");
+      const { eq } = await import("drizzle-orm");
+      
+      // Load integrations from database
+      const dbIntegrations = await db.select()
+        .from(integrations)
+        .where(eq(integrations.publisherId, publisherId as string));
       
       // Calculate real totals from connected integrations
       let totalSubscribers = 0;
@@ -1059,8 +1068,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let avgClickRate = 0;
       let activeIntegrations = 0;
       
-      for (const integration of connectedIntegrations) {
-        if (integration.stats) {
+      for (const integration of dbIntegrations) {
+        if (integration.stats && integration.status === 'connected') {
           totalSubscribers += integration.stats.subscribers || 0;
           totalCampaigns += integration.stats.campaigns || 0;
           if (integration.stats.openRate) avgOpenRate += parseFloat(integration.stats.openRate.toString());
@@ -1076,8 +1085,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calculate engagement rate and revenue based on real data
-      const engagementRate = avgOpenRate > 0 ? avgOpenRate.toFixed(1) : "0.0";
+      const engagementRate = avgOpenRate > 0 ? (avgOpenRate * 100).toFixed(1) : "0.0";
       const monthlyRevenue = totalSubscribers > 0 ? (totalSubscribers * 2.5).toFixed(2) : "0.00";
+      
+      console.log(`Analytics calculated: ${totalSubscribers} subscribers, ${activeIntegrations} active integrations, ${engagementRate}% engagement`);
       
       const analytics = {
         totalSubscribers: totalSubscribers,

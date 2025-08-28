@@ -55,6 +55,26 @@ export const subscribers = pgTable("subscribers", {
   tags: text("tags").array(),
 });
 
+// Email platform integrations - persistent storage
+export const integrations = pgTable("integrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  platformId: text("platform_id").notNull(), // e.g., "customer_io", "mailchimp"
+  name: text("name").notNull(), // user-friendly name for the connection
+  status: text("status").notNull().default("connected"), // connected, error, disconnected
+  credentials: jsonb("credentials").$type<Record<string, any>>().notNull(),
+  lastSync: timestamp("last_sync"),
+  stats: jsonb("stats").$type<{
+    subscribers?: number;
+    campaigns?: number;
+    openRate?: number;
+    clickRate?: number;
+    lastUpdated?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Campaign hierarchy - top level container for multiple sends
 export const campaigns = pgTable("campaigns", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -749,6 +769,14 @@ export const insertEmailSegmentSchema = createInsertSchema(emailSegments).pick({
   criteria: true,
   subscriberCount: true,
 });
+
+// Integration types and schemas
+export type Integration = typeof integrations.$inferSelect;
+export type InsertIntegration = typeof integrations.$inferInsert;
+export type UpdateIntegration = Partial<InsertIntegration>;
+
+export const insertIntegrationSchema = createInsertSchema(integrations);
+export const updateIntegrationSchema = insertIntegrationSchema.partial();
 
 export const insertNaNewsBundleSchema = createInsertSchema(naNewsBundle).pick({
   publisherId: true,
