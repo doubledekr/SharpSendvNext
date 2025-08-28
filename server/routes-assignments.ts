@@ -1180,6 +1180,25 @@ router.post("/api/assignments/:id/generate-variations", async (req, res) => {
   }
 });
 
+// Helper function to parse scheduled time properly
+function parseScheduledTime(scheduledTime: string | number, customDateTime?: string): Date {
+  if (customDateTime) {
+    return new Date(customDateTime);
+  }
+  
+  if (scheduledTime === "immediate" || scheduledTime === "now") {
+    return new Date();
+  }
+  
+  // Convert to number and add minutes to current time
+  const minutes = typeof scheduledTime === 'string' ? parseInt(scheduledTime, 10) : scheduledTime;
+  if (isNaN(minutes)) {
+    return new Date(); // Default to immediate if invalid
+  }
+  
+  return new Date(Date.now() + (minutes * 60 * 1000));
+}
+
 // Add assignment to send queue with segment variations and pixel tracking
 router.post("/api/assignments/:id/send-queue", async (req, res) => {
   try {
@@ -1260,7 +1279,7 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
           recipientName: subscriber.name,
           subject: variation.subjectLine,
           content: variation.content,
-          scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
+          scheduledFor: parseScheduledTime(scheduledTime, customDateTime),
           status: 'pending',
           priority: 1,
           metadata: {
@@ -1315,7 +1334,7 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
             recipientName: subscriber.name,
             subject: assignment.title, // Use assignment title as master subject
             content: assignment.content || assignment.brief?.objective || 'Master email content',
-            scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
+            scheduledFor: parseScheduledTime(scheduledTime, customDateTime),
             status: 'pending',
             priority: 0, // Lower priority than segment variations
             metadata: {
@@ -1344,7 +1363,7 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
           recipientName: 'No Unassigned Recipients',
           subject: assignment.title,
           content: assignment.content || assignment.brief?.objective || 'Master email content',
-          scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
+          scheduledFor: parseScheduledTime(scheduledTime, customDateTime),
           status: 'pending',
           priority: 0,
           metadata: {
@@ -1383,7 +1402,7 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
         masterVariationIncluded: true, // Always true since we always create master
         unassignedSubscribers: unassignedSubscribers.length,
         totalSubscribers: allSubscribers.length,
-        scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
+        scheduledFor: parseScheduledTime(scheduledTime, customDateTime),
         details: {
           segmentBreakdown: variations.map(v => ({
             segmentName: v.segmentName,
