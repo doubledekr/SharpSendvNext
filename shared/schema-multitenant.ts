@@ -252,25 +252,6 @@ export const assignments = pgTable("assignments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Email Templates Table for Grape.js Integration
-export const emailTemplates = pgTable("email_templates", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  publisherId: varchar("publisher_id", { length: 255 }).notNull().references(() => publishers.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  description: text("description"),
-  type: text("type").notNull().default("newsletter"), // newsletter, campaign, transactional
-  content: jsonb("content").notNull().default({
-    html: "",
-    css: "",
-    json: {}
-  }),
-  assignmentId: varchar("assignment_id", { length: 255 }).references(() => assignments.id, { onDelete: "set null" }),
-  tags: text("tags").array().default([]),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
-});
-
 export const drafts = pgTable("drafts", {
   id: varchar("id", { length: 255 }).primaryKey(),
   assignmentId: varchar("assignment_id", { length: 255 }),
@@ -466,17 +447,6 @@ export const insertEmailAssignmentSchema = createInsertSchema(emailAssignments).
   dueDate: true,
 });
 
-export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).pick({
-  publisherId: true,
-  name: true,
-  description: true,
-  type: true,
-  content: true,
-  assignmentId: true,
-  tags: true,
-  isActive: true,
-});
-
 // Types
 export type InsertPublisher = z.infer<typeof insertPublisherSchema>;
 export type Publisher = typeof publishers.$inferSelect;
@@ -509,10 +479,6 @@ export type CampaignProject = typeof campaignProjects.$inferSelect;
 
 export type InsertEmailAssignment = z.infer<typeof insertEmailAssignmentSchema>;
 export type EmailAssignment = typeof emailAssignments.$inferSelect;
-
-// Email Templates types
-export type EmailTemplate = typeof emailTemplates.$inferSelect;
-export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
 
 export type Analytics = typeof analytics.$inferSelect;
 
