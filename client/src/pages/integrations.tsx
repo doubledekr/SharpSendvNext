@@ -39,6 +39,11 @@ interface Platform {
     label: string;
     type: string;
     required: boolean;
+    description?: string;
+    options?: Array<{
+      value: string;
+      label: string;
+    }>;
   }>;
   status: string;
   features: string[];
@@ -491,14 +496,35 @@ export default function IntegrationsPage() {
                     {field.label}
                     {field.required && <span className="text-destructive">*</span>}
                   </Label>
-                  <Input
-                    id={field.name}
-                    type={field.type}
-                    value={credentials[field.name] || ""}
-                    onChange={(e) => handleCredentialChange(field.name, e.target.value)}
-                    placeholder={field.label}
-                    required={field.required}
-                  />
+                  {field.description && (
+                    <p className="text-xs text-muted-foreground">{field.description}</p>
+                  )}
+                  {field.type === "select" && field.options ? (
+                    <Select
+                      value={credentials[field.name] || ""}
+                      onValueChange={(value) => handleCredentialChange(field.name, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Select ${field.label}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id={field.name}
+                      type={field.type}
+                      value={credentials[field.name] || ""}
+                      onChange={(e) => handleCredentialChange(field.name, e.target.value)}
+                      placeholder={field.label}
+                      required={field.required}
+                    />
+                  )}
                 </div>
               ))}
               
