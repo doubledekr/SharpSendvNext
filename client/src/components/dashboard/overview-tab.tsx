@@ -43,6 +43,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import AIEnhancedAssignmentForm from "@/components/ai-enhanced-assignment-form";
 import "../../styles/dashboard-improvements.css";
 import "../../styles/draft-animation.css";
 
@@ -170,6 +171,8 @@ export default function OverviewTab() {
   const [copiedLinks, setCopiedLinks] = useState<Set<number>>(new Set());
   const [showDraftAnimation, setShowDraftAnimation] = useState(false);
   const [editingEvent, setEditingEvent] = useState<string | null>(null);
+  const [showAIAssignmentForm, setShowAIAssignmentForm] = useState(false);
+  const [assignmentFormData, setAssignmentFormData] = useState<any>(null);
   const [editedEvents, setEditedEvents] = useState<Map<string, any>>(new Map());
   const { toast } = useToast();
 
@@ -419,58 +422,26 @@ Your SharpSend Team`,
     }
   };
 
-  // Create assignment from specific market event with full context
-  const handleCreateAssignmentFromEvent = async (event: any) => {
-    try {
-      const response = await apiRequest("POST", "/api/assignments", {
-        title: `${event.title} - Content Assignment`,
-        description: event.description,
-        type: event.type === 'news' ? 'newsletter' : 'analysis',
+  // Create assignment from specific market event with AI enhancement
+  const handleCreateAssignmentFromEvent = (event: any) => {
+    // Prepare prefilled data for the AI-enhanced form
+    const prefilledData = {
+      title: `${event.title} - Content Assignment`,
+      description: event.description,
+      referenceUrl: event.url || event.articleUrl || "",
+      marketContext: {
+        eventType: event.type,
         priority: event.priority,
-        brief: {
-          objective: event.emailOpportunity?.template || `Create content addressing: ${event.title}`,
-          angle: event.assignment?.focus || `Market analysis perspective on ${event.type} event`,
-          keyPoints: [
-            `Event Type: ${event.type}`,
-            `Priority Level: ${event.priority}`,
-            ...(event.emailOpportunity?.segments || [])
-          ]
-        },
-        notes: `Market Event Context:
-• Source: ${event.source || 'Market Intelligence'}
-• Event Type: ${event.type}
-• Impact Score: ${event.impactScore || 'Medium'}
-• Sentiment Score: ${event.sentimentScore || 'Neutral'}
-• Article URL: ${event.url || 'Not available'}
+        source: event.source || 'Market Intelligence',
+        impactScore: event.impactScore || 'Medium',
+        sentimentScore: event.sentimentScore || 'Neutral',
+        emailOpportunity: event.emailOpportunity,
+        assignment: event.assignment
+      }
+    };
 
-Email Opportunity Details:
-• Template Suggestion: ${event.emailOpportunity?.template || 'Not specified'}
-• Target Segments: ${event.emailOpportunity?.segments?.join(', ') || 'General audience'}
-• Urgency Level: ${event.emailOpportunity?.urgency || event.priority}
-
-Assignment Focus: ${event.assignment?.focus || 'Address market event implications'}
-Deadline: ${event.assignment?.deadline || '24 hours'}
-
-SharpSend AI Suggestion: ${event.aiSuggestion || 'Leverage current market conditions for timely, relevant content that drives engagement'}
-
-This assignment includes comprehensive market context to help the copywriter create informed, impactful content.`
-      });
-
-      const result = await response.json();
-      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
-      
-      toast({
-        title: "Assignment Created",
-        description: `Assignment created from market event: ${event.title}`,
-      });
-    } catch (error) {
-      console.error('Error creating assignment from event:', error);
-      toast({
-        title: "Creation Failed",
-        description: "Failed to create assignment from market event",
-        variant: "destructive"
-      });
-    }
+    setAssignmentFormData(prefilledData);
+    setShowAIAssignmentForm(true);
   };
 
   return (
@@ -1589,6 +1560,22 @@ This assignment includes comprehensive market context to help the copywriter cre
             <Folder className="h-8 w-8" />
           </div>
         </div>
+      )}
+
+      {/* AI-Enhanced Assignment Form Dialog */}
+      {showAIAssignmentForm && (
+        <Dialog open={showAIAssignmentForm} onOpenChange={setShowAIAssignmentForm}>
+          <DialogContent className="max-w-5xl">
+            <AIEnhancedAssignmentForm
+              prefilledData={assignmentFormData}
+              onClose={() => setShowAIAssignmentForm(false)}
+              onSuccess={() => {
+                // Refresh assignments data
+                queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
