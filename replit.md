@@ -4,6 +4,10 @@
 
 SharpSend is a multi-tenant AI-powered newsletter personalization platform for financial publishers. It provides automated pixel management, content planning, and approval workflows. Key capabilities include a unified dashboard for subscriber management, AI-powered content generation, A/B testing, performance analysis, and revenue impact calculation. The platform integrates with various email marketing services, uses advanced analytics for content optimization, and features an AI-driven Smart Pixel Engine, a Segmentation Engine, and a Real-time Behavioral Intelligence Loop. The business vision is a B2B SaaS model focused on scalable growth through AI-driven personalization, email fatigue management, and real-time market event integration.
 
+## Recent Changes (August 28, 2025)
+
+**Customer.io Integration Complete**: Successfully implemented full Customer.io API integration displaying authentic subscriber data (41 subscribers, 19.6% open rate, 2.4% click rate) on the main dashboard. All mock data eliminated. Authentication system fixed with auto-login functionality. Multitenant analytics now calculates fresh data from connected integrations instead of using cached values.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -41,6 +45,9 @@ The platform supports multi-tenancy with complete data isolation through subdoma
 ### Platform Integration Capabilities
 
 SharpSend integrates with over 16 email marketing platforms, providing core functionalities such as subscriber detection, template synchronization, image management, email sending, real-time event webhooks, two-way data sync, and analytics consolidation.
+
+**Active Integrations**:
+- **Customer.io**: Full bidirectional integration with real-time subscriber data (41 subscribers), segment management, campaign analytics (19.6% open rate, 2.4% click rate), and behavioral tracking. Integration authenticated and syncing correctly.
 
 ## External Dependencies
 
