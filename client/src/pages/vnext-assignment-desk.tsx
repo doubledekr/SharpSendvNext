@@ -76,6 +76,15 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [activeView, setActiveView] = useState<"assignments" | "opportunities">("assignments");
+  
+  // Parse URL parameters for external assignment creation
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlPrefilledUrl = urlParams.get('prefilledUrl');
+  const urlAutoOpen = urlParams.get('autoOpen') === 'true';
+  
+  // Use URL parameters if props are not provided
+  const finalPrefilledUrl = prefilledUrl || urlPrefilledUrl || '';
+  const finalAutoOpen = autoOpenDialog || urlAutoOpen;
   const [newAssignment, setNewAssignment] = useState({
     title: "",
     objective: "",
@@ -114,14 +123,14 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
 
   // Handle prefilled URL and auto-open
   useEffect(() => {
-    if (prefilledUrl) {
-      setSourceUrl(prefilledUrl);
+    if (finalPrefilledUrl) {
+      setSourceUrl(finalPrefilledUrl);
       setIsPrefillOpen(true);
     }
-    if (autoOpenDialog) {
+    if (finalAutoOpen) {
       setIsCreateDialogOpen(true);
     }
-  }, [prefilledUrl, autoOpenDialog]);
+  }, [finalPrefilledUrl, finalAutoOpen]);
 
   // Listen for external assignment form open events
   useEffect(() => {
