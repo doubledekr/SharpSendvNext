@@ -61,10 +61,9 @@ router.post('/iterable/connect', async (req, res) => {
     }
 
     // Get platform capabilities
-    const [lists, templates, channels] = await Promise.all([
+    const [lists, templates] = await Promise.all([
       service.getLists().catch(() => ({ lists: [] })),
-      service.getTemplates().catch(() => ({ templates: [] })),
-      service.getMessageChannels().catch(() => ({ channels: [] }))
+      service.getTemplates().catch(() => ({ templates: [] }))
     ]);
 
     // Save integration to database
@@ -78,9 +77,8 @@ router.post('/iterable/connect', async (req, res) => {
         status: 'active',
         config: {
           region,
-          listIds: lists.lists?.map(l => l.id) || [],
-          templateIds: templates.templates?.map(t => t.templateId) || [],
-          messageChannels: channels.channels?.map(c => c.name) || [],
+          listIds: lists.lists?.map((l: any) => l.id) || [],
+          templateIds: templates.templates?.map((t: any) => t.templateId) || [],
           ...config
         },
         capabilities: {
@@ -105,9 +103,8 @@ router.post('/iterable/connect', async (req, res) => {
           status: 'active',
           config: {
             region,
-            listIds: lists.lists?.map(l => l.id) || [],
-            templateIds: templates.templates?.map(t => t.templateId) || [],
-            messageChannels: channels.channels?.map(c => c.name) || [],
+            listIds: lists.lists?.map((l: any) => l.id) || [],
+            templateIds: templates.templates?.map((t: any) => t.templateId) || [],
             ...config
           },
           lastSync: new Date(),
@@ -120,8 +117,7 @@ router.post('/iterable/connect', async (req, res) => {
       integration,
       capabilities: {
         lists: lists.lists || [],
-        templates: templates.templates || [],
-        channels: channels.channels || []
+        templates: templates.templates || []
       }
     });
   } catch (error) {
@@ -225,10 +221,9 @@ router.post('/customerio/connect', async (req, res) => {
     }
 
     // Get platform capabilities
-    const [campaigns, segments, journeys] = await Promise.all([
+    const [campaigns, segments] = await Promise.all([
       service.getCampaigns().catch(() => ({ campaigns: [] })),
-      service.getSegments().catch(() => ({ segments: [] })),
-      service.getJourneys().catch(() => ({ journeys: [] }))
+      service.getSegments().catch(() => ({ segments: [] }))
     ]);
 
     // Save integration to database
@@ -245,8 +240,7 @@ router.post('/customerio/connect', async (req, res) => {
           region,
           trackingKey,
           appApiKey: apiKey,
-          segmentIds: segments.segments?.map(s => s.id) || [],
-          journeyIds: journeys.journeys?.map(j => j.id) || [],
+          segmentIds: segments.segments?.map((s: any) => s.id) || [],
           ...config
         },
         capabilities: {
@@ -274,8 +268,7 @@ router.post('/customerio/connect', async (req, res) => {
             region,
             trackingKey,
             appApiKey: apiKey,
-            segmentIds: segments.segments?.map(s => s.id) || [],
-            journeyIds: journeys.journeys?.map(j => j.id) || [],
+            segmentIds: segments.segments?.map((s: any) => s.id) || [],
             ...config
           },
           lastSync: new Date(),
@@ -288,8 +281,7 @@ router.post('/customerio/connect', async (req, res) => {
       integration,
       capabilities: {
         campaigns: campaigns.campaigns || [],
-        segments: segments.segments || [],
-        journeys: journeys.journeys || []
+        segments: segments.segments || []
       }
     });
   } catch (error) {
@@ -363,11 +355,9 @@ router.post('/keap/connect', async (req, res) => {
     }
 
     // Get platform capabilities
-    const [campaigns, tags, customFields, leadSources] = await Promise.all([
+    const [campaigns, tags] = await Promise.all([
       service.getCampaigns().catch(() => ({ campaigns: [] })),
-      service.getTags().catch(() => ({ tags: [] })),
-      service.getCustomFields().catch(() => ({ custom_fields: [] })),
-      service.getLeadSources().catch(() => ({ lead_sources: [] }))
+      service.getTags().catch(() => ({ tags: [] }))
     ]);
 
     // Save integration to database
@@ -385,9 +375,7 @@ router.post('/keap/connect', async (req, res) => {
         config: {
           clientId,
           clientSecret,
-          campaignIds: campaigns.campaigns?.map(c => c.id) || [],
-          customFields: customFields.custom_fields || [],
-          leadSourceId: leadSources.lead_sources?.[0]?.id,
+          campaignIds: campaigns.campaigns?.map((c: any) => c.id) || [],
           ...config
         },
         capabilities: {
@@ -418,9 +406,7 @@ router.post('/keap/connect', async (req, res) => {
           config: {
             clientId,
             clientSecret,
-            campaignIds: campaigns.campaigns?.map(c => c.id) || [],
-            customFields: customFields.custom_fields || [],
-            leadSourceId: leadSources.lead_sources?.[0]?.id,
+            campaignIds: campaigns.campaigns?.map((c: any) => c.id) || [],
             ...config
           },
           lastSync: new Date(),
@@ -433,9 +419,7 @@ router.post('/keap/connect', async (req, res) => {
       integration,
       capabilities: {
         campaigns: campaigns.campaigns || [],
-        tags: tags.tags || [],
-        customFields: customFields.custom_fields || [],
-        leadSources: leadSources.lead_sources || []
+        tags: tags.tags || []
       }
     });
   } catch (error) {

@@ -865,8 +865,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
   await registerMultiTenantRoutes(app);
-  // Integrations routes handled by middleware above
-  // platformIntegrationsRoutes(app); // Commented out to avoid conflicts
+  // Enable real platform integrations (Customer.io, Iterable, Keap with actual API calls)
+  platformIntegrationsRoutes(app);
   registerEmailRoutes(app);
   app.use("/api/ai", aiProcessingRoutes);
   registerAIContentHelperRoutes(app);
@@ -984,7 +984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(assetRoutes);
   app.use(opportunityRoutes);
   app.use(opportunityDetectorRoutes);
-  app.use(integrationsRoutes);
+  // app.use(integrationsRoutes); // Disabled mock integrations in favor of real platform integrations
   app.use(cohortsRoutes);
 
   // Market news API endpoint - fetches real articles from MarketAux
