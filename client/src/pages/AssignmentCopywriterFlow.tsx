@@ -834,22 +834,25 @@ Use the toolbar above for rich formatting options, or let AI help you create com
             </div>
           </TabsContent>
 
-          {/* Email Preview Stack Tab */}
+          {/* Segment Variations Tab - Split Screen Layout */}
           <TabsContent value="segments" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Segment Selection & Email Variations</CardTitle>
-                <CardDescription>
-                  Generate and preview targeted email variations for different subscriber segments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {segments.length === 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-300px)]">
+              {/* Left Side - Segment Selection & Controls */}
+              <div className="space-y-4">
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Segment Variations</CardTitle>
+                    <CardDescription>
+                      Generate targeted email variations for different subscriber segments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 h-full overflow-y-auto">
+                    {segments.length === 0 ? (
                   <div className="space-y-6">
                     <div className="text-center py-8">
                       <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Ready to create segment variations</p>
-                      <p className="text-sm text-gray-500 mt-2">
+                      <p className="text-gray-600 dark:text-gray-400">Ready to create segment variations</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
                         Generate AI-powered email variations tailored to different subscriber segments
                       </p>
                     </div>
@@ -874,7 +877,7 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                         )}
                       </Button>
                       {(!subject || !content) && (
-                        <p className="text-sm text-gray-500 mt-2">
+                        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
                           Complete the master email content to generate variations
                         </p>
                       )}
@@ -883,28 +886,40 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                     {/* Preview Available Segments */}
                     <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
                       <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">Target Segments Available:</h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <div className="grid grid-cols-1 gap-3">
+                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Growth Investors</span>
+                          <div>
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Growth Investors</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">High-growth companies, tech stocks, emerging markets</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                           <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Conservative Investors</span>
+                          <div>
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Conservative Investors</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Dividend stocks, blue-chip companies, low-risk investments</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                           <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Day Traders</span>
+                          <div>
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Day Traders</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Active trading, volatility, technical analysis</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                           <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Crypto Enthusiasts</span>
+                          <div>
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Crypto Enthusiasts</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Cryptocurrency, blockchain, digital assets</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
+                    </div>
+                    ) : (
+                    <div className="space-y-4">
                     {/* Segment Stack Navigation */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1070,9 +1085,60 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                       </div>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right Side - Email Preview */}
+              <div className="space-y-4">
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Email Preview</CardTitle>
+                    <CardDescription>
+                      {segments.length > 0 && segments[currentVariationIndex] 
+                        ? `Preview for ${segments[currentVariationIndex].segmentName}`
+                        : 'Email preview will appear after generating variations'
+                      }
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-full overflow-y-auto">
+                    {segments.length > 0 && segments[currentVariationIndex] ? (
+                      <div className="space-y-4">
+                        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+                          <div className="space-y-4">
+                            <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Subject:</p>
+                              <p className="font-medium text-gray-800 dark:text-gray-200">
+                                {segments[currentVariationIndex].subjectLine}
+                              </p>
+                            </div>
+                            
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                              <div 
+                                className="text-gray-800 dark:text-gray-200 leading-relaxed"
+                                style={{ whiteSpace: 'pre-wrap' }}
+                              >
+                                {segments[currentVariationIndex].content}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Generate segment variations to see email preview
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
