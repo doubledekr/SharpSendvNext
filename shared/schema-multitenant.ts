@@ -72,11 +72,16 @@ export const campaigns = pgTable("campaigns", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  subjectLine: text("subject_line").notNull(),
-  content: text("content").notNull(),
-  status: text("status").notNull().default("draft"), // draft, scheduled, sent, cancelled
+  type: text("type").notNull().default("marketing"), // marketing, editorial, fulfillment, etc
+  description: text("description"),
+  owner: varchar("owner"), // user id of campaign owner
+  subjectLine: text("subject_line"), // Optional - for backward compatibility
+  content: text("content"), // Optional - for backward compatibility
+  status: text("status").notNull().default("active"), // active, paused, completed, archived
   scheduledAt: timestamp("scheduled_at"),
   sentAt: timestamp("sent_at"),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
   openRate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
   clickRate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
   revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
@@ -377,14 +382,17 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).pick({
 export const insertCampaignSchema = createInsertSchema(campaigns).pick({
   publisherId: true,
   name: true,
-  subjectLine: true,
-  content: true,
+  type: true,
+  description: true,
+  owner: true,
   status: true,
-  scheduledAt: true,
+  startDate: true,
+  endDate: true,
 }).partial({
-  subjectLine: true,
-  content: true,
-  scheduledAt: true,
+  description: true,
+  owner: true,
+  startDate: true,
+  endDate: true,
 });
 
 export const insertABTestSchema = createInsertSchema(abTests).pick({
