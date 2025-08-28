@@ -34,17 +34,28 @@ const EMAIL_PLATFORMS = [
   {
     id: "customer_io",
     name: "Customer.io",
-    description: "Omnichannel messaging with behavioral triggers",
+    description: "Full bidirectional integration: read segments, create campaigns, sync customer data",
     category: "Marketing Automation",
     logo: "https://customer.io/assets/images/logos/customerio-logo.svg",
     authType: "api_key",
     fields: [
-      { name: "app_api_key", label: "App API Key", type: "password", required: true },
-      { name: "site_id", label: "Site ID", type: "text", required: true },
-      { name: "secret_api_key", label: "Secret API Key", type: "password", required: true }
+      { name: "app_api_key", label: "App API Key (Bearer Token)", type: "password", required: true, description: "For reading data, managing campaigns, and segments" },
+      { name: "site_id", label: "Site ID", type: "text", required: true, description: "Used with Track API for customer events" },
+      { name: "track_api_key", label: "Track API Key", type: "password", required: true, description: "Used with Site ID for sending customer data" },
+      { name: "region", label: "Region", type: "select", required: true, options: [
+        { value: "us", label: "US (api.customer.io)" },
+        { value: "eu", label: "EU (api-eu.customer.io)" }
+      ], description: "Your Customer.io workspace region" }
     ],
     status: "available",
-    features: ["Behavioral triggers", "In-app messaging", "Journey automation", "Event tracking", "Data retrieval"]
+    features: [
+      "Read Customer.io segments and profiles", 
+      "Create and trigger campaigns from SharpSend", 
+      "Bidirectional customer data sync",
+      "Dynamic segment creation",
+      "Real-time engagement tracking",
+      "A/B testing integration"
+    ]
   },
   {
     id: "keap",
@@ -427,17 +438,21 @@ router.post("/api/integrations/:id/sync", async (req, res) => {
   }
 });
 
-// Customer.io API integration
+// Customer.io API integration with full bidirectional support
 async function syncCustomerIOData(credentials: any) {
-  const { app_api_key, site_id, secret_api_key } = credentials;
+  const { app_api_key, site_id, track_api_key, region = 'us' } = credentials;
   
   if (!app_api_key) {
-    throw new Error("App API Key is required for data retrieval");
+    throw new Error("App API Key is required for reading data and managing campaigns");
   }
   
-  if (!site_id || !secret_api_key) {
-    throw new Error("Site ID and Secret API Key are required for event tracking");
+  if (!site_id || !track_api_key) {
+    throw new Error("Site ID and Track API Key are required for customer data sync");
   }
+
+  // Set correct endpoints based on region
+  const appApiBase = region === 'eu' ? 'https://api-eu.customer.io/v1' : 'https://api.customer.io/v1';
+  const trackApiBase = region === 'eu' ? 'https://track-eu.customer.io/api/v1' : 'https://track.customer.io/api/v1';
 
   try {
     let subscribers = 0;
@@ -445,8 +460,8 @@ async function syncCustomerIOData(credentials: any) {
 
     // Primary method: Use App API to get real data (Bearer Token only)
     try {
-      // Get campaigns from App API - correct endpoint
-      const campaignsResponse = await fetch(`https://api.customer.io/v1/campaigns`, {
+      // Get campaigns from App API - use region-aware endpoint
+      const campaignsResponse = await fetch(`${appApiBase}/campaigns`, {
         headers: {
           'Authorization': `Bearer ${app_api_key}`,
           'Content-Type': 'application/json'
@@ -466,7 +481,7 @@ async function syncCustomerIOData(credentials: any) {
       }
 
       // Get segments to estimate subscriber count
-      const segmentsResponse = await fetch(`https://api.customer.io/v1/segments`, {
+      const segmentsResponse = await fetch(`${appApiBase}/segments`, {
         headers: {
           'Authorization': `Bearer ${app_api_key}`,
           'Content-Type': 'application/json'
@@ -518,9 +533,9 @@ async function syncCustomerIOData(credentials: any) {
       throw new Error("No data returned from Customer.io APIs - check your credentials and account setup");
     }
 
-    // Validate Track API connection (Track API is for sending events, not retrieving data)
+    // Validate Track API connection (Track API is for sending events and customer data)
     try {
-      const trackAuth = Buffer.from(`${site_id}:${secret_api_key}`).toString('base64');
+      const trackAuth = Buffer.from(`${site_id}:${track_api_key}`).toString('base64');
       
       // Track API doesn't have an auth endpoint, so we'll validate by attempting a minimal operation
       // Note: Track API is primarily for sending data, not retrieving counts
@@ -582,5 +597,184 @@ router.post("/api/integrations/request-custom", (req, res) => {
     });
   }
 });
+
+// Additional Customer.io API endpoints for full bidirectional integration
+
+// Get Customer.io segments for assignment targeting  
+router.get("/api/integrations/customer-io/:id/segments", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const integration = connectedIntegrations.find(i => i.id === id && i.platformId === 'customer_io');
+    
+    if (!integration) {
+      return res.status(404).json({
+        success: false,
+        error: "Customer.io integration not found"
+      });
+    }
+
+    const segments = await getCustomerIOSegments(integration.credentials);
+    
+    res.json({
+      success: true,
+      segments: segments
+    });
+  } catch (error) {
+    console.error("Error fetching Customer.io segments:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch Customer.io segments"
+    });
+  }
+});
+
+// Create campaign in Customer.io from SharpSend assignment
+router.post("/api/integrations/customer-io/:id/create-campaign", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { campaignData } = req.body;
+    
+    const integration = connectedIntegrations.find(i => i.id === id && i.platformId === 'customer_io');
+    
+    if (!integration) {
+      return res.status(404).json({
+        success: false,
+        error: "Customer.io integration not found"
+      });
+    }
+
+    const campaign = await createCustomerIOCampaign(integration.credentials, campaignData);
+    
+    res.json({
+      success: true,
+      campaign: campaign,
+      message: "Campaign created successfully in Customer.io"
+    });
+  } catch (error) {
+    console.error("Error creating Customer.io campaign:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to create Customer.io campaign"
+    });
+  }
+});
+
+// Update customer profile in Customer.io
+router.post("/api/integrations/customer-io/:id/update-customer", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customerId, attributes } = req.body;
+    
+    const integration = connectedIntegrations.find(i => i.id === id && i.platformId === 'customer_io');
+    
+    if (!integration) {
+      return res.status(404).json({
+        success: false,
+        error: "Customer.io integration not found"
+      });
+    }
+
+    const success = await updateCustomerIOProfile(integration.credentials, customerId, attributes);
+    
+    res.json({
+      success: success,
+      message: success ? "Customer profile updated successfully" : "Failed to update customer profile"
+    });
+  } catch (error) {
+    console.error("Error updating Customer.io profile:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to update customer profile"
+    });
+  }
+});
+
+// Enhanced Customer.io API helper functions
+
+// Get Customer.io segments for SharpSend targeting
+async function getCustomerIOSegments(credentials: any) {
+  const { app_api_key, region = 'us' } = credentials;
+  const appApiBase = region === 'eu' ? 'https://api-eu.customer.io/v1' : 'https://api.customer.io/v1';
+
+  try {
+    const response = await fetch(`${appApiBase}/segments`, {
+      headers: {
+        'Authorization': `Bearer ${app_api_key}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const segments = await response.json();
+      return Array.isArray(segments) ? segments : segments.segments || [];
+    } else {
+      console.error("Failed to fetch Customer.io segments:", response.status, response.statusText);
+      return [];
+    }
+  } catch (error) {
+    console.error("Error fetching Customer.io segments:", error);
+    return [];
+  }
+}
+
+// Create a campaign in Customer.io from SharpSend assignment
+async function createCustomerIOCampaign(credentials: any, campaignData: any) {
+  const { app_api_key, region = 'us' } = credentials;
+  const appApiBase = region === 'eu' ? 'https://api-eu.customer.io/v1' : 'https://api.customer.io/v1';
+
+  try {
+    const response = await fetch(`${appApiBase}/campaigns`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${app_api_key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(campaignData)
+    });
+
+    if (response.ok) {
+      const campaign = await response.json();
+      console.log("Successfully created Customer.io campaign:", campaign.id);
+      return campaign;
+    } else {
+      const errorText = await response.text();
+      console.error("Failed to create Customer.io campaign:", response.status, errorText);
+      throw new Error(`Failed to create campaign: ${response.status} ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error("Error creating Customer.io campaign:", error);
+    throw error;
+  }
+}
+
+// Send customer data to Customer.io via Track API
+async function updateCustomerIOProfile(credentials: any, customerId: string, attributes: any) {
+  const { site_id, track_api_key, region = 'us' } = credentials;
+  const trackApiBase = region === 'eu' ? 'https://track-eu.customer.io/api/v1' : 'https://track.customer.io/api/v1';
+  const trackAuth = Buffer.from(`${site_id}:${track_api_key}`).toString('base64');
+
+  try {
+    const response = await fetch(`${trackApiBase}/customers/${customerId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Basic ${trackAuth}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(attributes)
+    });
+
+    if (response.ok) {
+      console.log(`Successfully updated Customer.io profile for ${customerId}`);
+      return true;
+    } else {
+      const errorText = await response.text();
+      console.error("Failed to update Customer.io profile:", response.status, errorText);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error updating Customer.io profile:", error);
+    return false;
+  }
+}
 
 export default router;
