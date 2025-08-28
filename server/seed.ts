@@ -86,7 +86,7 @@ export async function seedDatabase() {
     }
 
     // No mock subscribers - only real data from integrations
-    console.log("Skipping mock subscriber creation - only real integration data will be used");
+    console.log("No mock data will be created - using only authentic integration data");
 
     // Skip campaign seeding for now - table structure mismatch
     // Will be handled by demo-init endpoint instead
@@ -158,18 +158,12 @@ export async function seedDatabase() {
         .limit(1);
       
       // Skip creating mock analytics data - only use real integration data
-      console.log("Skipping mock analytics data - only real integration data will be used");
+      console.log("No mock analytics data - using only authentic integration data");
     } catch (analyticsError) {
       console.warn("Failed to create analytics data:", analyticsError);
     }
 
-    // Seed email templates
-    try {
-      const { seedEmailTemplates } = await import('./seed-email-templates');
-      await seedEmailTemplates();
-    } catch (templateError) {
-      console.warn("Failed to seed email templates:", templateError);
-    }
+    // Email templates seeding removed
 
     console.log("Database seeded successfully!");
     return { success: true };

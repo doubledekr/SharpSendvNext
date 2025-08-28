@@ -23,11 +23,11 @@ import opportunityDetectorRoutes from "./routes-opportunity-detector";
 import integrationsRoutes from "./routes-integrations-simple";
 import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
-import { registerDemoRoutes } from "./routes-demo";
+// Demo routes removed - no demo functionality
 import platformSendRoutes from "./routes-platform-send";
 import cohortsRoutes from "./routes-cohorts";
 import { sharpSendIntelligenceRoutes } from "./routes-sharpsend-intelligence";
-import { initializeDemoEnvironment, cleanupDemoData, getDemoConfig } from "./demo-environment";
+// Demo environment removed - no demo functionality
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -107,147 +107,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Demo environment endpoints
-  app.post('/api/demo/initialize', async (req, res) => {
-    try {
-      const result = await initializeDemoEnvironment();
-      if (result.success) {
-        res.json(result);
-      } else {
-        res.status(500).json({ error: result.error });
-      }
-    } catch (error) {
-      console.error("Error initializing demo environment:", error);
-      res.status(500).json({ error: "Failed to initialize demo environment" });
-    }
-  });
+  // All demo functionality removed
 
-  app.get('/api/demo/status', (req, res) => {
-    const config = getDemoConfig();
-    res.json({
-      enabled: config.enabled,
-      ready: !!config.publisherId,
-      publisherId: config.publisherId
-    });
-  });
 
-  app.post('/api/demo/cleanup', async (req, res) => {
-    try {
-      const result = await cleanupDemoData();
-      res.json(result);
-    } catch (error) {
-      console.error("Error cleaning up demo data:", error);
-      res.status(500).json({ error: "Failed to cleanup demo data" });
-    }
-  });
-
-  // Demo login endpoint - bypasses normal authentication
-  app.post('/api/demo/login', async (req, res) => {
-    try {
-      // In production, use simplified demo login without database initialization
-      if (process.env.NODE_ENV === 'production') {
-        console.log("📦 Production demo login - using static demo credentials");
-        
-        // Create a static demo token for production
-        const demoToken = Buffer.from(JSON.stringify({
-          publisherId: "demo-publisher-id",
-          userId: "demo-user-id",
-          email: "demo@sharpsend.io",
-          demo: true,
-          timestamp: Date.now()
-        })).toString('base64');
-        
-        res.json({
-          token: demoToken,
-          publisher: {
-            id: "demo-publisher-id",
-            name: "Demo Financial Publisher",
-            subdomain: "demo",
-            plan: "premium"
-          },
-          user: {
-            id: "demo-user-id",
-            email: "demo@sharpsend.io",
-            username: "demo",
-            role: "admin"
-          }
-        });
-      } else {
-        // In development, initialize full demo environment
-        const result = await initializeDemoEnvironment();
-        if (result.success) {
-          res.json({
-            token: result.token,
-            publisher: {
-              id: result.publisherId,
-              name: "Demo Financial Publisher",
-              subdomain: "demo",
-              plan: "premium"
-            },
-            user: {
-              id: result.userId,
-              email: "demo@sharpsend.io",
-              username: "demo",
-              role: "admin"
-            }
-          });
-        } else {
-          // Fallback to static demo if initialization fails
-          console.log("⚠️ Demo initialization failed, using static credentials");
-          const fallbackToken = Buffer.from(JSON.stringify({
-            publisherId: "demo-publisher-id",
-            userId: "demo-user-id",
-            email: "demo@sharpsend.io",
-            demo: true,
-            timestamp: Date.now()
-          })).toString('base64');
-          
-          res.json({
-            token: fallbackToken,
-            publisher: {
-              id: "demo-publisher-id",
-              name: "Demo Financial Publisher",
-              subdomain: "demo",
-              plan: "premium"
-            },
-            user: {
-              id: "demo-user-id",
-              email: "demo@sharpsend.io",
-              username: "demo",
-              role: "admin"
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error with demo login:", error);
-      
-      // Always provide a working demo response even if there's an error
-      const emergencyToken = Buffer.from(JSON.stringify({
-        publisherId: "demo-publisher-id",
-        userId: "demo-user-id",
-        email: "demo@sharpsend.io",
-        demo: true,
-        timestamp: Date.now()
-      })).toString('base64');
-      
-      res.json({
-        token: emergencyToken,
-        publisher: {
-          id: "demo-publisher-id",
-          name: "Demo Financial Publisher",
-          subdomain: "demo",
-          plan: "premium"
-        },
-        user: {
-          id: "demo-user-id",
-          email: "demo@sharpsend.io",
-          username: "demo",
-          role: "admin"
-        }
-      });
-    }
-  });
 
   // Market sentiment endpoint for dashboard
   app.get("/api/market-sentiment", async (req, res) => {
@@ -819,49 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Demo login endpoint - only handle demo users, pass others to multi-tenant
-  app.post("/api/demo/login", async (req, res) => {
-    try {
-      const { email, password, subdomain } = req.body;
-      
-      console.log("Demo login attempt:", { email, password, subdomain });
-      
-      // For demo purposes, accept any subdomain and check for demo user
-      if (!email || !password) {
-        return res.status(400).json({ error: "Email and password are required" });
-      }
-      
-      // Check if this is the demo user - accept multiple demo email formats and passwords
-      const isDemoEmail = email === "demo@example.com" || email === "demo" || email === "demo@sharpsend.com";
-      const isDemoPassword = password === "demo" || password === "demo123";
-      
-      if (isDemoEmail && isDemoPassword) {
-        console.log("Demo login successful");
-        // Return success for demo login
-        res.json({
-          publisher: {
-            id: "demo-publisher",
-            name: "Demo Publisher",
-            subdomain: subdomain || "demo",
-            plan: "premium"
-          },
-          user: {
-            id: "demo-user",
-            username: "demo",
-            email: "demo@example.com",
-            role: "admin"
-          },
-          token: "demo-token-123"
-        });
-      } else {
-        console.log("Demo login failed - invalid credentials");
-        res.status(401).json({ error: "Invalid credentials" });
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ error: "Login failed" });
-    }
-  });
+
 
   // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
   await registerMultiTenantRoutes(app);
@@ -877,7 +697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerEmailPlatformRoutes(app);
   registerSendQueueRoutes(app);
   registerVNextRoutes(app);
-  registerDemoRoutes(app);
+  // Demo routes removed
   app.use("/api/platform-send", platformSendRoutes);
   app.use(assignmentRoutes);
   

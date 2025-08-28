@@ -7,7 +7,7 @@ import {
 type AuthenticatedRequest = Request;
 import { tenantStorage } from "./storage-multitenant";
 import { emailService } from "./services/email";
-import { seedDemoData } from "./seed-demo";
+// Demo functionality removed
 
 export function registerEmailRoutes(app: Express): void {
   

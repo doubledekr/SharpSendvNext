@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
-import { initializeDemoEnvironment } from "./demo-environment";
+// Demo environment removed
 import { tenantMiddleware } from "./middleware/tenant";
 
 // CRITICAL DEBUG: Override process.exit to find what's trying to exit
