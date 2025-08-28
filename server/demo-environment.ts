@@ -161,52 +161,8 @@ export async function initializeDemoEnvironment() {
     
     // Note: Segments table removed - using hardcoded segments in sends instead
     
-    // 4. Create demo subscribers if needed
-    const existingSubscribers = await db.select().from(subscribers)
-      .where(eq(subscribers.publisherId, publisherId))
-      .limit(1);
-    
-    if (existingSubscribers.length === 0) {
-      const demoSubscribers = [
-        {
-          publisherId,
-          email: "sarah.chen@techcorp.com",
-          name: "Sarah Chen",
-          segment: "High Value Investors",
-          engagementScore: "89.5",
-          revenue: "2450.00"
-        },
-        {
-          publisherId,
-          email: "michael.rodriguez@startup.io",
-          name: "Michael Rodriguez",
-          segment: "Active Traders",
-          engagementScore: "76.3",
-          revenue: "1250.00"
-        },
-        {
-          publisherId,
-          email: "emily.johnson@consulting.com",
-          name: "Emily Johnson",
-          segment: "Premium Subscribers",
-          engagementScore: "92.1",
-          revenue: "3200.00"
-        },
-        {
-          publisherId,
-          email: "david.kim@fintech.ai",
-          name: "David Kim",
-          segment: "Growth Investors",
-          engagementScore: "68.7",
-          revenue: "850.00"
-        }
-      ];
-      
-      for (const subscriber of demoSubscribers) {
-        await db.insert(subscribers).values(subscriber).catch(() => {});
-      }
-      console.log("✓ Created demo subscribers");
-    }
+    // 4. No mock subscribers - only real data from integrations
+    console.log("✓ Skipping subscriber creation - only real integration data will be used");
     
     // 5. Create demo campaigns with sends and pixels - skip for now due to schema mismatch
     // The campaigns table has different columns in the database vs TypeScript schema
