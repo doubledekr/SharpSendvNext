@@ -659,6 +659,11 @@ export const insertCampaignSchema = createInsertSchema(campaigns).pick({
   startDate: true,
   endDate: true,
   status: true,
+}).partial({
+  description: true,
+  owner: true,
+  startDate: true,
+  endDate: true,
 });
 
 export const insertSendSchema = createInsertSchema(sends).pick({

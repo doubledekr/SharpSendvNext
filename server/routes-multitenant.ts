@@ -216,11 +216,11 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     logTenantOperation("GET_ANALYTICS"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        let analytics = await tenantStorage.getLatestAnalytics(req.tenant.publisherId);
+        let analytics = await tenantStorage.getLatestAnalytics(req.tenant!.id);
         
         // If no analytics exist, calculate and create them
         if (!analytics) {
-          analytics = await tenantStorage.calculateAnalytics(req.tenant.publisherId);
+          analytics = await tenantStorage.calculateAnalytics(req.tenant!.id);
         }
         
         res.json(analytics);
@@ -237,7 +237,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     async (req: AuthenticatedRequest, res) => {
       try {
         const days = parseInt(req.query.days as string) || 30;
-        const history = await tenantStorage.getAnalyticsHistory(req.tenant.publisherId, days);
+        const history = await tenantStorage.getAnalyticsHistory(req.tenant!.id, days);
         res.json(history);
       } catch (error) {
         console.error("Analytics history fetch error:", error);
@@ -253,7 +253,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     logTenantOperation("GET_SUBSCRIBERS"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        const subscribers = await tenantStorage.getSubscribers(req.tenant.publisherId);
+        const subscribers = await tenantStorage.getSubscribers(req.tenant!.id);
         res.json(subscribers);
       } catch (error) {
         console.error("Subscribers fetch error:", error);
@@ -267,7 +267,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const subscriber = await tenantStorage.getSubscriber(req.params.id, req.tenant.publisherId);
+        const subscriber = await tenantStorage.getSubscriber(req.params.id, req.tenant!.id);
         if (!subscriber) {
           return res.status(404).json({ error: "Subscriber not found" });
         }
@@ -287,11 +287,11 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
       try {
         const validatedData = insertSubscriberSchema.parse({
           ...req.body,
-          publisherId: req.tenant.publisherId,
+          publisherId: req.tenant!.id,
         });
         
         // Check if subscriber already exists
-        const existing = await tenantStorage.getSubscriberByEmail(validatedData.email, req.tenant.publisherId);
+        const existing = await tenantStorage.getSubscriberByEmail(validatedData.email, req.tenant!.id);
         if (existing) {
           return res.status(400).json({ error: "Subscriber with this email already exists" });
         }
@@ -321,7 +321,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
         const validatedSubscribers = subscriberList.map(sub => 
           insertSubscriberSchema.parse({
             ...sub,
-            publisherId: req.tenant.publisherId,
+            publisherId: req.tenant!.id,
           })
         );
 
@@ -347,7 +347,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
         const updates = req.body;
         delete updates.publisherId; // Prevent publisher ID changes
         
-        const subscriber = await tenantStorage.updateSubscriber(req.params.id, req.tenant.publisherId, updates);
+        const subscriber = await tenantStorage.updateSubscriber(req.params.id, req.tenant!.id, updates);
         if (!subscriber) {
           return res.status(404).json({ error: "Subscriber not found" });
         }
@@ -365,7 +365,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     requireRole("editor"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        const deleted = await tenantStorage.deleteSubscriber(req.params.id, req.tenant.publisherId);
+        const deleted = await tenantStorage.deleteSubscriber(req.params.id, req.tenant!.id);
         if (!deleted) {
           return res.status(404).json({ error: "Subscriber not found" });
         }
@@ -384,7 +384,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     logTenantOperation("GET_CAMPAIGNS"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        const campaigns = await tenantStorage.getCampaigns(req.tenant.publisherId);
+        const campaigns = await tenantStorage.getCampaigns(req.tenant!.id);
         res.json(campaigns);
       } catch (error) {
         console.error("Campaigns fetch error:", error);
@@ -401,7 +401,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
       try {
         const validatedData = insertCampaignSchema.parse({
           ...req.body,
-          publisherId: req.tenant.publisherId,
+          publisherId: req.tenant!.id,
         });
         const campaign = await tenantStorage.createCampaign(validatedData);
         res.status(201).json(campaign);
@@ -417,7 +417,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const campaign = await tenantStorage.getCampaign(req.params.id, req.tenant.publisherId);
+        const campaign = await tenantStorage.getCampaign(req.params.id, req.tenant!.id);
         if (!campaign) {
           return res.status(404).json({ error: "Campaign not found" });
         }
@@ -438,7 +438,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
         const updates = req.body;
         delete updates.publisherId; // Prevent publisher ID changes
         
-        const campaign = await tenantStorage.updateCampaign(req.params.id, req.tenant.publisherId, updates);
+        const campaign = await tenantStorage.updateCampaign(req.params.id, req.tenant!.id, updates);
         if (!campaign) {
           return res.status(404).json({ error: "Campaign not found" });
         }
@@ -531,7 +531,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const abTests = await tenantStorage.getABTests(req.tenant.publisherId);
+        const abTests = await tenantStorage.getABTests(req.tenant!.id);
         res.json(abTests);
       } catch (error) {
         console.error("A/B tests fetch error:", error);
@@ -548,7 +548,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
       try {
         const validatedData = insertABTestSchema.parse({
           ...req.body,
-          publisherId: req.tenant.publisherId,
+          publisherId: req.tenant!.id,
         });
         const abTest = await tenantStorage.createABTest(validatedData);
         res.status(201).json(abTest);
@@ -568,7 +568,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
         const updates = req.body;
         delete updates.publisherId; // Prevent publisher ID changes
         
-        const abTest = await tenantStorage.updateABTest(req.params.id, req.tenant.publisherId, updates);
+        const abTest = await tenantStorage.updateABTest(req.params.id, req.tenant!.id, updates);
         if (!abTest) {
           return res.status(404).json({ error: "A/B test not found" });
         }
@@ -586,7 +586,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const integrations = await tenantStorage.getEmailIntegrations(req.tenant.publisherId);
+        const integrations = await tenantStorage.getEmailIntegrations(req.tenant!.id);
         res.json(integrations);
       } catch (error) {
         console.error("Email integrations fetch error:", error);
@@ -603,7 +603,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
       try {
         const validatedData = insertEmailIntegrationSchema.parse({
           ...req.body,
-          publisherId: req.tenant.publisherId,
+          publisherId: req.tenant!.id,
         });
         const integration = await tenantStorage.createEmailIntegration(validatedData);
         res.status(201).json(integration);
@@ -623,7 +623,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
         const updates = req.body;
         delete updates.publisherId; // Prevent publisher ID changes
         
-        const integration = await tenantStorage.updateEmailIntegration(req.params.id, req.tenant.publisherId, updates);
+        const integration = await tenantStorage.updateEmailIntegration(req.params.id, req.tenant!.id, updates);
         if (!integration) {
           return res.status(404).json({ error: "Email integration not found" });
         }
@@ -641,7 +641,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     requireTenant,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const integrations = await tenantStorage.getCrmIntegrations(req.tenant.publisherId);
+        const integrations = await tenantStorage.getCrmIntegrations(req.tenant!.id);
         res.json(integrations);
       } catch (error) {
         console.error("CRM integrations fetch error:", error);
@@ -658,7 +658,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
       try {
         const validatedData = insertCrmIntegrationSchema.parse({
           ...req.body,
-          publisherId: req.tenant.publisherId,
+          publisherId: req.tenant!.id,
         });
         const integration = await tenantStorage.createCrmIntegration(validatedData);
         res.status(201).json(integration);
@@ -678,7 +678,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
         const updates = req.body;
         delete updates.publisherId; // Prevent publisher ID changes
         
-        const integration = await tenantStorage.updateCrmIntegration(req.params.id, req.tenant.publisherId, updates);
+        const integration = await tenantStorage.updateCrmIntegration(req.params.id, req.tenant!.id, updates);
         if (!integration) {
           return res.status(404).json({ error: "CRM integration not found" });
         }
@@ -730,7 +730,7 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
         delete updates.id; // Prevent ID changes
         delete updates.subdomain; // Prevent subdomain changes
         
-        const publisher = await tenantStorage.updatePublisher(req.tenant.publisherId, updates);
+        const publisher = await tenantStorage.updatePublisher(req.tenant!.id, updates);
         if (!publisher) {
           return res.status(404).json({ error: "Publisher not found" });
         }

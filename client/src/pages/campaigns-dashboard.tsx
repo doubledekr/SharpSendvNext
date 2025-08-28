@@ -354,7 +354,7 @@ export function CampaignsDashboard() {
                       <DialogFooter>
                         <Button
                           onClick={() => createCampaignMutation.mutate({ ...newCampaign, type: emailType.id })}
-                          disabled={!newCampaign.name || !newCampaign.owner}
+                          disabled={!newCampaign.name}
                         >
                           Create Campaign
                         </Button>
