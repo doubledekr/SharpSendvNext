@@ -1329,15 +1329,15 @@ Use the toolbar above for rich formatting options, or let AI help you create com
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{metrics.sent}</div>
+                    <div className="text-2xl font-bold text-blue-600">{metrics?.sent || 0}</div>
                     <div className="text-sm text-gray-600">Sent</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{metrics.opened}</div>
+                    <div className="text-2xl font-bold text-green-600">{metrics?.opened || 0}</div>
                     <div className="text-sm text-gray-600">Opened</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{metrics.clicked}</div>
+                    <div className="text-2xl font-bold text-purple-600">{metrics?.clicked || 0}</div>
                     <div className="text-sm text-gray-600">Clicked</div>
                   </div>
                 </div>
