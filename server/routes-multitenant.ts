@@ -215,12 +215,8 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     logTenantOperation("GET_ANALYTICS"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        let analytics = await tenantStorage.getLatestAnalytics(req.tenant!.id);
-        
-        // If no analytics exist, calculate and create them
-        if (!analytics) {
-          analytics = await tenantStorage.calculateAnalytics(req.tenant!.id);
-        }
+        // Always recalculate analytics to get fresh integration data
+        const analytics = await tenantStorage.calculateAnalytics(req.tenant!.id);
         
         res.json(analytics);
       } catch (error) {

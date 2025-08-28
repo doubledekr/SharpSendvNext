@@ -288,7 +288,7 @@ class TenantAwareStorage {
 
   // Utility methods for analytics calculation
   async calculateAnalytics(publisherId: string): Promise<Analytics> {
-    // Import integrations table and get connection data
+    // Use correct integrations table from current schema (not shared/schema)
     const { integrations } = await import("@shared/schema");
     const connectedIntegrations = await db
       .select()
@@ -299,6 +299,7 @@ class TenantAwareStorage {
       ));
 
     console.log(`[Analytics] Found ${connectedIntegrations.length} connected integrations for publisher ${publisherId}`);
+    console.log(`[Analytics] Integration query result:`, connectedIntegrations);
 
     let totalSubscribers = 0;
     let openRate = "0";
