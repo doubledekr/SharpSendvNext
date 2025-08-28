@@ -87,6 +87,7 @@ interface EmailMetrics {
 function renderMarkdownContent(text: string): string {
   return text
     .replace(/&/g, '&amp;') // Fix ampersand display issue
+    .replace(/^#{1,6}\s*/gm, '') // Remove markdown headers
     .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1 ↗</a>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
@@ -707,11 +708,11 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                             <div className="space-y-2 mt-2">
                               {aiSuggestions.subjects.map((suggestedSubject, index) => (
                                 <div key={index} className="flex items-center gap-2 p-2 bg-white rounded border">
-                                  <span className="flex-1 text-sm">{suggestedSubject}</span>
+                                  <span className="flex-1 text-sm text-gray-800">{suggestedSubject.replace(/^#{1,6}\s*/g, '')}</span>
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => setSubject(suggestedSubject)}
+                                    onClick={() => setSubject(suggestedSubject.replace(/^#{1,6}\s*/g, ''))}
                                   >
                                     Use This
                                   </Button>
@@ -728,12 +729,12 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                               {aiSuggestions.contents.map((suggestedContent, index) => (
                                 <div key={index} className="p-3 bg-white rounded border">
                                   <div className="text-sm text-gray-800 mb-2 max-h-20 overflow-y-auto">
-                                    {suggestedContent.substring(0, 200)}...
+                                    {suggestedContent.replace(/^#{1,6}\s*/g, '').substring(0, 200)}...
                                   </div>
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => setContent(suggestedContent)}
+                                    onClick={() => setContent(suggestedContent.replace(/^#{1,6}\s*/g, ''))}
                                   >
                                     Use This Content
                                   </Button>
@@ -793,14 +794,14 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                   </div>
 
                   {/* Email Preview */}
-                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-800 min-h-[400px]">
+                  <div className="border rounded-lg p-4 bg-white min-h-[400px]">
                     <div className="text-sm text-gray-500 mb-3 pb-3 border-b">
                       <div>From: publisher@example.com</div>
                       <div>Subject: {subject || 'Your subject line will appear here'}</div>
                     </div>
                     
                     <div 
-                      className="text-sm text-gray-800 dark:text-gray-200 space-y-2 prose prose-sm max-w-none"
+                      className="text-sm text-gray-800 space-y-2 prose prose-sm max-w-none"
                       dangerouslySetInnerHTML={{
                         __html: content ? renderMarkdownContent(content) : '<span class="text-gray-400">Your email content will appear here as you type...</span>'
                       }}
