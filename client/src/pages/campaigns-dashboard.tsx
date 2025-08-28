@@ -93,8 +93,10 @@ export function CampaignsDashboard() {
     name: "",
     type: "marketing",
     description: "",
+    owner: "",
     startDate: "",
     endDate: "",
+    status: "active",
   });
   const [newSend, setNewSend] = useState({
     name: "",
@@ -159,8 +161,10 @@ export function CampaignsDashboard() {
         name: "",
         type: "marketing",
         description: "",
+        owner: "",
         startDate: "",
         endDate: "",
+        status: "active",
       });
     },
   });
@@ -317,6 +321,15 @@ export function CampaignsDashboard() {
                             placeholder="Campaign objectives and goals..."
                           />
                         </div>
+                        <div>
+                          <Label htmlFor="owner">Campaign Owner</Label>
+                          <Input
+                            id="owner"
+                            value={newCampaign.owner}
+                            onChange={(e) => setNewCampaign({ ...newCampaign, owner: e.target.value })}
+                            placeholder="john@example.com"
+                          />
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="startDate">Start Date</Label>
@@ -341,7 +354,7 @@ export function CampaignsDashboard() {
                       <DialogFooter>
                         <Button
                           onClick={() => createCampaignMutation.mutate({ ...newCampaign, type: emailType.id })}
-                          disabled={!newCampaign.name}
+                          disabled={!newCampaign.name || !newCampaign.owner}
                         >
                           Create Campaign
                         </Button>
