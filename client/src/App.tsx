@@ -21,21 +21,46 @@ import Onboarding from "@/pages/onboarding";
 import IntegrationsPage from "@/pages/integrations";
 import PublisherSettings from "@/pages/publisher-settings";
 import NotFound from "@/pages/not-found";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const [, setLocation] = useLocation();
+  const [isAutoLoginAttempted, setIsAutoLoginAttempted] = useState(false);
   
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
+    if (!token && !isAutoLoginAttempted) {
+      setIsAutoLoginAttempted(true);
+      // Auto-login with demo credentials to access multitenant system
+      fetch('/api/multitenant/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'demo@example.com',
+          password: 'password123',
+          subdomain: 'demo'
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('publisher', JSON.stringify(data.publisher));
+          // Component will re-render with token
+        } else {
+          setLocation("/login");
+        }
+      })
+      .catch(() => setLocation("/login"));
+    } else if (!token) {
       setLocation("/login");
     }
-  }, [setLocation]);
+  }, [setLocation, isAutoLoginAttempted]);
 
   const token = localStorage.getItem("token");
   if (!token) {
-    return null; // Will redirect in useEffect
+    return null; // Will redirect or auto-login in useEffect
   }
 
   return <Component />;

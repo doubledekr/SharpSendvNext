@@ -17,6 +17,36 @@ import VNextMarketSentiment from "@/components/vnext-market-sentiment";
 
 export default function VNextDashboard() {
   const [activeTab, setActiveTab] = useState("performance");
+  const [isAutoLoginAttempted, setIsAutoLoginAttempted] = useState(false);
+  
+  // Auto-login with demo credentials if not authenticated
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token && !isAutoLoginAttempted) {
+      setIsAutoLoginAttempted(true);
+      // Auto-login with demo credentials to access multitenant analytics
+      fetch('/api/multitenant/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'demo@example.com',
+          password: 'password123',
+          subdomain: 'demo'
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('publisher', JSON.stringify(data.publisher));
+          // Trigger query refetch
+          window.location.reload();
+        }
+      })
+      .catch(err => console.log('Auto-login failed:', err));
+    }
+  }, [isAutoLoginAttempted]);
   
   // Check if this is a demo account
   const isDemoAccount = () => {
@@ -30,7 +60,7 @@ export default function VNextDashboard() {
     }
   };
   
-  // Fetch real analytics data
+  // Fetch real analytics data from multitenant endpoint (requires auth)
   const { data: analytics, isLoading: analyticsLoading } = useQuery<any>({
     queryKey: ["/api/analytics"],
     retry: false,
