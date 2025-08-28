@@ -59,30 +59,25 @@ export default function VNextFatigueDetector() {
     }
   };
 
+  // Only show critical alerts if there are real alerts from data
+  const hasCriticalAlerts = segmentHealth.some(segment => segment.health === "critical");
+
   return (
     <div className="space-y-6">
-      {/* Critical Alerts */}
-      <Alert className="border-red-200 bg-red-50 dark:bg-red-950/20">
-        <AlertTriangle className="h-4 w-4 text-red-600" />
-        <AlertTitle>Email Fatigue Alert</AlertTitle>
-        <AlertDescription>
-          <div className="mt-2 space-y-2">
-            <p className="text-sm">
-              <strong>Active Traders</strong> segment showing critical fatigue: 
-              30% drop in open rates over 2 weeks
-            </p>
-            <div className="flex gap-2">
-              <Button size="sm" variant="destructive">
-                <Pause className="h-3 w-3 mr-1" />
-                Pause Segment
-              </Button>
-              <Button size="sm" variant="outline">
-                Apply Cool-off Period
-              </Button>
+      {/* Critical Alerts - Only show if real data indicates problems */}
+      {hasCriticalAlerts && (
+        <Alert className="border-red-200 bg-red-50 dark:bg-red-950/20">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertTitle>Email Fatigue Alert</AlertTitle>
+          <AlertDescription>
+            <div className="mt-2 space-y-2">
+              <p className="text-sm">
+                Critical fatigue detected in one or more segments. Review segment health below.
+              </p>
             </div>
-          </div>
-        </AlertDescription>
-      </Alert>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Health Overview */}
       <Card>
