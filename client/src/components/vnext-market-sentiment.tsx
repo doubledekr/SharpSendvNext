@@ -172,13 +172,7 @@ export default function VNextMarketSentiment() {
             <Button 
               size="sm" 
               className="mt-2"
-              onClick={() => handleCreateAssignment({
-                type: "market_alert",
-                title: "Volatility Play Email",
-                description: "VIX spike detected - create targeted campaign for volatility-sensitive subscribers",
-                suggestedSegments: ["Active Traders", "Options Traders"],
-                marketContext: { vix: vixLevel, sentiment: marketSentiment }
-              })}
+              onClick={() => handleCreateAssignmentFromOpportunity()}
             >
               <Send className="h-3 w-3 mr-1" />
               Create Assignment
@@ -278,19 +272,7 @@ export default function VNextMarketSentiment() {
                     </div>
                     <Button 
                       size="sm"
-                      onClick={() => handleCreateAssignment({
-                        type: "news_based",
-                        title: item.headline.substring(0, 50) + "...",
-                        description: item.suggestedAction || "Create targeted email based on this news event",
-                        urgency: item.impact === "high" ? "priority" : "standard",
-                        suggestedSegments: item.sentiment === "bullish" ? ["Growth Investors", "Tech Sector"] : ["Risk-Averse", "Value Investors"],
-                        marketContext: { 
-                          news: item.headline,
-                          source: item.source,
-                          sentiment: item.sentiment,
-                          impact: item.impact
-                        }
-                      })}
+                      onClick={() => handleCreateAssignmentFromNews(item)}
                     >
                       <Zap className="h-3 w-3 mr-1" />
                       Create Assignment

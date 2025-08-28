@@ -59,22 +59,8 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ currentPage }) => {
   };
 
   const handleCreateAssignment = () => {
-    // Handle different assignment types
-    if (assignmentType === 'copywriter') {
-      alert('Assignment created and sent to copywriter portal!');
-    } else if (assignmentType === 'ai') {
-      alert('AI is generating content based on your assignment...');
-    } else {
-      alert('Email draft is being generated...');
-    }
-    setIsAssignmentDialogOpen(false);
-    setAssignmentData({
-      title: '',
-      description: '',
-      priority: 'medium',
-      dueDate: '',
-      targetAudience: ''
-    });
+    // Navigate to unified assignment form
+    setLocation('/assignments?autoOpen=true');
   };
 
   const navigationItems = [

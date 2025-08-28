@@ -575,7 +575,7 @@ Your SharpSend Team`,
                   <Button 
                     size="sm" 
                     className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
-                    onClick={() => handleCreateAssignment()}
+                    onClick={() => setLocation('/assignments?autoOpen=true')}
                   >
                     <FileEdit className="w-3 h-3 mr-1" />
                     Create Assignment
