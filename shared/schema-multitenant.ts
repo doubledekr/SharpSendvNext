@@ -381,10 +381,10 @@ export const insertCampaignSchema = createInsertSchema(campaigns).pick({
   content: true,
   status: true,
   scheduledAt: true,
-  openRate: true,
-  clickRate: true,
-  revenue: true,
-  subscriberCount: true,
+}).partial({
+  subjectLine: true,
+  content: true,
+  scheduledAt: true,
 });
 
 export const insertABTestSchema = createInsertSchema(abTests).pick({
