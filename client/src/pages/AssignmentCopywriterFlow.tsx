@@ -336,7 +336,7 @@ function AssignmentCopywriterFlow() {
     mutationFn: async () => {
       setIsSending(true);
       const selectedVariations = selectedSegments.length > 0 
-        ? segments.filter(s => selectedSegments.includes(s.id))
+        ? segments.filter(s => selectedSegments.includes(s.segmentId))
         : segments;
 
       const queueData = {
@@ -345,27 +345,35 @@ function AssignmentCopywriterFlow() {
         customDateTime
       };
 
-      return fetch(`/api/assignments/${assignmentId}/send-queue`, {
+      const response = await fetch(`/api/assignments/${assignmentId}/send-queue`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(queueData)
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to add to send queue');
+      }
+
+      return response.json();
     },
     onSuccess: (data) => {
+      const queueResults = data.data;
+      
       toast({
         title: "Added to Send Queue",
-        description: `${segments.length} campaigns queued for sending`,
+        description: `${queueResults.queuedItems} emails queued across ${queueResults.segmentVariations} segments + master variation`,
       });
       
       // Close confirm dialog and editor after submission
       setShowConfirmDialog(false);
       setShowEditor(false);
       
-      // Simulate initial metrics
+      // Set initial metrics based on actual queue data
       setTimeout(() => {
         setMetrics({
-          sent: segments.reduce((sum, s) => sum + s.estimatedRecipients, 0),
-          delivered: Math.floor(segments.reduce((sum, s) => sum + s.estimatedRecipients, 0) * 0.98),
+          sent: queueResults.totalSubscribers,
+          delivered: Math.floor(queueResults.totalSubscribers * 0.98),
           opened: 0,
           clicked: 0,
           converted: 0,
@@ -377,7 +385,8 @@ function AssignmentCopywriterFlow() {
       simulateMetricsUpdates();
       setActiveTab('tracking');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Send queue error:", error);
       toast({
         title: "Queue Failed",
         description: "Failed to add to send queue",

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "./db";
-import { assignments, emailVariations, imageAttachments, imagePixelEvents } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { assignments, emailVariations, imageAttachments, imagePixelEvents, emailSendQueue, trackingPixels, subscribers } from "@shared/schema";
+import { eq, and, desc, notInArray } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 const router = Router();
@@ -1213,6 +1213,209 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
   } catch (error) {
     console.error("Error pushing to send queue:", error);
     res.status(500).json({ error: "Failed to push to send queue" });
+  }
+});
+
+// Add assignment to send queue with segment variations and pixel tracking
+router.post("/api/assignments/:id/send-queue", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { variations, scheduledTime, customDateTime } = req.body;
+    const publisherId = "demo-publisher";
+
+    // Get the assignment 
+    const [assignment] = await db
+      .select()
+      .from(assignments)
+      .where(and(
+        eq(assignments.id, id),
+        eq(assignments.publisherId, publisherId)
+      ))
+      .limit(1);
+
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    // Get all subscribers for this publisher
+    const allSubscribers = await db
+      .select()
+      .from(subscribers)
+      .where(eq(subscribers.publisherId, publisherId));
+
+    // Create send queue items and tracking pixels for each variation
+    const queueItems = [];
+    const trackingPixelItems = [];
+    
+    // Track which subscribers are assigned to specific segments
+    const assignedSubscriberIds = new Set();
+
+    // Process selected segment variations
+    for (const variation of variations) {
+      // Get subscribers for this segment based on segment criteria
+      const segmentSubscribers = allSubscribers.filter(sub => {
+        // Match subscribers to segments based on segment names/criteria
+        switch (variation.segmentName) {
+          case 'Growth Investors':
+            return sub.segment === 'high-growth' || sub.segment === 'tech-investors' || sub.segment === 'growth';
+          case 'Conservative Investors':
+            return sub.segment === 'conservative' || sub.segment === 'dividend' || sub.segment === 'low-risk';
+          case 'Day Traders':
+            return sub.segment === 'active-traders' || sub.segment === 'day-trading' || sub.segment === 'trading';
+          case 'Crypto Enthusiasts':
+            return sub.segment === 'crypto' || sub.segment === 'blockchain' || sub.segment === 'digital-assets';
+          default:
+            return false;
+        }
+      });
+
+      // Create tracking pixel for this variation
+      const pixelCode = randomBytes(16).toString("hex");
+      const [trackingPixel] = await db.insert(trackingPixels).values({
+        variantId: variation.id,
+        publisherId,
+        emailType: 'assignment_variation',
+        isUnique: true,
+        auditLog: [{
+          timestamp: new Date().toISOString(),
+          event: 'pixel_created',
+          metadata: { assignmentId: id, segmentName: variation.segmentName }
+        }]
+      }).returning();
+
+      trackingPixelItems.push(trackingPixel);
+
+      // Add send queue items for segment subscribers
+      for (const subscriber of segmentSubscribers) {
+        assignedSubscriberIds.add(subscriber.id);
+        
+        const [queueItem] = await db.insert(emailSendQueue).values({
+          publisherId,
+          campaignId: id, // Using assignment ID as campaign ID for tracking
+          emailType: 'assignment_variation',
+          recipientEmail: subscriber.email,
+          recipientName: subscriber.name,
+          subject: variation.subjectLine,
+          content: variation.content,
+          scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
+          status: 'pending',
+          priority: 1,
+          metadata: {
+            cohort: variation.segmentName,
+            assignmentId: id,
+            variationId: variation.id,
+            trackingPixelId: trackingPixel.id,
+            trackingPixelCode: pixelCode,
+            segmentCriteria: variation.segmentCriteria,
+            personalizationData: {
+              segmentName: variation.segmentName,
+              aiScore: variation.aiScore
+            },
+            trackingEnabled: true
+          }
+        }).returning();
+
+        queueItems.push(queueItem);
+      }
+    }
+
+    // Create master variation for unassigned subscribers
+    const unassignedSubscribers = allSubscribers.filter(sub => !assignedSubscriberIds.has(sub.id));
+    
+    if (unassignedSubscribers.length > 0) {
+      // Create tracking pixel for master variation
+      const masterPixelCode = randomBytes(16).toString("hex");
+      const [masterTrackingPixel] = await db.insert(trackingPixels).values({
+        variantId: `${id}_master`,
+        publisherId,
+        emailType: 'assignment_master',
+        isUnique: true,
+        auditLog: [{
+          timestamp: new Date().toISOString(),
+          event: 'master_pixel_created',
+          metadata: { assignmentId: id, segmentName: 'Master/Unassigned' }
+        }]
+      }).returning();
+
+      trackingPixelItems.push(masterTrackingPixel);
+
+      // Add send queue items for unassigned subscribers using master content
+      for (const subscriber of unassignedSubscribers) {
+        const [queueItem] = await db.insert(emailSendQueue).values({
+          publisherId,
+          campaignId: id,
+          emailType: 'assignment_master',
+          recipientEmail: subscriber.email,
+          recipientName: subscriber.name,
+          subject: assignment.title, // Use assignment title as master subject
+          content: assignment.content || assignment.brief?.objective || 'Master email content',
+          scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
+          status: 'pending',
+          priority: 0, // Lower priority than segment variations
+          metadata: {
+            cohort: 'Master/Unassigned',
+            assignmentId: id,
+            variationId: 'master',
+            trackingPixelId: masterTrackingPixel.id,
+            trackingPixelCode: masterPixelCode,
+            personalizationData: {
+              segmentName: 'Master',
+              isMaster: true
+            },
+            trackingEnabled: true
+          }
+        }).returning();
+
+        queueItems.push(queueItem);
+      }
+    }
+
+    // Update assignment status to indicate it's been queued
+    await db.update(assignments)
+      .set({ 
+        status: 'queued',
+        updatedAt: new Date()
+      })
+      .where(eq(assignments.id, id));
+
+    res.json({
+      success: true,
+      data: {
+        queuedItems: queueItems.length,
+        trackingPixels: trackingPixelItems.length,
+        segmentVariations: variations.length,
+        unassignedSubscribers: unassignedSubscribers.length,
+        totalSubscribers: allSubscribers.length,
+        scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
+        details: {
+          segmentBreakdown: variations.map(v => ({
+            segmentName: v.segmentName,
+            subscriberCount: allSubscribers.filter(sub => {
+              switch (v.segmentName) {
+                case 'Growth Investors':
+                  return sub.segment === 'high-growth' || sub.segment === 'tech-investors' || sub.segment === 'growth';
+                case 'Conservative Investors':
+                  return sub.segment === 'conservative' || sub.segment === 'dividend' || sub.segment === 'low-risk';
+                case 'Day Traders':
+                  return sub.segment === 'active-traders' || sub.segment === 'day-trading' || sub.segment === 'trading';
+                case 'Crypto Enthusiasts':
+                  return sub.segment === 'crypto' || sub.segment === 'blockchain' || sub.segment === 'digital-assets';
+                default:
+                  return false;
+              }
+            }).length
+          })),
+          masterVariation: {
+            segmentName: 'Master/Unassigned',
+            subscriberCount: unassignedSubscribers.length
+          }
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Error adding assignment to send queue:", error);
+    res.status(500).json({ error: "Failed to add assignment to send queue" });
   }
 });
 
