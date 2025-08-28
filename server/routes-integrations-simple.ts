@@ -378,13 +378,26 @@ router.post("/api/integrations/:id/sync", (req, res) => {
       });
     }
 
-    // Update last sync time
+    // Update last sync time and add mock stats data
     integration.lastSync = new Date().toISOString();
+    
+    // Add realistic demo stats based on platform
+    const platformStats: Record<string, {subscribers: number, campaigns: number, openRate: number, clickRate: number}> = {
+      mailchimp: { subscribers: 12847, campaigns: 34, openRate: 0.248, clickRate: 0.032 },
+      customer_io: { subscribers: 8532, campaigns: 28, openRate: 0.267, clickRate: 0.041 },
+      iterable: { subscribers: 15293, campaigns: 41, openRate: 0.221, clickRate: 0.028 },
+      sendgrid: { subscribers: 9876, campaigns: 22, openRate: 0.198, clickRate: 0.025 },
+      default: { subscribers: 5234, campaigns: 18, openRate: 0.215, clickRate: 0.029 }
+    };
+
+    const platformId = integration.platformId || 'default';
+    integration.stats = platformStats[platformId] || platformStats.default;
 
     res.json({
       success: true,
       message: `Successfully synced data from ${integration.platformName}`,
-      lastSync: integration.lastSync
+      lastSync: integration.lastSync,
+      stats: integration.stats
     });
   } catch (error) {
     console.error("Error syncing platform data:", error);
