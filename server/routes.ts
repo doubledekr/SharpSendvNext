@@ -869,7 +869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced analytics endpoint with real integration data from database
   app.get("/api/analytics", async (req, res) => {
     try {
-      const publisherId = req.headers['x-publisher-id'] || 'demo-publisher-id';
+      const publisherId = req.headers['x-publisher-id'] as string;
       
       // Import integrations table to get real subscriber data from database
       const { integrations } = await import("@shared/schema");

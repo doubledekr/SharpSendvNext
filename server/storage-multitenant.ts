@@ -288,8 +288,9 @@ class TenantAwareStorage {
 
   // Utility methods for analytics calculation
   async calculateAnalytics(publisherId: string): Promise<Analytics> {
-    // First check for integration data
-    const integrations = await db
+    // Import integrations table and get connection data
+    const { integrations } = await import("@shared/schema");
+    const connectedIntegrations = await db
       .select()
       .from(integrations)
       .where(and(
@@ -303,8 +304,8 @@ class TenantAwareStorage {
     let engagementRate = "0";
 
     // Use integration data if available
-    if (integrations.length > 0) {
-      const integration = integrations[0];
+    if (connectedIntegrations.length > 0) {
+      const integration = connectedIntegrations[0];
       if (integration.stats && typeof integration.stats === 'object') {
         const stats = integration.stats as any;
         totalSubscribers = stats.subscribers || 0;
