@@ -362,7 +362,7 @@ function AssignmentCopywriterFlow() {
       
       toast({
         title: "Added to Send Queue",
-        description: `${queueResults.queuedItems} emails queued across ${queueResults.segmentVariations} segments + master variation`,
+        description: `${queueResults.queuedItems} emails queued across ${queueResults.segmentVariations} segments + master variation (always included)`,
       });
       
       // Close confirm dialog and editor after submission

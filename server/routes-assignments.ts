@@ -1319,10 +1319,11 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
       }
     }
 
-    // Create master variation for unassigned subscribers
+    // Create master variation for unassigned subscribers (always create master)
     const unassignedSubscribers = allSubscribers.filter(sub => !assignedSubscriberIds.has(sub.id));
     
-    if (unassignedSubscribers.length > 0) {
+    // Always create master variation, even if no unassigned subscribers
+    {
       // Create tracking pixel for master variation
       const masterPixelCode = randomBytes(16).toString("hex");
       const [masterTrackingPixel] = await db.insert(trackingPixels).values({
@@ -1340,18 +1341,49 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
       trackingPixelItems.push(masterTrackingPixel);
 
       // Add send queue items for unassigned subscribers using master content
-      for (const subscriber of unassignedSubscribers) {
+      // Always queue master even if no unassigned subscribers (for tracking purposes)
+      if (unassignedSubscribers.length > 0) {
+        for (const subscriber of unassignedSubscribers) {
+          const [queueItem] = await db.insert(emailSendQueue).values({
+            publisherId,
+            campaignId: id,
+            emailType: 'assignment_master',
+            recipientEmail: subscriber.email,
+            recipientName: subscriber.name,
+            subject: assignment.title, // Use assignment title as master subject
+            content: assignment.content || assignment.brief?.objective || 'Master email content',
+            scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
+            status: 'pending',
+            priority: 0, // Lower priority than segment variations
+            metadata: {
+              cohort: 'Master/Unassigned',
+              assignmentId: id,
+              variationId: 'master',
+              trackingPixelId: masterTrackingPixel.id,
+              trackingPixelCode: masterPixelCode,
+              personalizationData: {
+                segmentName: 'Master',
+                isMaster: true
+              },
+              trackingEnabled: true
+            }
+          }).returning();
+
+          queueItems.push(queueItem);
+        }
+      } else {
+        // Create a placeholder master queue item for tracking even with no subscribers
         const [queueItem] = await db.insert(emailSendQueue).values({
           publisherId,
           campaignId: id,
           emailType: 'assignment_master',
-          recipientEmail: subscriber.email,
-          recipientName: subscriber.name,
-          subject: assignment.title, // Use assignment title as master subject
+          recipientEmail: 'no-recipients@placeholder.com',
+          recipientName: 'No Unassigned Recipients',
+          subject: assignment.title,
           content: assignment.content || assignment.brief?.objective || 'Master email content',
           scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
           status: 'pending',
-          priority: 0, // Lower priority than segment variations
+          priority: 0,
           metadata: {
             cohort: 'Master/Unassigned',
             assignmentId: id,
@@ -1360,7 +1392,8 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
             trackingPixelCode: masterPixelCode,
             personalizationData: {
               segmentName: 'Master',
-              isMaster: true
+              isMaster: true,
+              isPlaceholder: true
             },
             trackingEnabled: true
           }
@@ -1384,6 +1417,7 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
         queuedItems: queueItems.length,
         trackingPixels: trackingPixelItems.length,
         segmentVariations: variations.length,
+        masterVariationIncluded: true, // Always true since we always create master
         unassignedSubscribers: unassignedSubscribers.length,
         totalSubscribers: allSubscribers.length,
         scheduledFor: customDateTime ? new Date(customDateTime) : new Date(Date.now() + (scheduledTime * 60 * 1000)),
