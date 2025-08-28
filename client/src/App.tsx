@@ -19,6 +19,7 @@ import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
 import IntegrationsPage from "@/pages/integrations";
 import PublisherSettings from "@/pages/publisher-settings";
+import { EmailBuilderPage } from "@/pages/email-builder";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -68,6 +69,8 @@ function Router() {
           <Route path="/ab-testing" component={() => <ProtectedRoute component={ABTestingDashboard} />} />
           <Route path="/integrations" component={() => <ProtectedRoute component={IntegrationsPage} />} />
           <Route path="/analytics" component={() => <ProtectedRoute component={VNextDashboard} />} />
+          <Route path="/email-builder" component={() => <ProtectedRoute component={EmailBuilderPage} />} />
+          <Route path="/email-builder/:templateId" component={() => <ProtectedRoute component={EmailBuilderPage} />} />
           
           {/* Settings Routes */}
           <Route path="/settings/publisher" component={() => <ProtectedRoute component={PublisherSettings} />} />

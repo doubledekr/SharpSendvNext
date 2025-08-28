@@ -740,5 +740,162 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
       }
     }
   );
+
+  // Email Templates endpoints
+  app.get("/api/email-templates",
+    authenticateAndSetTenant,
+    requireTenant,
+    logTenantOperation("GET_EMAIL_TEMPLATES"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const templates = await tenantStorage.getEmailTemplates(req.tenant!.id);
+        res.json(templates);
+      } catch (error) {
+        console.error("Email templates fetch error:", error);
+        res.status(500).json({ error: "Failed to fetch email templates" });
+      }
+    }
+  );
+
+  app.get("/api/email-templates/:id",
+    authenticateAndSetTenant,
+    requireTenant,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const template = await tenantStorage.getEmailTemplate(req.params.id, req.tenant!.id);
+        if (!template) {
+          return res.status(404).json({ error: "Email template not found" });
+        }
+        res.json(template);
+      } catch (error) {
+        console.error("Email template fetch error:", error);
+        res.status(500).json({ error: "Failed to fetch email template" });
+      }
+    }
+  );
+
+  app.post("/api/email-templates",
+    authenticateAndSetTenant,
+    requireTenant,
+    requireRole("editor"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const templateData = {
+          ...req.body,
+          publisherId: req.tenant!.id,
+        };
+        const template = await tenantStorage.createEmailTemplate(templateData);
+        res.status(201).json(template);
+      } catch (error) {
+        console.error("Email template creation error:", error);
+        res.status(400).json({ error: "Invalid email template data" });
+      }
+    }
+  );
+
+  app.patch("/api/email-templates/:id",
+    authenticateAndSetTenant,
+    requireTenant,
+    requireRole("editor"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const updates = req.body;
+        delete updates.publisherId; // Prevent publisher ID changes
+        
+        const template = await tenantStorage.updateEmailTemplate(req.params.id, req.tenant!.id, updates);
+        if (!template) {
+          return res.status(404).json({ error: "Email template not found" });
+        }
+        res.json(template);
+      } catch (error) {
+        console.error("Email template update error:", error);
+        res.status(500).json({ error: "Failed to update email template" });
+      }
+    }
+  );
+
+  app.delete("/api/email-templates/:id",
+    authenticateAndSetTenant,
+    requireTenant,
+    requireRole("editor"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const result = await tenantStorage.deleteEmailTemplate(req.params.id, req.tenant!.id);
+        if (!result) {
+          return res.status(404).json({ error: "Email template not found" });
+        }
+        res.json({ message: "Email template deleted successfully" });
+      } catch (error) {
+        console.error("Email template deletion error:", error);
+        res.status(500).json({ error: "Failed to delete email template" });
+      }
+    }
+  );
+
+  app.post("/api/email-templates/:id/export",
+    authenticateAndSetTenant,
+    requireTenant,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const template = await tenantStorage.getEmailTemplate(req.params.id, req.tenant!.id);
+        if (!template) {
+          return res.status(404).json({ error: "Email template not found" });
+        }
+
+        const { content } = template;
+        const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${template.name}</title>
+    <style>${content.css || ""}</style>
+  </head>
+  <body>
+    ${content.html || ""}
+  </body>
+</html>`;
+
+        res.json({ 
+          html,
+          css: content.css || "",
+          json: content.json || {},
+          name: template.name,
+        });
+      } catch (error) {
+        console.error("Email template export error:", error);
+        res.status(500).json({ error: "Failed to export email template" });
+      }
+    }
+  );
+
+  app.post("/api/email-templates/:id/duplicate",
+    authenticateAndSetTenant,
+    requireTenant,
+    requireRole("editor"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const originalTemplate = await tenantStorage.getEmailTemplate(req.params.id, req.tenant!.id);
+        if (!originalTemplate) {
+          return res.status(404).json({ error: "Email template not found" });
+        }
+
+        const duplicatedTemplate = await tenantStorage.createEmailTemplate({
+          publisherId: req.tenant!.id,
+          name: `${originalTemplate.name} (Copy)`,
+          description: originalTemplate.description,
+          type: originalTemplate.type,
+          content: originalTemplate.content,
+          tags: originalTemplate.tags,
+          isActive: true,
+        });
+
+        res.status(201).json(duplicatedTemplate);
+      } catch (error) {
+        console.error("Email template duplication error:", error);
+        res.status(500).json({ error: "Failed to duplicate email template" });
+      }
+    }
+  );
 }
 

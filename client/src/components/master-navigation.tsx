@@ -96,6 +96,12 @@ export function MasterNavigation() {
       href: "/analytics",
       icon: BarChart3,
       description: "Performance Metrics"
+    },
+    {
+      title: "Email Builder",
+      href: "/email-builder",
+      icon: Mail,
+      description: "Drag & Drop Email Designer"
     }
   ];
 
