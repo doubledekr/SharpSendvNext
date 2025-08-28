@@ -611,60 +611,63 @@ async function syncCustomerIOData(credentials: any) {
 
       if (segmentsResponse.ok) {
         const segmentsData = await segmentsResponse.json();
-        console.log("Segments data structure:", JSON.stringify(segmentsData, null, 2));
+        console.log("Raw segments response:", JSON.stringify(segmentsData, null, 2));
 
-        // Check specific segment details for better accuracy
-        try {
-          const segments = Array.isArray(segmentsData) ? segmentsData : (segmentsData.segments || []);
-          const csvSegment = segments.find((seg: any) => seg.name && seg.name.includes('sharpsend_customerio_mock_data.csv'));
-          if (csvSegment) {
-            console.log(`Found CSV segment: ${csvSegment.name}, checking details...`);
-            const segmentDetailResponse = await fetch(`${appApiBase}/segments/${csvSegment.id}`, {
+        // Extract segments array from response
+        const segments = Array.isArray(segmentsData) ? segmentsData : (segmentsData.segments || []);
+        console.log(`Found ${segments.length} segments, now fetching subscriber counts...`);
+
+        // Fetch subscriber count for each segment using correct Customer.io API
+        const segmentsWithCounts = [];
+        let totalSubscriberCount = 0;
+
+        for (const segment of segments) {
+          try {
+            console.log(`Fetching subscriber count for segment: ${segment.name} (ID: ${segment.id})`);
+            
+            // Use the correct Customer.io endpoint for subscriber counts
+            const countResponse = await fetch(`${appApiBase}/segments/${segment.id}/customer_count`, {
               headers: {
                 'Authorization': `Bearer ${app_api_key}`,
                 'Content-Type': 'application/json'
               }
             });
-            
-            if (segmentDetailResponse.ok) {
-              const segmentDetail = await segmentDetailResponse.json();
-              console.log('CSV Segment Detail:', JSON.stringify(segmentDetail, null, 2));
+
+            let subscriberCount = 0;
+            if (countResponse.ok) {
+              const countData = await countResponse.json();
+              console.log(`Count response for ${segment.name}:`, JSON.stringify(countData, null, 2));
               
-              if (segmentDetail.segment && segmentDetail.segment.member_count > 0) {
-                console.log(`CSV segment actually has ${segmentDetail.segment.member_count} members`);
-                totalCustomers = segmentDetail.segment.member_count;
-              }
+              // Extract count from response (could be countData.count or countData.customer_count)
+              subscriberCount = countData.count || countData.customer_count || countData.total || 0;
+            } else {
+              console.log(`Failed to get count for segment ${segment.name}: ${countResponse.status} ${countResponse.statusText}`);
+              const errorText = await countResponse.text();
+              console.log(`Count error response:`, errorText);
             }
+
+            segmentsWithCounts.push({
+              ...segment,
+              subscriber_count: subscriberCount
+            });
+
+            totalSubscriberCount += subscriberCount;
+            console.log(`Segment "${segment.name}" has ${subscriberCount} subscribers`);
+
+            // Add small delay to respect rate limits (10 requests per second)
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+          } catch (segmentError: any) {
+            console.log(`Error fetching count for segment ${segment.name}:`, segmentError.message);
+            segmentsWithCounts.push({
+              ...segment,
+              subscriber_count: 0
+            });
           }
-        } catch (segmentError: any) {
-          console.log('Segment detail fetch failed:', segmentError.message);
         }
-        
-        if (Array.isArray(segmentsData)) {
-          // Customer.io returns segments as a direct array
-          let totalMembers = 0;
-          for (const segment of segmentsData) {
-            const memberCount = segment.member_count || 0;
-            totalMembers += memberCount;
-            console.log(`Segment "${segment.name}" has ${memberCount} subscribers`);
-          }
-          
-          // Use totalCustomers if we found any via detailed segment check
-          subscribers = Math.max(totalMembers, totalCustomers);
-          console.log(`Found ${segmentsData.length} segments with ${totalMembers} segment subscribers, ${totalCustomers} detailed count (REAL DATA)`);
-        } else if (segmentsData?.segments && Array.isArray(segmentsData.segments)) {
-          // Wrapped response format
-          let totalMembers = 0;
-          for (const segment of segmentsData.segments) {
-            const memberCount = segment.member_count || 0;
-            totalMembers += memberCount;
-            console.log(`Segment "${segment.name}" has ${memberCount} subscribers`);
-          }
-          
-          // Use totalCustomers if we found any via detailed segment check
-          subscribers = Math.max(totalMembers, totalCustomers);
-          console.log(`Found ${segmentsData.segments.length} segments with ${totalMembers} segment subscribers, ${totalCustomers} detailed count (REAL DATA)`);
-        }
+
+        subscribers = totalSubscriberCount;
+        console.log(`CORRECT API IMPLEMENTATION: Found ${segments.length} segments with ${totalSubscriberCount} total subscribers (REAL DATA)`);
         
         // If segments are empty but we know there are customers, try alternative approach
         if (subscribers === 0) {
