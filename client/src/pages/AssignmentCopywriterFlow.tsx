@@ -705,18 +705,19 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                         {aiSuggestions.subjects.length > 0 && (
                           <div>
                             <Label className="text-sm font-medium text-blue-800">Subject Line Suggestions:</Label>
-                            <div className="space-y-2 mt-2">
+                            <div className="flex flex-wrap gap-2 mt-2">
                               {aiSuggestions.subjects.map((suggestedSubject, index) => (
-                                <div key={index} className="flex items-center gap-2 p-2 bg-white rounded border">
-                                  <span className="flex-1 text-sm text-gray-800">{suggestedSubject.replace(/^#{1,6}\s*/g, '')}</span>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setSubject(suggestedSubject.replace(/^#{1,6}\s*/g, ''))}
-                                  >
-                                    Use This
-                                  </Button>
-                                </div>
+                                <Button
+                                  key={index}
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-left justify-start max-w-xs"
+                                  onClick={() => setSubject(suggestedSubject.replace(/^#{1,6}\s*/g, ''))}
+                                  title={suggestedSubject.replace(/^#{1,6}\s*/g, '')}
+                                >
+                                  <span className="mr-2 font-bold">{index + 1}</span>
+                                  <span className="truncate">{suggestedSubject.replace(/^#{1,6}\s*/g, '').substring(0, 30)}...</span>
+                                </Button>
                               ))}
                             </div>
                           </div>
@@ -725,20 +726,19 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                         {aiSuggestions.contents.length > 0 && (
                           <div>
                             <Label className="text-sm font-medium text-blue-800">Content Suggestions:</Label>
-                            <div className="space-y-2 mt-2">
+                            <div className="flex flex-wrap gap-2 mt-2">
                               {aiSuggestions.contents.map((suggestedContent, index) => (
-                                <div key={index} className="p-3 bg-white rounded border">
-                                  <div className="text-sm text-gray-800 mb-2 max-h-20 overflow-y-auto">
-                                    {suggestedContent.replace(/^#{1,6}\s*/g, '').substring(0, 200)}...
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setContent(suggestedContent.replace(/^#{1,6}\s*/g, ''))}
-                                  >
-                                    Use This Content
-                                  </Button>
-                                </div>
+                                <Button
+                                  key={index}
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-left justify-start max-w-xs"
+                                  onClick={() => setContent(suggestedContent.replace(/^#{1,6}\s*/g, ''))}
+                                  title={suggestedContent.replace(/^#{1,6}\s*/g, '').substring(0, 100)}
+                                >
+                                  <span className="mr-2 font-bold">{index + 1}</span>
+                                  <span className="truncate">{suggestedContent.replace(/^#{1,6}\s*/g, '').substring(0, 25)}...</span>
+                                </Button>
                               ))}
                             </div>
                           </div>
@@ -747,29 +747,7 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                     </Card>
                   )}
 
-                  {/* Master Email Preview */}
-                  {(subject || content) && (
-                    <Card className="bg-gray-50 border-2 border-dashed">
-                      <CardHeader>
-                        <CardTitle className="text-base">Master Email Preview</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="border rounded p-4 bg-white">
-                          <div className="text-xs text-gray-500 mb-3 pb-2 border-b">
-                            <div>From: publisher@example.com</div>
-                            <div>Subject: {subject || 'No subject'}</div>
-                          </div>
-                          
-                          <div 
-                            className="text-sm text-gray-800 space-y-2"
-                            dangerouslySetInnerHTML={{
-                              __html: renderMarkdownContent(content || 'No content')
-                            }}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+
                 </CardContent>
               </Card>
 
