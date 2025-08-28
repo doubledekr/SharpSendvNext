@@ -726,17 +726,18 @@ Use the toolbar above for rich formatting options, or let AI help you create com
 
                   {/* AI Content Suggestions */}
                   {showAISuggestions && (aiSuggestions.subjects.length > 0 || aiSuggestions.contents.length > 0) && (
-                    <Card className="bg-blue-50 border-2 border-blue-200">
+                    <Card className="bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-800 shadow-sm">
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-base flex items-center">
-                            <Sparkles className="w-4 h-4 mr-2 text-blue-600" />
+                          <CardTitle className="text-base flex items-center text-gray-800 dark:text-gray-200">
+                            <Sparkles className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" />
                             AI Content Suggestions
                           </CardTitle>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowAISuggestions(false)}
+                            className="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <X className="w-4 h-4" />
                           </Button>
@@ -745,18 +746,18 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                       <CardContent className="space-y-4">
                         {aiSuggestions.subjects.length > 0 && (
                           <div>
-                            <Label className="text-sm font-medium text-blue-800 dark:text-blue-400">Subject Line Suggestions:</Label>
-                            <div className="flex flex-wrap gap-2 mt-2">
+                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Subject Line Suggestions:</Label>
+                            <div className="flex flex-wrap gap-2">
                               {aiSuggestions.subjects.map((suggestedSubject, index) => (
                                 <Button
                                   key={index}
                                   size="sm"
                                   variant="outline"
-                                  className="text-left justify-start max-w-xs bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                  className="text-left justify-start max-w-xs bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                                   onClick={() => setSubject(suggestedSubject.replace(/^#{1,6}\s*/g, ''))}
                                   title={suggestedSubject.replace(/^#{1,6}\s*/g, '')}
                                 >
-                                  <span className="mr-2 font-bold text-blue-600 dark:text-blue-400">{index + 1}</span>
+                                  <span className="mr-2 font-bold text-green-600 dark:text-green-400">{index + 1}</span>
                                   <span className="truncate text-gray-800 dark:text-gray-200">{suggestedSubject.replace(/^#{1,6}\s*/g, '').substring(0, 30)}...</span>
                                 </Button>
                               ))}
@@ -766,18 +767,18 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                         
                         {aiSuggestions.contents.length > 0 && (
                           <div>
-                            <Label className="text-sm font-medium text-blue-800 dark:text-blue-400">Content Suggestions:</Label>
-                            <div className="flex flex-wrap gap-2 mt-2">
+                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Content Suggestions:</Label>
+                            <div className="flex flex-wrap gap-2">
                               {aiSuggestions.contents.map((suggestedContent, index) => (
                                 <Button
                                   key={index}
                                   size="sm"
                                   variant="outline"
-                                  className="text-left justify-start max-w-xs bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                  className="text-left justify-start max-w-xs bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                                   onClick={() => setContent(suggestedContent.replace(/^#{1,6}\s*/g, ''))}
                                   title={suggestedContent.replace(/^#{1,6}\s*/g, '').substring(0, 100)}
                                 >
-                                  <span className="mr-2 font-bold text-blue-600 dark:text-blue-400">{index + 1}</span>
+                                  <span className="mr-2 font-bold text-green-600 dark:text-green-400">{index + 1}</span>
                                   <span className="truncate text-gray-800 dark:text-gray-200">{suggestedContent.replace(/^#{1,6}\s*/g, '').substring(0, 25)}...</span>
                                 </Button>
                               ))}
