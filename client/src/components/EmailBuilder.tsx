@@ -119,7 +119,7 @@ export function EmailBuilder({
         gjsStyleGradient,
       ],
       pluginsOpts: {
-        [gjsPresetNewsletter]: {
+        "gjs-preset-newsletter": {
           modalTitleImport: "Import Newsletter Template",
           modalTitleExport: "Export Newsletter",
           codeViewerTheme: "material",
@@ -127,7 +127,7 @@ export function EmailBuilder({
           showStylesOnChange: true,
           useCustomTheme: true,
         },
-        [gjsPresetWebpage]: {
+        "gjs-preset-webpage": {
           blocksBasicOpts: {
             blocks: ["column1", "column2", "column3", "text", "link", "image", "video"],
             flexGrid: 1,
@@ -139,10 +139,10 @@ export function EmailBuilder({
             return editor.getHtml() + "<style>" + editor.getCss() + "</style>";
           },
         },
-        [gjsBlocksBasic]: {},
-        [gjsPluginForms]: {},
-        [gjsComponentCountdown]: {},
-        [gjsPluginExport]: {
+        "gjs-blocks-basic": {},
+        "gjs-plugin-forms": {},
+        "gjs-component-countdown": {},
+        "gjs-plugin-export": {
           addExportBtn: true,
           btnLabel: "Export",
           filenamePfx: "grapesjs_template",
@@ -163,7 +163,7 @@ export function EmailBuilder({
               </html>`,
           },
         },
-        [gjsStyleGradient]: {},
+        "gjs-style-gradient": {},
       },
       canvas: {
         styles: [
