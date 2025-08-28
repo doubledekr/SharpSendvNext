@@ -63,132 +63,34 @@ export class MemStorage implements IStorage {
     this.abTests = new Map();
     this.emailIntegrations = new Map();
     this.analytics = new Map();
-    this.initializeData();
+    console.log("MemStorage initialized with NO MOCK DATA - only real integration data will be used");
   }
 
-  private initializeData() {
-    // Initialize with sample data for the SharpSend.io demo scenario
-    const currentDate = new Date();
-    
-    // Sample analytics data
-    const analyticsData: Analytics = {
-      id: randomUUID(),
-      date: currentDate,
-      totalSubscribers: 47842,
-      engagementRate: "34.7",
-      churnRate: "2.1",
-      monthlyRevenue: "89450.00",
-      revenueGrowth: "23.8"
-    };
-    this.analytics.set(analyticsData.id, analyticsData);
-
-    // Sample email integrations
-    const mailchimpIntegration: EmailIntegration = {
-      id: randomUUID(),
-      platform: "Mailchimp",
-      isConnected: true,
-      apiKey: "mc_key_xxx",
-      lastSync: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
-      campaignsSent: 284,
-      status: "active"
-    };
-    this.emailIntegrations.set(mailchimpIntegration.id, mailchimpIntegration);
-
-    const sendgridIntegration: EmailIntegration = {
-      id: randomUUID(),
-      platform: "SendGrid",
-      isConnected: true,
-      apiKey: "sg_key_xxx",
-      lastSync: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-      campaignsSent: 1200,
-      status: "active"
-    };
-    this.emailIntegrations.set(sendgridIntegration.id, sendgridIntegration);
-
-    // Sample subscribers
-    // No mock subscriber data - only real data from integrations
-
-    // Sample A/B test
-    const abTest: ABTest = {
-      id: randomUUID(),
-      name: "Subject Line Test: Market Update",
-      status: "active",
-      variantA: {
-        subjectLine: "Weekly Market Analysis: Key Trends to Watch",
-        content: "Traditional market analysis content...",
-        openRate: 28.4,
-        clickRate: 8.2,
-        sent: 12456
-      },
-      variantB: {
-        subjectLine: "🚨 URGENT: Market Shifts That Could Impact Your Portfolio",
-        content: "Urgent market update content...",
-        openRate: 34.7,
-        clickRate: 12.8,
-        sent: 12386
-      },
-      confidenceLevel: "95.2",
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
-    };
-    this.abTests.set(abTest.id, abTest);
-
-    // Sample campaigns
-    const campaignData = [
-      {
-        name: "Tesla Stock Analysis",
-        subjectLine: "TSLA Breakthrough: What Investors Need to Know",
-        content: "Deep dive into Tesla's latest developments...",
-        openRate: "47.2",
-        clickRate: "18.5",
-        revenue: "8500.00",
-        subscriberCount: 15000
-      },
-      {
-        name: "Crypto Market Update",
-        subjectLine: "Bitcoin Surge: Portfolio Implications",
-        content: "Cryptocurrency market analysis...",
-        openRate: "41.8",
-        clickRate: "15.2",
-        revenue: "6200.00",
-        subscriberCount: 18000
-      }
-    ];
-
-    campaignData.forEach(data => {
-      const campaign: Campaign = {
-        id: randomUUID(),
-        name: data.name,
-        subjectLine: data.subjectLine,
-        content: data.content,
-        sentAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date within last 30 days
-        openRate: data.openRate,
-        clickRate: data.clickRate,
-        revenue: data.revenue,
-        subscriberCount: data.subscriberCount
-      };
-      this.campaigns.set(campaign.id, campaign);
-    });
-  }
-
-  // User methods
+  // Users
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    for (const user of this.users.values()) {
+      if (user.username === username) {
+        return user;
+      }
+    }
+    return undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async createUser(user: InsertUser): Promise<User> {
+    const newUser: User = {
+      id: randomUUID(),
+      createdAt: new Date(),
+      ...user
+    };
+    this.users.set(newUser.id, newUser);
+    return newUser;
   }
 
-  // Subscriber methods
+  // Subscribers - NO MOCK DATA
   async getSubscribers(): Promise<Subscriber[]> {
     return Array.from(this.subscribers.values());
   }
@@ -197,32 +99,29 @@ export class MemStorage implements IStorage {
     return this.subscribers.get(id);
   }
 
-  async createSubscriber(insertSubscriber: InsertSubscriber): Promise<Subscriber> {
-    const id = randomUUID();
-    const subscriber: Subscriber = {
-      ...insertSubscriber,
-      id,
-      joinedAt: new Date(),
-      isActive: true
+  async createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber> {
+    const newSubscriber: Subscriber = {
+      id: randomUUID(),
+      ...subscriber
     };
-    this.subscribers.set(id, subscriber);
-    return subscriber;
+    this.subscribers.set(newSubscriber.id, newSubscriber);
+    return newSubscriber;
   }
 
   async updateSubscriber(id: string, updates: Partial<Subscriber>): Promise<Subscriber | undefined> {
     const subscriber = this.subscribers.get(id);
     if (!subscriber) return undefined;
-    
-    const updated = { ...subscriber, ...updates };
-    this.subscribers.set(id, updated);
-    return updated;
+
+    const updatedSubscriber = { ...subscriber, ...updates };
+    this.subscribers.set(id, updatedSubscriber);
+    return updatedSubscriber;
   }
 
   async deleteSubscriber(id: string): Promise<boolean> {
     return this.subscribers.delete(id);
   }
 
-  // Campaign methods
+  // Campaigns
   async getCampaigns(): Promise<Campaign[]> {
     return Array.from(this.campaigns.values());
   }
@@ -231,18 +130,16 @@ export class MemStorage implements IStorage {
     return this.campaigns.get(id);
   }
 
-  async createCampaign(insertCampaign: InsertCampaign): Promise<Campaign> {
-    const id = randomUUID();
-    const campaign: Campaign = {
-      ...insertCampaign,
-      id,
-      sentAt: new Date()
+  async createCampaign(campaign: InsertCampaign): Promise<Campaign> {
+    const newCampaign: Campaign = {
+      id: randomUUID(),
+      ...campaign
     };
-    this.campaigns.set(id, campaign);
-    return campaign;
+    this.campaigns.set(newCampaign.id, newCampaign);
+    return newCampaign;
   }
 
-  // A/B Test methods
+  // A/B Tests
   async getABTests(): Promise<ABTest[]> {
     return Array.from(this.abTests.values());
   }
@@ -251,27 +148,25 @@ export class MemStorage implements IStorage {
     return this.abTests.get(id);
   }
 
-  async createABTest(insertABTest: InsertABTest): Promise<ABTest> {
-    const id = randomUUID();
-    const abTest: ABTest = {
-      ...insertABTest,
-      id,
-      createdAt: new Date()
+  async createABTest(test: InsertABTest): Promise<ABTest> {
+    const newTest: ABTest = {
+      id: randomUUID(),
+      ...test
     };
-    this.abTests.set(id, abTest);
-    return abTest;
+    this.abTests.set(newTest.id, newTest);
+    return newTest;
   }
 
   async updateABTest(id: string, updates: Partial<ABTest>): Promise<ABTest | undefined> {
-    const abTest = this.abTests.get(id);
-    if (!abTest) return undefined;
-    
-    const updated = { ...abTest, ...updates };
-    this.abTests.set(id, updated);
-    return updated;
+    const test = this.abTests.get(id);
+    if (!test) return undefined;
+
+    const updatedTest = { ...test, ...updates };
+    this.abTests.set(id, updatedTest);
+    return updatedTest;
   }
 
-  // Email Integration methods
+  // Email Integrations
   async getEmailIntegrations(): Promise<EmailIntegration[]> {
     return Array.from(this.emailIntegrations.values());
   }
@@ -280,37 +175,35 @@ export class MemStorage implements IStorage {
     return this.emailIntegrations.get(id);
   }
 
-  async createEmailIntegration(insertIntegration: InsertEmailIntegration): Promise<EmailIntegration> {
-    const id = randomUUID();
-    const integration: EmailIntegration = {
-      ...insertIntegration,
-      id,
-      lastSync: new Date()
+  async createEmailIntegration(integration: InsertEmailIntegration): Promise<EmailIntegration> {
+    const newIntegration: EmailIntegration = {
+      id: randomUUID(),
+      ...integration
     };
-    this.emailIntegrations.set(id, integration);
-    return integration;
+    this.emailIntegrations.set(newIntegration.id, newIntegration);
+    return newIntegration;
   }
 
   async updateEmailIntegration(id: string, updates: Partial<EmailIntegration>): Promise<EmailIntegration | undefined> {
     const integration = this.emailIntegrations.get(id);
     if (!integration) return undefined;
-    
-    const updated = { ...integration, ...updates };
-    this.emailIntegrations.set(id, updated);
-    return updated;
+
+    const updatedIntegration = { ...integration, ...updates };
+    this.emailIntegrations.set(id, updatedIntegration);
+    return updatedIntegration;
   }
 
-  // Analytics methods
+  // Analytics - NO MOCK DATA
   async getAnalytics(): Promise<Analytics[]> {
     return Array.from(this.analytics.values());
   }
 
   async getLatestAnalytics(): Promise<Analytics | undefined> {
     const analytics = Array.from(this.analytics.values());
-    return analytics.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+    if (analytics.length === 0) return undefined;
+    
+    return analytics.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
   }
 }
 
-import { DatabaseStorage } from "./db-storage";
-
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
