@@ -609,9 +609,25 @@ router.post("/api/integrations/:id/sync", async (req, res) => {
       stats = platformStats[platformId] || platformStats.default;
     }
 
-    // Update integration with synced data
+    // Update integration with synced data both in memory and database
     integration.lastSync = new Date().toISOString();
     integration.stats = stats;
+
+    // Also update the database integration record
+    try {
+      const publisherId = req.headers['x-publisher-id'] || 'demo-publisher-id';
+      await db.update(integrations)
+        .set({ 
+          stats,
+          lastSync: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(integrations.id, id));
+      
+      console.log(`Updated integration stats in database: ${stats.subscribers} subscribers, ${stats.campaigns} campaigns`);
+    } catch (dbError) {
+      console.error("Failed to update integration in database:", dbError);
+    }
 
     res.json({
       success: true,
