@@ -36,7 +36,8 @@ import {
   Pause,
   X,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  Edit
 } from 'lucide-react';
 
 interface Assignment {
@@ -107,6 +108,106 @@ function AssignmentCopywriterFlow() {
     subjects: string[];
     contents: string[];
   }>({ subjects: [], contents: [] });
+
+  // New variation management system
+  const [variations, setVariations] = useState({
+    master: {
+      subject: '',
+      content: '',
+      isActive: true
+    },
+    variations: {
+      '1': { segment: 'growth_investors', subject: '', content: '', exists: false, segmentName: 'Growth Investors' },
+      '2': { segment: 'day_traders', subject: '', content: '', exists: false, segmentName: 'Day Traders' },
+      '3': { segment: 'income_focused', subject: '', content: '', exists: false, segmentName: 'Income Focused' },
+      '4': { segment: 'conservative', subject: '', content: '', exists: false, segmentName: 'Conservative Investors' },
+      '5': { segment: 'crypto', subject: '', content: '', exists: false, segmentName: 'Crypto Enthusiasts' }
+    }
+  });
+
+  const [currentView, setCurrentView] = useState('M'); // M, 1, 2, 3, 4, 5
+  const [generatingVariations, setGeneratingVariations] = useState(false);
+
+  // Navigation button configuration
+  const navigationButtons = [
+    { id: 'M', label: 'M', type: 'master', tooltip: 'Master Email (Base Content)' },
+    { id: '1', label: '1', type: 'variation', segment: 'growth_investors', tooltip: 'Growth Investors' },
+    { id: '2', label: '2', type: 'variation', segment: 'day_traders', tooltip: 'Day Traders' },
+    { id: '3', label: '3', type: 'variation', segment: 'income_focused', tooltip: 'Income Focused' },
+    { id: '4', label: '4', type: 'variation', segment: 'conservative', tooltip: 'Conservative Investors' },
+    { id: '5', label: '5', type: 'variation', segment: 'crypto', tooltip: 'Crypto Enthusiasts' }
+  ];
+
+  // Helper functions for the new navigation system
+  const handleNavigationClick = (buttonId: string) => {
+    setCurrentView(buttonId);
+  };
+
+  const getCurrentContent = () => {
+    if (currentView === 'M') {
+      return {
+        subject: subject,
+        content: content,
+        segment: 'Master Email'
+      };
+    }
+    
+    const variation = variations.variations[currentView];
+    if (!variation?.exists) {
+      return null;
+    }
+    
+    return {
+      subject: variation.subject,
+      content: variation.content,
+      segment: variation.segmentName
+    };
+  };
+
+  const generateVariations = async () => {
+    if (!subject || !content) return;
+    
+    setGeneratingVariations(true);
+    try {
+      const response = await apiRequest('/api/ai/generate-variations', {
+        method: 'POST',
+        body: {
+          masterSubject: subject,
+          masterContent: content,
+          assignmentId: assignmentId
+        }
+      });
+
+      if (response.success && response.variations) {
+        const newVariations = { ...variations };
+        response.variations.forEach((variation: any, index: number) => {
+          const varId = (index + 1).toString();
+          if (newVariations.variations[varId]) {
+            newVariations.variations[varId] = {
+              ...newVariations.variations[varId],
+              subject: variation.subject,
+              content: variation.content,
+              exists: true
+            };
+          }
+        });
+        setVariations(newVariations);
+        
+        toast({
+          title: "Variations Generated",
+          description: `Created ${response.variations.length} AI-powered variations`,
+        });
+      }
+    } catch (error) {
+      console.error('Error generating variations:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Could not generate variations. Please try again.",
+        variant: "destructive"
+      });
+    }
+    setGeneratingVariations(false);
+  };
 
   // Fetch assignment details
   const { data: assignment, isLoading } = useQuery<Assignment>({
@@ -453,12 +554,27 @@ function AssignmentCopywriterFlow() {
           </TabsList>
 
           {/* Write Content & Variations Tab */}
-          <TabsContent value="write" className="space-y-4">
+          <TabsContent value="write" className="space-y-6">
+            {/* Section Headers */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Master Email Content</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Write your master email - variations will be generated from this</p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Generated Variations</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">AI-generated segment-specific versions from master email</p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Master Email Editor */}
+              {/* Left Panel - Master Email Editor */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Master Email Content</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Edit className="w-5 h-5" />
+                    Master Email Content
+                  </CardTitle>
                   <CardDescription>Write your master email - variations will be generated from this</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -468,7 +584,13 @@ function AssignmentCopywriterFlow() {
                       id="subject"
                       placeholder="Enter compelling subject line..."
                       value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
+                      onChange={(e) => {
+                        setSubject(e.target.value);
+                        setVariations(prev => ({
+                          ...prev,
+                          master: { ...prev.master, subject: e.target.value }
+                        }));
+                      }}
                       data-testid="input-subject"
                     />
                   </div>
@@ -479,7 +601,13 @@ function AssignmentCopywriterFlow() {
                       id="content"
                       placeholder="Write your email content... Use [link text](url) for hyperlinks, **bold** for emphasis"
                       value={content}
-                      onChange={(e) => setContent(e.target.value)}
+                      onChange={(e) => {
+                        setContent(e.target.value);
+                        setVariations(prev => ({
+                          ...prev,
+                          master: { ...prev.master, content: e.target.value }
+                        }));
+                      }}
                       className="min-h-[300px]"
                       data-testid="textarea-content"
                     />
@@ -503,19 +631,6 @@ function AssignmentCopywriterFlow() {
                         <Sparkles className="w-4 h-4 mr-2" />
                       )}
                       AI Content Helper
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => generateSegmentVariations()}
-                      disabled={!subject || !content || isGenerating}
-                      data-testid="button-generate-ai"
-                    >
-                      {isGenerating ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Brain className="w-4 h-4 mr-2" />
-                      )}
-                      Generate AI Variations
                     </Button>
                     
                     <Button 
@@ -619,249 +734,141 @@ function AssignmentCopywriterFlow() {
                 </CardContent>
               </Card>
 
-              {/* Email Variations Side Panel */}
+              {/* Right Panel - Variations Preview */}
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>Generated Variations</CardTitle>
-                      <CardDescription>AI-generated segment-specific versions from master email</CardDescription>
-                    </div>
-                    {segments.length > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={generateSegmentVariations}
-                        disabled={isGenerating}
-                      >
-                        <RefreshCw className="w-4 h-4 mr-1" />
-                        Regenerate
-                      </Button>
-                    )}
-                  </div>
+                  <CardTitle className="text-base">Variation Navigation</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {segments.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                      <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <p className="text-base">No variations generated yet</p>
-                      <p className="text-sm mt-2">Write master content and click "Generate AI Variations"</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Variation Navigation */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-1">
-                          {segments.map((_, index) => (
-                            <button
-                              key={index}
-                              onClick={() => setCurrentVariationIndex(index)}
-                              className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
-                                currentVariationIndex === index
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                              }`}
-                            >
-                              {index + 1}
-                            </button>
-                          ))}
+                <CardContent className="space-y-4">
+                  {/* Navigation Buttons */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {navigationButtons.map(button => {
+                      const isActive = currentView === button.id;
+                      const isAvailable = button.type === 'master' || variations.variations[button.id]?.exists;
+                      const isEmpty = button.type === 'variation' && !variations.variations[button.id]?.exists;
+                      
+                      return (
+                        <button
+                          key={button.id}
+                          className={`
+                            min-w-[40px] h-10 rounded border-2 font-semibold text-sm transition-all
+                            ${isActive 
+                              ? 'bg-blue-600 text-white border-blue-700' 
+                              : isAvailable 
+                                ? 'bg-gray-600 text-white border-gray-700 hover:bg-gray-700' 
+                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                            }
+                          `}
+                          onClick={() => isAvailable && handleNavigationClick(button.id)}
+                          title={button.tooltip}
+                          disabled={isEmpty}
+                        >
+                          {button.label}
+                        </button>
+                      );
+                    })}
+                    <Button 
+                      onClick={generateVariations}
+                      disabled={generatingVariations || !subject || !content}
+                      className="bg-green-600 hover:bg-green-700"
+                      size="sm"
+                    >
+                      {generatingVariations ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                          Generating...
+                        </>
+                      ) : (
+                        '+ Generate'
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Current View Indicator */}
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Currently Viewing: {getCurrentContent()?.segment || 'Master Email'}
+                  </div>
+
+                  {/* Email Preview */}
+                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-800 min-h-[300px]">
+                    {getCurrentContent() ? (
+                      <>
+                        <div className="text-sm text-gray-500 mb-3 pb-3 border-b">
+                          <div>From: publisher@example.com</div>
+                          <div>Subject: {getCurrentContent()?.subject || 'Your subject line will appear here'}</div>
                         </div>
-                        <div className="text-sm text-gray-600">
-                          {currentVariationIndex + 1} of {segments.length}
+                        
+                        <div 
+                          className="text-sm text-gray-800 dark:text-gray-200 space-y-2"
+                          dangerouslySetInnerHTML={{
+                            __html: getCurrentContent()?.content ? renderMarkdownContent(getCurrentContent()!.content) : '<span class="text-gray-400">Your email content will appear here...</span>'
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-400">
+                        <div className="text-center">
+                          <FileText className="w-8 h-8 mx-auto mb-2" />
+                          <p>No content available for this variation</p>
+                          <p className="text-xs mt-1">Generate variations to see content here</p>
                         </div>
                       </div>
+                    )}
+                  </div>
 
-                      {/* Current Variation Display */}
-                      {segments[currentVariationIndex] && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-base">{segments[currentVariationIndex].segmentName}</h4>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                <Users className="w-3 h-3 mr-1" />
-                                {segments[currentVariationIndex].estimatedRecipients.toLocaleString()}
-                              </Badge>
-                              <Badge className="bg-green-500 text-white text-xs">
-                                AI: {segments[currentVariationIndex].aiScore?.toFixed(0) || 92}%
-                              </Badge>
-                            </div>
-                          </div>
+                  {/* Segment Info */}
+                  {currentView !== 'M' && variations.variations[currentView]?.exists && (
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        <span>Segment: {variations.variations[currentView]?.segmentName}</span>
+                      </div>
+                      <div className="text-xs mt-1">Recipients: Estimated 2,500-5,000 subscribers</div>
+                    </div>
+                  )}
 
-                          <p className="text-sm text-gray-600">{segments[currentVariationIndex].segmentCriteria}</p>
+                  {/* Preview Actions */}
+                  <div className="flex gap-2 pt-2 border-t">
+                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                      📱 Mobile
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                      🖥️ Desktop
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                      📧 Test
+                    </Button>
+                  </div>
 
-                          {/* Editable Variation Fields */}
-                          <div className="space-y-3">
-                            <div>
-                              <Label className="text-sm font-medium">Variation Subject:</Label>
-                              <Input
-                                value={segments[currentVariationIndex].subjectLine}
-                                onChange={(e) => {
-                                  const newSegments = [...segments];
-                                  newSegments[currentVariationIndex].subjectLine = e.target.value;
-                                  setSegments(newSegments);
-                                }}
-                                className="text-sm mt-1"
-                              />
-                            </div>
-
-                            <div>
-                              <Label className="text-sm font-medium">Variation Content:</Label>
-                              <Textarea
-                                value={segments[currentVariationIndex].content}
-                                onChange={(e) => {
-                                  const newSegments = [...segments];
-                                  newSegments[currentVariationIndex].content = e.target.value;
-                                  setSegments(newSegments);
-                                }}
-                                className="h-32 mt-1 resize-none"
-                              />
-                            </div>
-
-                            {/* Variation Preview */}
-                            <Card className="bg-gray-50">
-                              <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">Variation Preview</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <div className="border rounded p-3 bg-white">
-                                  <div className="text-xs text-gray-500 mb-2 pb-2 border-b">
-                                    <div>From: publisher@example.com</div>
-                                    <div>Subject: {segments[currentVariationIndex].subjectLine}</div>
-                                  </div>
-                                  
-                                  <div 
-                                    className="text-xs text-gray-800 space-y-1 max-h-32 overflow-y-auto"
-                                    dangerouslySetInnerHTML={{
-                                      __html: renderMarkdownContent(segments[currentVariationIndex].content)
-                                    }}
-                                  />
-                                </div>
-                                
-                                <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
-                                  <div className="flex items-center gap-1">
-                                    <Eye className="w-3 h-3" />
-                                    <span>Pixel: {segments[currentVariationIndex].pixelId}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <CheckCircle className="w-3 h-3 text-green-500" />
-                                    <span>Tracking Ready</span>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </div>
-
-                          {/* Navigation Controls */}
-                          <div className="flex items-center justify-between pt-2 border-t">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentVariationIndex(Math.max(0, currentVariationIndex - 1))}
-                              disabled={currentVariationIndex === 0}
-                            >
-                              <ArrowLeft className="w-4 h-4 mr-1" />
-                              Previous
-                            </Button>
-                            
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="checkbox"
-                                id={segments[currentVariationIndex].id}
-                                checked={selectedSegments.includes(segments[currentVariationIndex].id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedSegments([...selectedSegments, segments[currentVariationIndex].id]);
-                                  } else {
-                                    setSelectedSegments(selectedSegments.filter(id => id !== segments[currentVariationIndex].id));
-                                  }
-                                }}
-                                className="w-4 h-4"
-                              />
-                              <Label htmlFor={segments[currentVariationIndex].id} className="text-sm cursor-pointer">
-                                Select for sending
-                              </Label>
-                            </div>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentVariationIndex(Math.min(segments.length - 1, currentVariationIndex + 1))}
-                              disabled={currentVariationIndex === segments.length - 1}
-                            >
-                              Next
-                              <ArrowRight className="w-4 h-4 ml-1" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                  {/* Generate Variations Button for bottom */}
+                  {segments.length === 0 && (
+                    <div className="pt-4 border-t">
+                      <Button 
+                        onClick={() => generateSegmentVariations()}
+                        disabled={!subject || !content || isGenerating}
+                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                        data-testid="button-generate-variations"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Generating AI Variations...
+                          </>
+                        ) : (
+                          <>
+                            <Brain className="w-4 h-4 mr-2" />
+                            🧠 Generate AI Variations
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-xs text-gray-500 text-center mt-2">
+                        Creates 5 personalized variations for different investor segments
+                      </p>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </div>
-
-            {/* Send Options */}
-            {segments.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Send Options</CardTitle>
-                  <CardDescription>Configure sending schedule for selected variations</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Send Time</Label>
-                      <Select value={scheduledTime} onValueChange={setScheduledTime}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose send time..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="immediate">Send Immediately</SelectItem>
-                          <SelectItem value="optimal">Optimal Time (AI Suggested)</SelectItem>
-                          <SelectItem value="custom">Custom Date & Time</SelectItem>
-                          <SelectItem value="draft">Save as Draft</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      
-                      {scheduledTime === 'custom' && (
-                        <Input
-                          type="datetime-local"
-                          value={customDateTime}
-                          onChange={(e) => setCustomDateTime(e.target.value)}
-                          min={new Date().toISOString().slice(0, 16)}
-                        />
-                      )}
-                      
-                      {scheduledTime === 'optimal' && (
-                        <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                          AI suggests: Tomorrow at 9:15 AM EST (based on subscriber patterns)
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-end">
-                      <Button 
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={segments.length === 0 || isSending || (scheduledTime === 'custom' && !customDateTime)}
-                        className="bg-green-600 hover:bg-green-700"
-                        data-testid="button-send-queue"
-                      >
-                        {isSending ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : scheduledTime === 'draft' ? (
-                          <Save className="w-4 h-4 mr-2" />
-                        ) : (
-                          <Send className="w-4 h-4 mr-2" />
-                        )}
-                        {scheduledTime === 'draft' ? 'Save to Drafts' : 
-                         scheduledTime === 'immediate' ? 'Send Now' : 
-                         'Add to Queue'} ({selectedSegments.length || segments.length})
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
 
           {/* Email Preview Stack Tab */}
