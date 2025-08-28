@@ -1,51 +1,8 @@
+# SharpSend Replit.md
+
 ## Overview
 
-SharpSend is a multi-tenant AI-powered newsletter personalization platform designed for financial publishers. It offers publisher-specific subdomains, automated pixel management, and comprehensive workflow tools for content planning and approvals. The platform provides a unified dashboard for subscriber management, AI-powered content generation, A/B testing, performance analysis, and revenue impact calculation. It integrates with various email marketing services and uses advanced analytics to optimize content and engagement. The business vision is a B2B SaaS model aiming for scalable growth through AI-driven personalization, email fatigue management, real-time market event integration, and a hierarchical tracking pixel system. It includes advanced email intelligence features like a Smart Pixel Engine with context-aware tracking and behavioral predictions, an AI-powered segmentation engine, and a real-time behavioral intelligence loop.
-
-## Recent Changes (January 2025 - Latest Updates)
-- **COMPLETED: Eliminated ALL Mock Data Sources and Demo Functionality (January 28, 2025)** - Successfully located and eliminated all mock data sources causing "8 subscribers" display issue. Deleted mock analytics record from database (total_subscribers = 8), removed ALL demo files, routes, and functionality permanently. Fixed import errors and storage calculation issues. Platform now displays ONLY authentic Customer.io integration data (41 subscribers when connected) or 0 when no integrations are connected. Complete elimination of demo modules, mock data, and fake analytics achieved.
-- **COMPLETED: Enhanced Customer.io Integration with Full Bidirectional API Support (January 28, 2025)** - Completely rebuilt Customer.io integration based on official API documentation to support full bidirectional data flow. Updated configuration to require App API Key (Bearer token for data retrieval/campaigns), Site ID + Track API Key (Basic auth for customer events), and Region selection (US/EU endpoints). Added comprehensive API endpoints for reading segments, creating campaigns from assignments, and syncing customer profiles. Integration now supports the complete workflow: reading Customer.io segments into SharpSend → creating assignments with segment targeting → triggering Customer.io campaigns → syncing engagement data back. Implementation includes regional endpoint routing, proper authentication methods, and error handling for both App API and Track API functionality.
-- **COMPLETED: Fixed Campaign Creation Date Parsing Issue (January 28, 2025)** - Resolved critical "Invalid time value" error that was preventing campaign creation via "Add to Send Queue" functionality. The issue was caused by improper date handling when scheduledTime="immediate" was multiplied with numeric values, creating invalid Date objects. Implemented comprehensive parseScheduledTime helper function that properly handles immediate scheduling, custom date times, and numeric minute offsets. Fixed date parsing in both database inserts and response objects. Campaign workflow from Assignment → Send Queue → Broadcasting is now fully functional.
-- **COMPLETED: AI-Enhanced Assignment Creation from News Articles (January 28, 2025)** - Implemented comprehensive AI-powered assignment creation system that automatically analyzes news article URLs and populates assignment forms with intelligent content suggestions. Created new AIEnhancedAssignmentForm component with OpenAI integration that fetches article content, generates titles, descriptions, objectives, angles, and key points. Enhanced market intelligence dashboard to use AI analysis for creating assignments directly from finance news opportunities. System supports URL content analysis, AI suggestion preview, and form auto-population with graceful fallback handling.
-- **COMPLETED: Enhanced Segment Variations with Graceful Selection Interface (January 28, 2025)** - Fixed segment variations API endpoint routing issue and implemented graceful segment selection system. Added comprehensive pre-generation preview showing available target segments (Growth Investors, Conservative Investors, Day Traders, Crypto Enthusiasts) with color-coded indicators. Enhanced segment variations with detailed criteria descriptions and improved selection tracking. Created unified "Generate Segment Variations" button with proper content validation and loading states.
-- **COMPLETED: Streamlined Write Content Interface with Rich Text Editor (January 28, 2025)** - Completely removed variations system from Write Content tab per user feedback, focusing exclusively on master email creation. Implemented comprehensive rich text editor with formatting toolbar including bold, italic, links, lists, quotes, alignment controls, and font selection. Added split-screen layout with master email editor on left and real-time preview on right. Fixed ampersand display issues and removed markdown headers (##) from AI content suggestions. Set email preview on white background for better readability. Enhanced text visibility in AI suggestions with proper color contrast.
-- **COMPLETED: Enhanced Assignment Interface with AI Content Helper and Email Variations Stack (January 27, 2025)** - Successfully implemented complete enhanced copywriter workflow with AI-powered content generation and clickable variations stack. Updated routing to use AssignmentCopywriterFlow.tsx component instead of basic copywriter-assignment.tsx, providing users with AI Content Helper for intelligent subject lines and email content, plus Email Variations Preview Stack with interactive stacked cards, visual depth effects, and navigation controls. All syntax and JSX structure issues resolved, server running successfully with full feature integration.
-- Enhanced market sentiment component to allow creating assignments directly from opportunities
-- Added "Create Assignment" functionality to all proactive campaign suggestions
-- Implemented clickable news headlines and external link buttons for article access
-- Added tooltips and improved UX for opening referenced news articles
-- Integrated assignment creation dialog with market context preservation
-- Fixed AI-detected segments to only show for demo accounts (demo-user-id)
-- Removed local mock data from auto-segmentation component - now uses only API data
-- Fixed `/api/segments` endpoint in routes-segments.ts to return empty array for all accounts
-- Removed duplicate segmentsRoutes mounting in server/routes.ts to prevent routing conflicts
-- All segment-related endpoints now properly return empty data for non-demo accounts
-- Added clickable links to market intelligence dashboard news articles with external link icons
-- Removed "vNext" from all SharpSend branding across the platform (navigation, onboarding, documentation)
-- Created `/api/market-news` endpoint that fetches real news from MarketAux API when configured
-- Updated Market Sentiment and Market Intelligence Dashboard components to fetch news from API endpoint
-- Fixed MarketAux API integration by removing problematic date parameter - now successfully fetches real-time financial news
-- News articles now display actual MarketAux data with working article URLs when API keys are configured
-- System properly handles missing API keys and provides graceful fallback behavior
-- Successfully integrated real-time news feed showing articles from sources like pymnts.com, argaam.com, businessinsider.com
-- Fixed critical assignment creation bug by adding auto-generated UUID defaults to assignments table
-- Implemented complete assignment review workflow with approval requests automatically created when status changes to "review"
-- Enhanced approvals system to sync assignment status when approved/rejected through review queue
-- Added publisher-specific CDN access control ensuring proper multi-tenant isolation for image assets
-- **Implemented real URL content analysis with OpenAI integration** - System now fetches actual article content, analyzes it with AI, and generates tailored assignment suggestions based on specific article details rather than generic templates
-- Enhanced web scraping with robust error handling and intelligent fallbacks using URL structure analysis
-- Fixed character length constraints for assignment angle (max 120 chars) and objective (max 150 chars) fields
-- **RESOLVED assignment workflow issues** - Fixed PATCH route for assignment updates to work for both authenticated publisher access and shareable link copywriter access, ensuring proper assignment status transitions from creation to review queue
-- **Enhanced Assignment Creation Workflow (5-Step Process)** - Upgraded assignment creation from 3 to 5 steps:
-  - Step 1: Core Content (Title, Objective, Angle)
-  - Step 2: Content Details (Key Points, CTA)
-  - Step 3: Target Segments (NEW) - Select audience segments with subscriber counts
-  - Step 4: Collaboration & Review (NEW) - Assign reviewers with roles and deadlines
-  - Step 5: Project Settings (Type, Priority, Due Date)
-- **Unified Assignment-to-Broadcast Pipeline** - Integrated complete workflow from assignment creation to broadcast management
-- **Enhanced Dashboard with Status Overview** - Added 5-stage status cards (Draft, In Review, Approved, Queued, Sent) with color-coded indicators
-- **Database Schema Updates** - Added enhanced workflow fields: targetSegments, emailPlatform, reviewers, reviewDeadline, reviewNotes, autoGenerateVariations, workflowStage, progressPercentage, broadcastSettings
-- **Automatic Review Workflow** - When reviewers are assigned, assignments automatically move to "In Review" status with progress tracking
+SharpSend is a multi-tenant AI-powered newsletter personalization platform for financial publishers. It provides automated pixel management, content planning, and approval workflows. Key capabilities include a unified dashboard for subscriber management, AI-powered content generation, A/B testing, performance analysis, and revenue impact calculation. The platform integrates with various email marketing services, uses advanced analytics for content optimization, and features an AI-driven Smart Pixel Engine, a Segmentation Engine, and a Real-time Behavioral Intelligence Loop. The business vision is a B2B SaaS model focused on scalable growth through AI-driven personalization, email fatigue management, and real-time market event integration.
 
 ## User Preferences
 
@@ -55,19 +12,19 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend
 
-The frontend is a React 18 SPA using TypeScript, Wouter for routing, Vite for building, Radix UI with shadcn/ui for components, and Tailwind CSS for styling. State management uses TanStack Query, and forms use React Hook Form with Zod validation.
+The frontend is a React 18 SPA built with TypeScript, using Wouter for routing, Vite for bundling, Radix UI with shadcn/ui for components, and Tailwind CSS for styling. State management is handled by TanStack Query, and forms utilize React Hook Form with Zod validation.
 
 ### Backend
 
-The backend is a Node.js Express.js REST API, written in TypeScript. It utilizes Drizzle ORM with PostgreSQL for type-safe database operations and includes custom middleware for logging and error handling. Key backend services include the Smart Pixel Engine, Segmentation Engine, and Intelligence Loop for AI-powered features.
+The backend is a Node.js Express.js REST API, written in TypeScript. It employs Drizzle ORM with PostgreSQL for type-safe database operations and includes custom middleware for logging and error handling. Core backend services encompass the Smart Pixel Engine, Segmentation Engine, and Intelligence Loop, facilitating AI-powered features.
 
 ### Data Storage
 
-PostgreSQL, hosted on Neon Database, is the primary data store. Drizzle ORM handles database interactions and migrations, with Zod schemas for validation and type generation.
+PostgreSQL, hosted on Neon Database, serves as the primary data store. Drizzle ORM manages database interactions and migrations, with Zod schemas used for validation and type generation.
 
 ### Data Architecture
 
-The platform integrates data from its proprietary pixel tracking system (tracking opens, clicks, page visits, purchases, device/location data), email platform APIs (subscriber counts, metrics), and payment system integrations (transaction data, revenue attribution). Core data models include Users, Subscribers, Campaigns, A/B Tests, Email Integrations, and Analytics. SharpSend Intelligence models capture pixel events, behavioral predictions, segment definitions, and mappings.
+The platform integrates data from its proprietary pixel tracking system (opens, clicks, page visits, device/location), email platform APIs (subscriber counts, metrics), and payment system integrations (transaction data, revenue attribution). Key data models include Users, Subscribers, Campaigns, A/B Tests, Email Integrations, and Analytics. SharpSend Intelligence models capture pixel events, behavioral predictions, segment definitions, and mappings.
 
 ### Authentication and Authorization
 
@@ -79,11 +36,11 @@ The frontend features a modular component structure with a multi-tab dashboard a
 
 ### System Design Choices
 
-The platform is multi-tenant with complete data isolation via subdomain-based routing, `publisher_id` filtering, isolated CDN paths, and tenant middleware. AI is used for cohort analysis, investment assessment, market intelligence, email content enhancement, volatility-based send optimization, live pricing, and email fatigue tracking. AI-Powered Publication Detection uses OpenAI GPT-4o for deep web analysis and content extraction. The Email Tracking & Attribution System includes hierarchical tracking control, conversion attribution, and GDPR compliance. A robust database environment strategy is in place with graceful error handling for duplicate constraints. The system has enhanced server startup processes, optimized health checks (sub-200ms response times), comprehensive process stability monitoring, and reliable demo login functionality across environments. UI consistency is maintained with standardized layouts and theme-aware components, and shareable link generation for assignments is robust.
+The platform supports multi-tenancy with complete data isolation through subdomain-based routing, `publisher_id` filtering, isolated CDN paths, and tenant middleware. AI is leveraged for cohort analysis, investment assessment, market intelligence, email content enhancement, volatility-based send optimization, live pricing, and email fatigue tracking. AI-Powered Publication Detection uses OpenAI GPT-4o for web content analysis. The Email Tracking & Attribution System includes hierarchical tracking control, conversion attribution, and GDPR compliance. Robust database environment strategies ensure graceful error handling, optimized server startup, and comprehensive process stability monitoring. UI consistency is maintained through standardized layouts and theme-aware components, and shareable link generation for assignments is supported. The assignment creation workflow is a 5-step process (Core Content, Content Details, Target Segments, Collaboration & Review, Project Settings) with an integrated assignment-to-broadcast pipeline and an enhanced dashboard status overview.
 
 ### Platform Integration Capabilities
 
-SharpSend integrates with 16+ email marketing platforms, offering core features like subscriber detection, template synchronization, image management, email sending, real-time event webhooks, two-way data sync, and analytics consolidation. Platform-specific strengths are leveraged for integrations (e.g., Mailchimp for e-commerce tracking, Iterable for real-time data feeds).
+SharpSend integrates with over 16 email marketing platforms, providing core functionalities such as subscriber detection, template synchronization, image management, email sending, real-time event webhooks, two-way data sync, and analytics consolidation.
 
 ## External Dependencies
 
@@ -94,11 +51,11 @@ SharpSend integrates with 16+ email marketing platforms, offering core features 
 
 ### Platform Integration APIs
 
-- **Iterable API**: Cross-channel messaging, advanced templates.
 - **Customer.io API**: Omnichannel messaging, behavioral triggers.
+- **Iterable API**: Cross-channel messaging, advanced templates.
 - **Keap API**: CRM, sales pipeline automation.
 
-### Email Service Integrations
+### Email Service Integrations (Examples)
 
 - **Mailchimp**: List management.
 - **ConvertKit**: Creator-focused email marketing.
@@ -122,6 +79,6 @@ SharpSend integrates with 16+ email marketing platforms, offering core features 
 
 ### AI and Financial Data APIs
 
-- **MarketAux**: Financial data.
-- **Polygon API**: Financial data.
+- **MarketAux**: Financial news data.
+- **Polygon API**: Financial market data.
 - **OpenAI GPT-4**: AI-powered email personalization and intelligence.
