@@ -238,6 +238,17 @@ const EMAIL_PLATFORMS = [
 // Mock connected integrations storage
 let connectedIntegrations: any[] = [];
 
+// Initialize with demo data if needed
+function initializeConnectedIntegrations() {
+  if (connectedIntegrations.length === 0) {
+    // Add any demo integrations that should persist
+    console.log('Initializing connected integrations storage...');
+  }
+}
+
+// Initialize on server start
+initializeConnectedIntegrations();
+
 // Get all available platforms
 router.get("/api/integrations/platforms", (req, res) => {
   try {
@@ -337,7 +348,20 @@ router.post("/api/integrations/connect", async (req, res) => {
       }
     };
 
-    connectedIntegrations.push(newIntegration);
+    // Check if integration already exists and update it instead of duplicating
+    const existingIndex = connectedIntegrations.findIndex(i => 
+      i.platformId === platformId && i.name === newIntegration.name
+    );
+    
+    if (existingIndex >= 0) {
+      connectedIntegrations[existingIndex] = newIntegration;
+      console.log(`Updated existing ${platform.name} integration`);
+    } else {
+      connectedIntegrations.push(newIntegration);
+      console.log(`Added new ${platform.name} integration to connected list`);
+    }
+
+    console.log(`Total connected integrations: ${connectedIntegrations.length}`);
 
     res.json({
       success: true,
