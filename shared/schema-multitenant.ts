@@ -265,6 +265,61 @@ export const drafts = pgTable("drafts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Phase 2: Broadcast Queue System
+export const broadcastQueue = pgTable("broadcast_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
+  assignmentId: varchar("assignment_id").notNull(),
+  title: text("title").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("ready"), // ready, scheduled, sending, sent, failed, cancelled
+  scheduledAt: timestamp("scheduled_at"),
+  sentAt: timestamp("sent_at"),
+  audienceCount: integer("audience_count").default(0),
+  segments: jsonb("segments").$type<Array<{
+    segmentId: string;
+    segmentName: string;
+    subscriberCount: number;
+    platform: string;
+  }>>(),
+  sendSettings: jsonb("send_settings").$type<{
+    sendType?: "immediate" | "scheduled" | "recurring";
+    timeZone?: string;
+    throttleRate?: number;
+    retrySettings?: {
+      maxRetries: number;
+      retryDelay: number;
+    };
+  }>(),
+  abTestConfig: jsonb("ab_test_config").$type<{
+    enabled: boolean;
+    testId?: string;
+    variants?: Array<{
+      name: string;
+      percentage: number;
+      content: any;
+    }>;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Broadcast send logs for tracking
+export const broadcastSendLogs = pgTable("broadcast_send_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
+  broadcastId: varchar("broadcast_id").notNull().references(() => broadcastQueue.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 50 }).notNull(), // started, progress, completed, failed
+  message: text("message"),
+  details: jsonb("details").$type<{
+    totalRecipients?: number;
+    sent?: number;
+    failed?: number;
+    bounced?: number;
+    error?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const sendQueue = pgTable("send_queue", {
   id: varchar("id", { length: 255 }).primaryKey(),
   publisherId: varchar("publisher_id", { length: 255 }).notNull(),
@@ -337,6 +392,12 @@ export type PixelTracking = typeof pixelTracking.$inferSelect;
 export type InsertPixelTracking = typeof pixelTracking.$inferInsert;
 export type EmailMetric = typeof emailMetrics.$inferSelect;
 export type InsertEmailMetric = typeof emailMetrics.$inferInsert;
+
+// Phase 2: Broadcast Queue Types
+export type BroadcastQueueItem = typeof broadcastQueue.$inferSelect;
+export type InsertBroadcastQueueItem = typeof broadcastQueue.$inferInsert;
+export type BroadcastSendLog = typeof broadcastSendLogs.$inferSelect;
+export type InsertBroadcastSendLog = typeof broadcastSendLogs.$inferInsert;
 
 // Insert schemas
 export const insertPublisherSchema = createInsertSchema(publishers).pick({
@@ -447,6 +508,27 @@ export const insertEmailAssignmentSchema = createInsertSchema(emailAssignments).
   dueDate: true,
 });
 
+// Phase 2: Broadcast Queue Insert Schemas
+export const insertBroadcastQueueSchema = createInsertSchema(broadcastQueue).pick({
+  publisherId: true,
+  assignmentId: true,
+  title: true,
+  status: true,
+  scheduledAt: true,
+  audienceCount: true,
+  segments: true,
+  sendSettings: true,
+  abTestConfig: true,
+});
+
+export const insertBroadcastSendLogSchema = createInsertSchema(broadcastSendLogs).pick({
+  publisherId: true,
+  broadcastId: true,
+  status: true,
+  message: true,
+  details: true,
+});
+
 // Types
 export type InsertPublisher = z.infer<typeof insertPublisherSchema>;
 export type Publisher = typeof publishers.$inferSelect;
@@ -479,6 +561,13 @@ export type CampaignProject = typeof campaignProjects.$inferSelect;
 
 export type InsertEmailAssignment = z.infer<typeof insertEmailAssignmentSchema>;
 export type EmailAssignment = typeof emailAssignments.$inferSelect;
+
+// Phase 2: Broadcast Queue Zod Types
+export type InsertBroadcastQueue = z.infer<typeof insertBroadcastQueueSchema>;
+export type BroadcastQueue = typeof broadcastQueue.$inferSelect;
+
+export type InsertBroadcastSendLogZod = z.infer<typeof insertBroadcastSendLogSchema>;
+export type BroadcastSendLogType = typeof broadcastSendLogs.$inferSelect;
 
 export type Analytics = typeof analytics.$inferSelect;
 

@@ -15,6 +15,7 @@ import { registerSendQueueRoutes } from "./routes-send-queue";
 import assignmentRoutes from "./routes-assignments";
 import approvalsRoutes from "./routes-approvals";
 import segmentsRoutes from "./routes-segments";
+import broadcastRoutes from "./routes-broadcast";
 import emailGenerationRoutes from "./routes-email-generation";
 import assetRoutes from "./routes-assets";
 import opportunityRoutes from "./routes-opportunities";
@@ -975,6 +976,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.use(approvalsRoutes);
+  // Phase 2: Broadcast Queue Routes
+  app.use("/api/broadcast-queue", broadcastRoutes);
   // Removed duplicate segmentsRoutes - it's already mounted below
   app.use(emailGenerationRoutes);
   app.use(imageTemplateRoutes);

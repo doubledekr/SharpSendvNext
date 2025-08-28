@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image, ThumbsUp, ThumbsDown, MessageCircle, XCircle } from "lucide-react";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image, ThumbsUp, ThumbsDown, MessageCircle, XCircle, Send } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -496,6 +496,35 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
       toast({
         title: "Request Failed",
         description: "Unable to request changes. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Phase 2: Add to Broadcast Queue Mutation
+  const addToBroadcastQueueMutation = useMutation({
+    mutationFn: async (data: {
+      assignmentId: string;
+      assignmentTitle: string;
+      priority: "high" | "medium" | "low";
+      emailSubject: string;
+      audienceCount: number;
+    }) => {
+      const response = await apiRequest("POST", "/api/broadcast-queue", data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/broadcast-queue"] });
+      toast({
+        title: "Added to Broadcast Queue",
+        description: "Assignment is now queued for broadcasting.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Add to Queue",
+        description: error.message || "Unable to add assignment to broadcast queue.",
         variant: "destructive",
       });
     }
@@ -1589,6 +1618,29 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                                   </span>
                                 )}
                               </div>
+                            )}
+
+                            {/* Phase 2: Add to Broadcast Queue Button for Approved Assignments */}
+                            {assignment.status === "approved" && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  addToBroadcastQueueMutation.mutate({
+                                    assignmentId: assignment.id,
+                                    assignmentTitle: assignment.title,
+                                    priority: assignment.priority as "high" | "medium" | "low",
+                                    emailSubject: assignment.title,
+                                    audienceCount: 1000
+                                  });
+                                }}
+                                disabled={addToBroadcastQueueMutation.isPending}
+                                className="text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                                data-testid={`button-add-to-broadcast-${assignment.id}`}
+                              >
+                                <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                Add to Broadcast Queue
+                              </Button>
                             )}
 
                             {assignment.status === "completed" && (

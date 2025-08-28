@@ -17,7 +17,8 @@ import {
   LogOut,
   ChevronDown,
   Info,
-  Zap
+  Zap,
+  Send
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,12 @@ export function MasterNavigation() {
       href: "/assignments",
       icon: FileText,
       description: "Content Planning & Reviews"
+    },
+    {
+      title: "Broadcast Queue",
+      href: "/broadcast-queue",
+      icon: Mail,
+      description: "Email Send Management"
     },
     {
       title: "Segments",
