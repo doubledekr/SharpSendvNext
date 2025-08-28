@@ -65,6 +65,13 @@ interface VNextAssignmentDeskProps {
   autoOpenDialog?: boolean;
 }
 
+// Function to open assignment form from external components
+export function openAssignmentFormWithUrl(url: string) {
+  window.dispatchEvent(new CustomEvent('openAssignmentForm', { 
+    detail: { url } 
+  }));
+}
+
 export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssignmentDeskProps = {}) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
