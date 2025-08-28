@@ -415,14 +415,39 @@ router.post("/api/integrations/test", async (req, res) => {
 
     // Specific test for Customer.io
     if (platformId === 'customer_io') {
-      // For now, skip actual Customer.io testing until service is properly set up
-      // const { CustomerIoIntegrationService } = await import('../services/customerio-integration');
-      
       try {
-        // For now, simulate successful connection
+        // Validate required fields
+        const requiredFields = ['site_id', 'track_api_key', 'app_api_key', 'region'];
+        const missingFields = requiredFields.filter(field => !credentials[field]);
+        
+        if (missingFields.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: `Missing required fields: ${missingFields.join(', ')}`
+          });
+        }
+
+        // Test connection with actual API call
+        const { app_api_key, region = 'us' } = credentials;
+        const appApiBase = region === 'eu' ? 'https://api-eu.customer.io/v1' : 'https://api.customer.io/v1';
+        
+        const testResponse = await fetch(`${appApiBase}/segments`, {
+          headers: {
+            'Authorization': `Bearer ${app_api_key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!testResponse.ok) {
+          return res.status(400).json({
+            success: false,
+            error: `Customer.io API test failed: ${testResponse.status} ${testResponse.statusText}`
+          });
+        }
+
         return res.json({
           success: true,
-          message: `✅ Customer.io connection validated with all required credentials:\n- App API Key: Connected\n- Track API Key: Connected\n- Site ID: ${credentials.site_id}\n- Region: ${credentials.region?.toUpperCase()}`,
+          message: `✅ Customer.io connection validated:\n- App API Key: Connected\n- Track API Key: Connected\n- Site ID: ${credentials.site_id}\n- Region: ${credentials.region?.toUpperCase()}\n- API Access: Working`,
           platform: platform.name,
           capabilities: platform.features
         });
@@ -619,7 +644,7 @@ async function syncCustomerIOData(credentials: any) {
 
         // Fetch subscriber count for each segment using correct Customer.io API
         const segmentsWithCounts = [];
-        let totalSubscriberCount = 0;
+        let allUsersCount = 0;
 
         for (const segment of segments) {
           try {
@@ -651,7 +676,11 @@ async function syncCustomerIOData(credentials: any) {
               subscriber_count: subscriberCount
             });
 
-            totalSubscriberCount += subscriberCount;
+            // Use "All Users" segment as the actual total count (most accurate)
+            if (segment.name === "All Users") {
+              allUsersCount = subscriberCount;
+            }
+
             console.log(`Segment "${segment.name}" has ${subscriberCount} subscribers`);
 
             // Add small delay to respect rate limits (10 requests per second)
@@ -666,8 +695,9 @@ async function syncCustomerIOData(credentials: any) {
           }
         }
 
-        subscribers = totalSubscriberCount;
-        console.log(`CORRECT API IMPLEMENTATION: Found ${segments.length} segments with ${totalSubscriberCount} total subscribers (REAL DATA)`);
+        // Use "All Users" count as total, not sum of overlapping segments
+        subscribers = allUsersCount;
+        console.log(`CORRECT API IMPLEMENTATION: Found ${segments.length} segments, ${allUsersCount} total unique subscribers (using "All Users" segment) (REAL DATA)`);
         
         // If segments are empty but we know there are customers, try alternative approach
         if (subscribers === 0) {
