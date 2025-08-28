@@ -1180,42 +1180,6 @@ router.post("/api/assignments/:id/generate-variations", async (req, res) => {
   }
 });
 
-// Push email variations to send queue
-router.post("/api/assignments/:id/send-queue", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { variations, scheduledTime, customDateTime } = req.body;
-    
-    // For demo - simulate pushing to queue
-    console.log(`Pushing ${variations?.length || 0} variations to send queue for assignment ${id}`);
-    console.log(`Schedule: ${scheduledTime}, Custom time: ${customDateTime}`);
-    
-    // Simulate queue processing
-    const queueEntries = variations?.map((v: any) => ({
-      id: `queue-${v.id}-${Date.now()}`,
-      assignmentId: id,
-      variationId: v.id,
-      segmentName: v.segmentName,
-      status: 'queued',
-      scheduledTime: scheduledTime === 'immediate' ? new Date() : 
-                     scheduledTime === 'optimal' ? new Date(Date.now() + 24 * 60 * 60 * 1000) :
-                     scheduledTime === 'custom' && customDateTime ? new Date(customDateTime) :
-                     null,
-      pixelId: v.pixelId,
-      platform: 'Mailchimp'
-    })) || [];
-    
-    res.json({ 
-      success: true, 
-      message: `${queueEntries.length} email variations added to send queue`,
-      queueEntries 
-    });
-  } catch (error) {
-    console.error("Error pushing to send queue:", error);
-    res.status(500).json({ error: "Failed to push to send queue" });
-  }
-});
-
 // Add assignment to send queue with segment variations and pixel tracking
 router.post("/api/assignments/:id/send-queue", async (req, res) => {
   try {
@@ -1224,15 +1188,14 @@ router.post("/api/assignments/:id/send-queue", async (req, res) => {
     const publisherId = "demo-publisher";
 
     // Get the assignment 
+    console.log(`Looking for assignment ${id} with publisher ${publisherId}`);
     const [assignment] = await db
       .select()
       .from(assignments)
-      .where(and(
-        eq(assignments.id, id),
-        eq(assignments.publisherId, publisherId)
-      ))
+      .where(eq(assignments.id, id))
       .limit(1);
 
+    console.log(`Found assignment:`, assignment);
     if (!assignment) {
       return res.status(404).json({ error: "Assignment not found" });
     }
