@@ -298,22 +298,35 @@ class TenantAwareStorage {
         eq(integrations.status, 'connected')
       ));
 
+    console.log(`[Analytics] Found ${connectedIntegrations.length} connected integrations for publisher ${publisherId}`);
+
     let totalSubscribers = 0;
     let openRate = "0";
     let clickRate = "0";
     let engagementRate = "0";
+    let totalCampaigns = 0;
 
     // Use integration data if available
     if (connectedIntegrations.length > 0) {
-      const integration = connectedIntegrations[0];
-      if (integration.stats && typeof integration.stats === 'object') {
-        const stats = integration.stats as any;
-        totalSubscribers = stats.subscribers || 0;
-        openRate = ((stats.openRate || 0) * 100).toFixed(1);
-        clickRate = ((stats.clickRate || 0) * 100).toFixed(1);
-        engagementRate = openRate; // Use open rate as engagement rate
+      for (const integration of connectedIntegrations) {
+        console.log(`[Analytics] Processing integration: ${integration.name}, stats:`, integration.stats);
+        if (integration.stats && typeof integration.stats === 'object') {
+          const stats = integration.stats as any;
+          totalSubscribers += stats.subscribers || 0;
+          totalCampaigns += stats.campaigns || 0;
+          
+          // Convert decimal rates to percentages
+          const integrationOpenRate = ((stats.openRate || 0) * 100);
+          const integrationClickRate = ((stats.clickRate || 0) * 100);
+          
+          openRate = integrationOpenRate.toFixed(1);
+          clickRate = integrationClickRate.toFixed(1);
+          engagementRate = integrationOpenRate.toFixed(1); // Use open rate as engagement rate
+        }
       }
+      console.log(`[Analytics] Calculated totals: ${totalSubscribers} subscribers, ${openRate}% open rate, ${clickRate}% click rate`);
     } else {
+      console.log(`[Analytics] No connected integrations found, checking local database`);
       // Fallback to local database count (should be 0 for real accounts)
       const subscriberCount = await db
         .select({ count: sql<number>`count(*)` })
@@ -321,6 +334,7 @@ class TenantAwareStorage {
         .where(and(eq(subscribers.publisherId, publisherId), eq(subscribers.isActive, true)));
       
       totalSubscribers = subscriberCount[0]?.count || 0;
+      console.log(`[Analytics] Local database subscribers: ${totalSubscribers}`);
     }
     
     // Calculate revenue based on real subscriber count

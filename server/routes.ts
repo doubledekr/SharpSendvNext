@@ -866,77 +866,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Legacy routes for backward compatibility (these will be deprecated)
   
-  // Enhanced analytics endpoint with real integration data from database
-  app.get("/api/analytics", async (req, res) => {
-    try {
-      const publisherId = req.headers['x-publisher-id'] as string;
-      
-      // Import integrations table to get real subscriber data from database
-      const { integrations } = await import("@shared/schema");
-      const { db } = await import("./db");
-      const { eq } = await import("drizzle-orm");
-      
-      // Load integrations from database
-      const dbIntegrations = await db.select()
-        .from(integrations)
-        .where(eq(integrations.publisherId, publisherId as string));
-      
-      // Calculate real totals from connected integrations
-      let totalSubscribers = 0;
-      let totalCampaigns = 0;
-      let avgOpenRate = 0;
-      let avgClickRate = 0;
-      let activeIntegrations = 0;
-      
-      for (const integration of dbIntegrations) {
-        if (integration.stats && integration.status === 'connected') {
-          totalSubscribers += integration.stats.subscribers || 0;
-          totalCampaigns += integration.stats.campaigns || 0;
-          if (integration.stats.openRate) avgOpenRate += parseFloat(integration.stats.openRate.toString());
-          if (integration.stats.clickRate) avgClickRate += parseFloat(integration.stats.clickRate.toString());
-          activeIntegrations++;
-        }
-      }
-      
-      // Calculate averages
-      if (activeIntegrations > 0) {
-        avgOpenRate = avgOpenRate / activeIntegrations;
-        avgClickRate = avgClickRate / activeIntegrations;
-      }
-      
-      // Calculate engagement rate and revenue based on real data
-      const engagementRate = avgOpenRate > 0 ? (avgOpenRate * 100).toFixed(1) : "0.0";
-      const monthlyRevenue = totalSubscribers > 0 ? (totalSubscribers * 2.5).toFixed(2) : "0.00";
-      
-      console.log(`Analytics calculated: ${totalSubscribers} subscribers, ${activeIntegrations} active integrations, ${engagementRate}% engagement`);
-      
-      // Only return real data from connected integrations - no mock values
-      const analytics = {
-        totalSubscribers: totalSubscribers,
-        engagementRate: engagementRate,
-        churnRate: totalSubscribers > 0 ? "2.1" : "0.0",
-        monthlyRevenue: monthlyRevenue,
-        revenueGrowth: totalSubscribers > 0 ? "15.3" : "0.0",
-        openRate: avgOpenRate > 0 ? (avgOpenRate * 100).toFixed(1) : "0.0",
-        clickRate: avgClickRate > 0 ? (avgClickRate * 100).toFixed(1) : "0.0", 
-        unsubscribeRate: totalSubscribers > 0 ? "0.8" : "0.0",
-        date: new Date().toISOString(),
-        // Additional fields for dashboard - only real data
-        assignments: { total: totalCampaigns },
-        revenue: { monthly: parseFloat(monthlyRevenue) },
-        pixelStats: { active: activeIntegrations },
-        alerts: { fatigue: 0 },
-        segments: { new: 0 },
-        marketSentiment: totalSubscribers > 0 ? 0.15 : 0
-      };
-      res.json(analytics);
-    } catch (error) {
-      console.error('Analytics error:', error);
-      res.status(500).json({ error: "Failed to fetch analytics" });
-    }
-  });
+  // REMOVED: Legacy analytics endpoint - now handled by multitenant routes
+  // The /api/analytics endpoint is handled by routes-multitenant.ts which properly uses integration data
 
-  // Legacy personalization endpoints for demo
+  // Legacy personalization endpoints
   app.post("/api/personalize/subject-line", async (req, res) => {
     try {
       const { baseSubjectLine, segment } = req.body;
