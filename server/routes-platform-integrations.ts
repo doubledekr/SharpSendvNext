@@ -9,6 +9,72 @@ import { eq, and } from 'drizzle-orm';
 const router = Router();
 
 /**
+ * Get available platforms - MUST be before /:publisherId route
+ */
+router.get('/platforms', (req, res) => {
+  try {
+    const platforms = [
+      {
+        id: "customerio",
+        name: "Customer.io",
+        description: "Omnichannel messaging with behavioral triggers",
+        category: "Marketing Automation",
+        logo: "https://customer.io/assets/images/logos/customerio-logo.svg",
+        authType: "api_key",
+        fields: [
+          { name: "siteId", label: "Site ID", type: "text", required: true },
+          { name: "apiKey", label: "API Key", type: "password", required: true },
+          { name: "region", label: "Region", type: "select", options: ["us", "eu"], required: true }
+        ],
+        status: "available",
+        features: ["Behavioral triggers", "In-app messaging", "Journey automation", "Event tracking", "Data retrieval"]
+      },
+      {
+        id: "iterable",
+        name: "Iterable",
+        description: "Cross-channel messaging with advanced segmentation",
+        category: "Marketing Automation",
+        logo: "https://iterable.com/wp-content/uploads/2020/07/iterable-logo.svg",
+        authType: "api_key",
+        fields: [
+          { name: "apiKey", label: "API Key", type: "password", required: true },
+          { name: "region", label: "Region", type: "select", options: ["us", "eu"], required: true }
+        ],
+        status: "available",
+        features: ["Cross-channel", "Real-time", "Templates", "Journey Builder"]
+      },
+      {
+        id: "keap",
+        name: "Keap",
+        description: "CRM with sales pipeline and marketing automation",
+        category: "CRM + Marketing",
+        logo: "https://keap.com/images/keap-logo.svg",
+        authType: "oauth",
+        fields: [
+          { name: "clientId", label: "Client ID", type: "text", required: true },
+          { name: "clientSecret", label: "Client Secret", type: "password", required: true },
+          { name: "accessToken", label: "Access Token", type: "password", required: true }
+        ],
+        status: "available",
+        features: ["CRM", "Sales pipeline", "E-commerce", "Marketing automation"]
+      }
+    ];
+
+    res.json({
+      success: true,
+      platforms,
+      categories: Array.from(new Set(platforms.map(p => p.category)))
+    });
+  } catch (error) {
+    console.error('Error fetching platforms:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch platforms'
+    });
+  }
+});
+
+/**
  * Iterable Integration Routes
  */
 router.post('/iterable/test-connection', async (req, res) => {
@@ -476,6 +542,7 @@ router.get('/keap/:publisherId/contacts', async (req, res) => {
     });
   }
 });
+
 
 /**
  * General Integration Management Routes
