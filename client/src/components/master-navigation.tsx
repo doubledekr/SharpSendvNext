@@ -71,13 +71,7 @@ export function MasterNavigation() {
       title: "Assignments",
       href: "/assignments",
       icon: FileText,
-      description: "Content Planning"
-    },
-    {
-      title: "Approvals",
-      href: "/approvals",
-      icon: CheckCircle,
-      description: "Review Workflows"
+      description: "Content Planning & Reviews"
     },
     {
       title: "Segments",

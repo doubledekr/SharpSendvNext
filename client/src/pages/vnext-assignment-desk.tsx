@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image } from "lucide-react";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image, ThumbsUp, ThumbsDown, MessageCircle, XCircle } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -43,6 +43,18 @@ interface Assignment {
   workflowStage?: string;
   progressPercentage?: number;
   broadcastSettings?: { sendTime?: string; pixelTracking?: boolean; campaignIds?: string[] };
+  // Phase 1: Approval System Fields
+  approvalStatus?: string; // pending, approved, rejected, changes_requested
+  approvalComments?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  approvalHistory?: Array<{
+    action: string;
+    userId: string;
+    userName: string;
+    comments?: string;
+    timestamp: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -424,6 +436,70 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
       generateShareableLinkMutation.mutate(assignment.id);
     }
   };
+
+  // Phase 1: Approval System Mutations
+  const approveAssignmentMutation = useMutation({
+    mutationFn: async ({ id, comments }: { id: string; comments?: string }) => {
+      const response = await apiRequest("POST", `/api/assignments/${id}/approve`, { comments });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+      toast({
+        title: "Assignment Approved",
+        description: "Assignment has been approved and is ready for broadcast.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Approval Failed",
+        description: "Unable to approve assignment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const rejectAssignmentMutation = useMutation({
+    mutationFn: async ({ id, comments }: { id: string; comments: string }) => {
+      const response = await apiRequest("POST", `/api/assignments/${id}/reject`, { comments });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+      toast({
+        title: "Assignment Rejected",
+        description: "Assignment has been rejected and sent back for revision.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Rejection Failed",
+        description: "Unable to reject assignment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const requestChangesAssignmentMutation = useMutation({
+    mutationFn: async ({ id, comments }: { id: string; comments: string }) => {
+      const response = await apiRequest("POST", `/api/assignments/${id}/request-changes`, { comments });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+      toast({
+        title: "Changes Requested",
+        description: "Assignment has been sent back with change requests.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Request Failed",
+        description: "Unable to request changes. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -1413,6 +1489,108 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                                 Submit for Review
                               </Button>
                             )}
+                            {/* Phase 1: Approval System - Review Status Actions */}
+                            {assignment.status === "review" && (
+                              <div className="flex flex-wrap gap-1 sm:gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    approveAssignmentMutation.mutate({ id: assignment.id });
+                                  }}
+                                  disabled={approveAssignmentMutation.isPending}
+                                  className="text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white"
+                                  data-testid={`button-approve-${assignment.id}`}
+                                >
+                                  <ThumbsUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const comments = prompt("Please provide rejection reason:");
+                                    if (comments && comments.trim()) {
+                                      rejectAssignmentMutation.mutate({ id: assignment.id, comments });
+                                    }
+                                  }}
+                                  disabled={rejectAssignmentMutation.isPending}
+                                  className="text-xs sm:text-sm border-red-200 text-red-600 hover:bg-red-50"
+                                  data-testid={`button-reject-${assignment.id}`}
+                                >
+                                  <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const comments = prompt("Please provide specific changes needed:");
+                                    if (comments && comments.trim()) {
+                                      requestChangesAssignmentMutation.mutate({ id: assignment.id, comments });
+                                    }
+                                  }}
+                                  disabled={requestChangesAssignmentMutation.isPending}
+                                  className="text-xs sm:text-sm border-yellow-200 text-yellow-600 hover:bg-yellow-50"
+                                  data-testid={`button-request-changes-${assignment.id}`}
+                                >
+                                  <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Changes
+                                </Button>
+                              </div>
+                            )}
+                            
+                            {/* Show approval status for approved/rejected assignments */}
+                            {(assignment.status === "approved" || assignment.approvalStatus === "approved") && (
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-green-100 text-green-800 text-xs">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Approved
+                                </Badge>
+                                {assignment.approvalComments && (
+                                  <span className="text-xs text-muted-foreground" title={assignment.approvalComments}>
+                                    "{assignment.approvalComments.length > 30 ? 
+                                      assignment.approvalComments.substring(0, 30) + "..." : 
+                                      assignment.approvalComments}"
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
+                            {assignment.approvalStatus === "rejected" && (
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-red-100 text-red-800 text-xs">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Rejected
+                                </Badge>
+                                {assignment.approvalComments && (
+                                  <span className="text-xs text-muted-foreground" title={assignment.approvalComments}>
+                                    "{assignment.approvalComments.length > 30 ? 
+                                      assignment.approvalComments.substring(0, 30) + "..." : 
+                                      assignment.approvalComments}"
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
+                            {assignment.approvalStatus === "changes_requested" && (
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                                  <MessageCircle className="h-3 w-3 mr-1" />
+                                  Changes Requested
+                                </Badge>
+                                {assignment.approvalComments && (
+                                  <span className="text-xs text-muted-foreground" title={assignment.approvalComments}>
+                                    "{assignment.approvalComments.length > 30 ? 
+                                      assignment.approvalComments.substring(0, 30) + "..." : 
+                                      assignment.approvalComments}"
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
                             {assignment.status === "completed" && (
                               <Button
                                 size="sm"

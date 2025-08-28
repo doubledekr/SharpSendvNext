@@ -236,6 +236,18 @@ export const assignments = pgTable("assignments", {
   assignmentLink: varchar("assignment_link", { length: 500 }),
   copywriterId: varchar("copywriter_id", { length: 255 }),
   marketContext: jsonb("market_context"),
+  // Phase 1: Approval System Fields
+  approvalStatus: varchar("approval_status", { length: 50 }).default("pending"), // pending, approved, rejected, changes_requested
+  approvalComments: text("approval_comments"),
+  approvedBy: varchar("approved_by", { length: 255 }),
+  approvedAt: timestamp("approved_at"),
+  approvalHistory: jsonb("approval_history").$type<Array<{
+    action: string;
+    userId: string;
+    userName: string;
+    comments?: string;
+    timestamp: string;
+  }>>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

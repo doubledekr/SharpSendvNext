@@ -311,6 +311,155 @@ router.patch("/api/assignments/:id", async (req, res) => {
   }
 });
 
+// Phase 1: Approval System API Endpoints
+
+// Approve assignment
+router.post("/api/assignments/:id/approve", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { comments } = req.body;
+    
+    // Check if assignment exists
+    const [existingAssignment] = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.id, id))
+      .limit(1);
+    
+    if (!existingAssignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+    
+    // Add to approval history
+    const currentHistory = existingAssignment.approvalHistory || [];
+    const newHistoryEntry = {
+      action: "approved",
+      userId: "current-user", // TODO: Get from auth context
+      userName: "Current User", // TODO: Get from auth context
+      comments: comments || "",
+      timestamp: new Date().toISOString()
+    };
+    
+    // Update assignment with approval
+    const [updated] = await db
+      .update(assignments)
+      .set({
+        approvalStatus: "approved",
+        approvalComments: comments,
+        approvedBy: "current-user", // TODO: Get from auth context
+        approvedAt: new Date(),
+        approvalHistory: [...currentHistory, newHistoryEntry],
+        status: "approved", // Also update main status
+        updatedAt: new Date(),
+      })
+      .where(eq(assignments.id, id))
+      .returning();
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("Error approving assignment:", error);
+    res.status(500).json({ error: "Failed to approve assignment" });
+  }
+});
+
+// Reject assignment
+router.post("/api/assignments/:id/reject", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { comments } = req.body;
+    
+    // Check if assignment exists
+    const [existingAssignment] = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.id, id))
+      .limit(1);
+    
+    if (!existingAssignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+    
+    // Add to approval history
+    const currentHistory = existingAssignment.approvalHistory || [];
+    const newHistoryEntry = {
+      action: "rejected",
+      userId: "current-user", // TODO: Get from auth context
+      userName: "Current User", // TODO: Get from auth context
+      comments: comments || "",
+      timestamp: new Date().toISOString()
+    };
+    
+    // Update assignment with rejection
+    const [updated] = await db
+      .update(assignments)
+      .set({
+        approvalStatus: "rejected",
+        approvalComments: comments,
+        approvalHistory: [...currentHistory, newHistoryEntry],
+        status: "revision_requested", // Set status to revision_requested
+        updatedAt: new Date(),
+      })
+      .where(eq(assignments.id, id))
+      .returning();
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("Error rejecting assignment:", error);
+    res.status(500).json({ error: "Failed to reject assignment" });
+  }
+});
+
+// Request changes for assignment
+router.post("/api/assignments/:id/request-changes", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { comments } = req.body;
+    
+    if (!comments || comments.trim().length === 0) {
+      return res.status(400).json({ error: "Comments are required when requesting changes" });
+    }
+    
+    // Check if assignment exists
+    const [existingAssignment] = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.id, id))
+      .limit(1);
+    
+    if (!existingAssignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+    
+    // Add to approval history
+    const currentHistory = existingAssignment.approvalHistory || [];
+    const newHistoryEntry = {
+      action: "changes_requested",
+      userId: "current-user", // TODO: Get from auth context
+      userName: "Current User", // TODO: Get from auth context
+      comments: comments,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Update assignment with change request
+    const [updated] = await db
+      .update(assignments)
+      .set({
+        approvalStatus: "changes_requested",
+        approvalComments: comments,
+        approvalHistory: [...currentHistory, newHistoryEntry],
+        status: "revision_requested", // Set status to revision_requested
+        updatedAt: new Date(),
+      })
+      .where(eq(assignments.id, id))
+      .returning();
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("Error requesting changes for assignment:", error);
+    res.status(500).json({ error: "Failed to request changes for assignment" });
+  }
+});
+
 // Public route to view assignment by shareable slug (no auth required)
 router.get("/api/public/assignment/:slug", async (req, res) => {
   try {
