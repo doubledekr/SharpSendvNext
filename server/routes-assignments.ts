@@ -798,7 +798,7 @@ router.get("/api/cdn/assets", async (req, res) => {
 });
 
 // Generate email variations for approved assignment
-router.post("/api/assignments/:id/variations", async (req, res) => {
+router.post("/api/assignments/:id/generate-variations", async (req, res) => {
   try {
     const { id } = req.params;
     const publisherId = "demo-publisher";
@@ -817,21 +817,46 @@ router.post("/api/assignments/:id/variations", async (req, res) => {
       return res.status(404).json({ error: "Assignment not found" });
     }
     
+    // Get request body for master content
+    const { subject, content } = req.body;
+    
     // Simulate email variation generation for different segments
     const segments = [
-      { id: "growth-investors", name: "Growth Investors", description: "Focus on growth stocks and emerging markets" },
-      { id: "conservative-investors", name: "Conservative Investors", description: "Focus on stable, dividend-paying stocks" },
-      { id: "day-traders", name: "Day Traders", description: "Active traders looking for short-term opportunities" },
-      { id: "crypto-enthusiasts", name: "Crypto Enthusiasts", description: "Interested in cryptocurrency and digital assets" }
+      { 
+        id: "growth-investors", 
+        name: "Growth Investors", 
+        description: "Focus on growth stocks and emerging markets",
+        criteria: "Interested in high-growth companies, tech stocks, and emerging markets. Typically younger investors (25-45) with higher risk tolerance."
+      },
+      { 
+        id: "conservative-investors", 
+        name: "Conservative Investors", 
+        description: "Focus on stable, dividend-paying stocks",
+        criteria: "Prefer dividend stocks, blue-chip companies, and low-risk investments. Often pre-retirement or retired investors (45+)."
+      },
+      { 
+        id: "day-traders", 
+        name: "Day Traders", 
+        description: "Active traders looking for short-term opportunities",
+        criteria: "Active traders who make multiple trades daily. Looking for volatility, technical analysis, and quick profit opportunities."
+      },
+      { 
+        id: "crypto-enthusiasts", 
+        name: "Crypto Enthusiasts", 
+        description: "Interested in cryptocurrency and digital assets",
+        criteria: "Invested in cryptocurrencies, blockchain technology, and digital assets. Often tech-savvy millennials and Gen Z."
+      }
     ];
     
     const variations = segments.map(segment => ({
       id: `${id}-${segment.id}`,
       segmentId: segment.id,
       segmentName: segment.name,
-      subjectLine: generateSubjectLineForSegment(assignment.title, segment),
-      content: generateContentForSegment(assignment.content || assignment.description, segment),
-      estimatedReach: Math.floor(Math.random() * 5000) + 1000,
+      segmentCriteria: segment.criteria,
+      subjectLine: generateSubjectLineForSegment(subject || assignment.title, segment),
+      content: generateContentForSegment(content || assignment.content || assignment.description, segment),
+      estimatedRecipients: Math.floor(Math.random() * 5000) + 1000,
+      aiScore: Math.floor(Math.random() * 15) + 85, // 85-100% score
       createdAt: new Date().toISOString()
     }));
     
@@ -847,7 +872,7 @@ router.post("/api/assignments/:id/variations", async (req, res) => {
         eq(assignments.publisherId, publisherId)
       ));
     
-    res.json({ variations, message: "Email variations generated successfully" });
+    res.json(variations);
   } catch (error) {
     console.error("Error generating email variations:", error);
     res.status(500).json({ error: "Failed to generate email variations" });

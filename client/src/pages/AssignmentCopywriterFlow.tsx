@@ -806,19 +806,70 @@ Use the toolbar above for rich formatting options, or let AI help you create com
           <TabsContent value="segments" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Email Variations Preview Stack</CardTitle>
+                <CardTitle>Segment Selection & Email Variations</CardTitle>
                 <CardDescription>
-                  Click through different segment variations - preview them as a stack
+                  Generate and preview targeted email variations for different subscriber segments
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {segments.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No variations generated yet</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Write content and click "Generate AI Variations" to create segment-specific versions
-                    </p>
+                  <div className="space-y-6">
+                    <div className="text-center py-8">
+                      <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Ready to create segment variations</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Generate AI-powered email variations tailored to different subscriber segments
+                      </p>
+                    </div>
+
+                    {/* Generate Variations Button */}
+                    <div className="text-center">
+                      <Button 
+                        onClick={generateSegmentVariations}
+                        disabled={isGenerating || !subject || !content}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Generating Variations...
+                          </>
+                        ) : (
+                          <>
+                            <Users className="w-4 h-4 mr-2" />
+                            Generate Segment Variations
+                          </>
+                        )}
+                      </Button>
+                      {(!subject || !content) && (
+                        <p className="text-sm text-gray-500 mt-2">
+                          Complete the master email content to generate variations
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Preview Available Segments */}
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-medium text-gray-800 mb-3">Target Segments Available:</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-sm">Growth Investors</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span className="text-sm">Conservative Investors</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          <span className="text-sm">Day Traders</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <span className="text-sm">Crypto Enthusiasts</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -948,30 +999,43 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                     </div>
 
                     {/* Stack Navigation Controls */}
-                    <div className="flex items-center justify-center gap-4 pt-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentVariationIndex(Math.max(0, currentVariationIndex - 1))}
-                        disabled={currentVariationIndex === 0}
-                      >
-                        <ArrowLeft className="w-4 h-4 mr-1" />
-                        Previous
-                      </Button>
-                      
-                      <div className="text-sm text-gray-600 px-4">
-                        {segments[currentVariationIndex]?.segmentName}
+                    <div className="flex items-center justify-between pt-4">
+                      <div className="flex items-center gap-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentVariationIndex(Math.max(0, currentVariationIndex - 1))}
+                          disabled={currentVariationIndex === 0}
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-1" />
+                          Previous
+                        </Button>
+                        
+                        <div className="text-sm text-gray-600 px-4">
+                          {segments[currentVariationIndex]?.segmentName}
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentVariationIndex(Math.min(segments.length - 1, currentVariationIndex + 1))}
+                          disabled={currentVariationIndex === segments.length - 1}
+                        >
+                          Next
+                          <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
                       </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentVariationIndex(Math.min(segments.length - 1, currentVariationIndex + 1))}
-                        disabled={currentVariationIndex === segments.length - 1}
-                      >
-                        Next
-                        <ArrowRight className="w-4 h-4 ml-1" />
-                      </Button>
+
+                      {/* Selection Summary */}
+                      <div className="text-sm text-gray-600">
+                        {selectedSegments.length > 0 ? (
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                            {selectedSegments.length} segment{selectedSegments.length !== 1 ? 's' : ''} selected
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">No segments selected</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
