@@ -39,9 +39,9 @@ const EMAIL_PLATFORMS = [
     logo: "https://customer.io/assets/images/logos/customerio-logo.svg",
     authType: "api_key",
     fields: [
-      { name: "app_api_key", label: "App API Key (for data retrieval)", type: "password", required: true },
-      { name: "site_id", label: "Site ID (for event tracking)", type: "text", required: true },
-      { name: "track_secret_key", label: "Track Secret Key (for event tracking)", type: "password", required: true }
+      { name: "app_tracking_api_key", label: "App Tracking API Key", type: "password", required: true },
+      { name: "site_id", label: "Site ID", type: "text", required: true },
+      { name: "api_track_key", label: "API Track Key", type: "password", required: true }
     ],
     status: "available",
     features: ["Behavioral triggers", "In-app messaging", "Journey automation", "Event tracking", "Data retrieval"]
@@ -429,14 +429,14 @@ router.post("/api/integrations/:id/sync", async (req, res) => {
 
 // Customer.io API integration
 async function syncCustomerIOData(credentials: any) {
-  const { app_api_key, site_id, track_secret_key } = credentials;
+  const { app_tracking_api_key, site_id, api_track_key } = credentials;
   
-  if (!app_api_key) {
-    throw new Error("App API Key is required for data retrieval");
+  if (!app_tracking_api_key) {
+    throw new Error("App Tracking API Key is required for data retrieval");
   }
   
-  if (!site_id || !track_secret_key) {
-    throw new Error("Site ID and Track Secret Key are required for event tracking");
+  if (!site_id || !api_track_key) {
+    throw new Error("Site ID and API Track Key are required for event tracking");
   }
 
   try {
@@ -448,7 +448,7 @@ async function syncCustomerIOData(credentials: any) {
       // Get campaigns from App API - correct endpoint
       const campaignsResponse = await fetch(`https://api.customer.io/v1/campaigns`, {
         headers: {
-          'Authorization': `Bearer ${app_api_key}`,
+          'Authorization': `Bearer ${app_tracking_api_key}`,
           'Content-Type': 'application/json'
         }
       });
@@ -468,7 +468,7 @@ async function syncCustomerIOData(credentials: any) {
       // Get segments to estimate subscriber count
       const segmentsResponse = await fetch(`https://api.customer.io/v1/segments`, {
         headers: {
-          'Authorization': `Bearer ${app_api_key}`,
+          'Authorization': `Bearer ${app_tracking_api_key}`,
           'Content-Type': 'application/json'
         }
       });
@@ -520,7 +520,7 @@ async function syncCustomerIOData(credentials: any) {
 
     // Validate Track API connection (Track API is for sending events, not retrieving data)
     try {
-      const trackAuth = Buffer.from(`${site_id}:${track_secret_key}`).toString('base64');
+      const trackAuth = Buffer.from(`${site_id}:${api_track_key}`).toString('base64');
       
       // Track API doesn't have an auth endpoint, so we'll validate by attempting a minimal operation
       // Note: Track API is primarily for sending data, not retrieving counts
