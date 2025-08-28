@@ -42,11 +42,11 @@ export default function VNextDashboard() {
     retry: false,
   });
   
-  // Calculate real stats from fetched data
+  // Calculate real stats from fetched data - use analytics integration data
   const stats = {
-    totalSubscribers: subscribers?.length || 0,
+    totalSubscribers: analytics?.totalSubscribers || 0, // Use integration data instead of database subscribers
     engagementRate: analytics?.engagementRate || 0,
-    monthlyRevenue: analytics?.revenue?.monthly || 0,
+    monthlyRevenue: analytics?.revenue?.monthly || analytics?.monthlyRevenue || 0,
     totalAssignments: analytics?.assignments?.total || 0,
     pixelsActive: analytics?.pixelStats?.active || 0,
     fatigueAlerts: analytics?.alerts?.fatigue || 0,
