@@ -299,9 +299,6 @@ router.post("/api/integrations/connect", async (req, res) => {
     // Test connection first for Customer.io
     if (platformId === 'customer_io') {
       try {
-        // For now, skip actual Customer.io testing until service is properly set up
-        // const { CustomerIoIntegrationService } = await import('../services/customerio-integration');
-        
         // Validate that all required fields are provided
         const requiredFields = ['site_id', 'track_api_key', 'app_api_key', 'region'];
         const missingFields = requiredFields.filter(field => !credentials[field]);
@@ -319,6 +316,25 @@ router.post("/api/integrations/connect", async (req, res) => {
           app_api_key: credentials.app_api_key ? 'provided' : 'missing',
           region: credentials.region || 'missing'
         });
+
+        // Test actual connection to Customer.io
+        const { CustomerIoIntegrationService } = await import('../services/customerio-integration');
+        const service = new CustomerIoIntegrationService({
+          siteId: credentials.site_id,
+          trackApiKey: credentials.track_api_key,
+          appApiKey: credentials.app_api_key,
+          region: credentials.region
+        });
+
+        const connectionTest = await service.testConnection();
+        if (!connectionTest.success) {
+          return res.status(400).json({
+            success: false,
+            error: `Customer.io connection failed: ${connectionTest.message}`
+          });
+        }
+
+        console.log('Customer.io connection test passed:', connectionTest.message);
       } catch (error) {
         return res.status(400).json({
           success: false,
@@ -341,10 +357,10 @@ router.post("/api/integrations/connect", async (req, res) => {
       credentials: credentials, // Store actual credentials for API calls
       config: config || {},
       stats: {
-        subscribers: platformId === 'customer_io' ? 1250 : 0,
-        campaigns: platformId === 'customer_io' ? 45 : 0,
-        openRate: platformId === 'customer_io' ? '0.24' : '0',
-        clickRate: platformId === 'customer_io' ? '0.08' : '0'
+        subscribers: 0, // Will be populated by sync endpoint with real data
+        campaigns: 0,
+        openRate: '0.00',
+        clickRate: '0.00'
       }
     };
 
