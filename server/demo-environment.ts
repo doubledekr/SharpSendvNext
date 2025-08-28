@@ -3,7 +3,6 @@ import {
   publishers, 
   users, 
   subscribers, 
-  campaigns,
   abTests,
   emailIntegrations,
   analytics,

@@ -92,12 +92,6 @@ export function MasterNavigation() {
       description: "Multi-variant Tests"
     },
     {
-      title: "Campaigns",
-      href: "/campaigns",
-      icon: Mail,
-      description: "Email Campaigns"
-    },
-    {
       title: "Integrations",
       href: "/integrations",
       icon: Zap,

@@ -3,7 +3,6 @@ import { db } from "./database";
 import { 
   users, 
   subscribers, 
-  campaigns, 
   abTests, 
   emailIntegrations, 
   analytics,
@@ -11,8 +10,6 @@ import {
   type InsertUser, 
   type Subscriber, 
   type InsertSubscriber,
-  type Campaign,
-  type InsertCampaign,
   type ABTest,
   type InsertABTest,
   type EmailIntegration,
@@ -71,20 +68,7 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  // Campaigns
-  async getCampaigns(): Promise<Campaign[]> {
-    return await db.select().from(campaigns);
-  }
 
-  async getCampaign(id: string): Promise<Campaign | undefined> {
-    const result = await db.select().from(campaigns).where(eq(campaigns.id, id)).limit(1);
-    return result[0];
-  }
-
-  async createCampaign(campaign: InsertCampaign): Promise<Campaign> {
-    const result = await db.insert(campaigns).values(campaign).returning();
-    return result[0];
-  }
 
   // A/B Tests
   async getABTests(): Promise<ABTest[]> {

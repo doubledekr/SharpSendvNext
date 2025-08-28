@@ -9,7 +9,6 @@ import { cohortPersonalizationRoutes } from "./routes-cohort-personalization";
 import { emailOptimizationRoutes } from "./routes-email-optimization";
 import { brevoIntegrationRoutes } from "./routes-brevo-integration";
 import { contentManagementRoutes } from "./routes-content-management";
-import { campaignManagementRoutes } from "./routes-campaign-management";
 import { registerEmailPlatformRoutes } from "./routes-email-platforms";
 import imageTemplateRoutes from "./routes-images-templates";
 import { registerSendQueueRoutes } from "./routes-send-queue";
@@ -24,7 +23,6 @@ import integrationsRoutes from "./routes-integrations-simple";
 import { platformIntegrationsRoutes } from "./routes-platform-integrations";
 import { registerVNextRoutes } from "./routes-vnext";
 import { registerDemoRoutes } from "./routes-demo";
-import { registerCampaignRoutes } from "./routes-campaigns";
 import platformSendRoutes from "./routes-platform-send";
 import cohortsRoutes from "./routes-cohorts";
 import { sharpSendIntelligenceRoutes } from "./routes-sharpsend-intelligence";
@@ -875,12 +873,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/email-optimization", emailOptimizationRoutes);
   app.use("/api/brevo", brevoIntegrationRoutes);
   app.use("/api/content", contentManagementRoutes);
-  campaignManagementRoutes(app);
   registerEmailPlatformRoutes(app);
   registerSendQueueRoutes(app);
   registerVNextRoutes(app);
   registerDemoRoutes(app);
-  registerCampaignRoutes(app);
   app.use("/api/platform-send", platformSendRoutes);
   app.use(assignmentRoutes);
   

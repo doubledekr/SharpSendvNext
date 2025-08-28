@@ -5,7 +5,6 @@ import {
   publishers,
   users,
   subscribers,
-  campaigns,
   abTests,
   emailIntegrations,
   crmIntegrations,
@@ -14,7 +13,6 @@ import {
   type Publisher,
   type User,
   type Subscriber,
-  type Campaign,
   type ABTest,
   type EmailIntegration,
   type CrmIntegration,
@@ -23,7 +21,6 @@ import {
   type InsertPublisher,
   type InsertUser,
   type InsertSubscriber,
-  type InsertCampaign,
   type InsertABTest,
   type InsertEmailIntegration,
   type InsertCrmIntegration,
@@ -151,43 +148,7 @@ class TenantAwareStorage {
     return await db.insert(subscribers).values(subscriberData).returning();
   }
 
-  // Campaign operations (tenant-aware)
-  async createCampaign(data: InsertCampaign): Promise<Campaign> {
-    const [campaign] = await db.insert(campaigns).values(data).returning();
-    return campaign;
-  }
 
-  async getCampaigns(publisherId: string): Promise<Campaign[]> {
-    return await db
-      .select()
-      .from(campaigns)
-      .where(eq(campaigns.publisherId, publisherId))
-      .orderBy(desc(campaigns.createdAt));
-  }
-
-  async getCampaign(id: string, publisherId: string): Promise<Campaign | null> {
-    const [campaign] = await db
-      .select()
-      .from(campaigns)
-      .where(and(eq(campaigns.id, id), eq(campaigns.publisherId, publisherId)));
-    return campaign || null;
-  }
-
-  async updateCampaign(id: string, publisherId: string, updates: Partial<Campaign>): Promise<Campaign | null> {
-    const [campaign] = await db
-      .update(campaigns)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(and(eq(campaigns.id, id), eq(campaigns.publisherId, publisherId)))
-      .returning();
-    return campaign || null;
-  }
-
-  async deleteCampaign(id: string, publisherId: string): Promise<boolean> {
-    const result = await db
-      .delete(campaigns)
-      .where(and(eq(campaigns.id, id), eq(campaigns.publisherId, publisherId)));
-    return result.rowCount > 0;
-  }
 
   // A/B Test operations (tenant-aware)
   async createABTest(data: InsertABTest): Promise<ABTest> {

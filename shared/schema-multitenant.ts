@@ -67,34 +67,11 @@ export const subscribers = pgTable("subscribers", {
   tags: text("tags").array(),
 });
 
-// Campaigns table - now belongs to a publisher
-export const campaigns = pgTable("campaigns", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  type: text("type").notNull().default("marketing"), // marketing, editorial, fulfillment, etc
-  description: text("description"),
-  owner: varchar("owner"), // user id of campaign owner
-  subjectLine: text("subject_line"), // Optional - for backward compatibility
-  content: text("content"), // Optional - for backward compatibility
-  status: text("status").notNull().default("active"), // active, paused, completed, archived
-  scheduledAt: timestamp("scheduled_at"),
-  sentAt: timestamp("sent_at"),
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  openRate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
-  clickRate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
-  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
-  subscriberCount: integer("subscriber_count").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 // A/B Tests table - now belongs to a publisher
 export const abTests = pgTable("ab_tests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
-  campaignId: varchar("campaign_id").references(() => campaigns.id, { onDelete: "cascade" }),
+  assignmentId: varchar("assignment_id"), // Reference to assignments instead of campaigns
   name: text("name").notNull(),
   status: text("status").notNull().default("active"),
   variantA: jsonb("variant_a").$type<{
@@ -164,7 +141,7 @@ export const analytics = pgTable("analytics", {
 export const aiContentHistory = pgTable("ai_content_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   publisherId: varchar("publisher_id").notNull().references(() => publishers.id, { onDelete: "cascade" }),
-  campaignId: varchar("campaign_id").references(() => campaigns.id, { onDelete: "cascade" }),
+  assignmentId: varchar("assignment_id"), // Reference to assignments instead of campaigns
   prompt: text("prompt").notNull(),
   generatedContent: text("generated_content").notNull(),
   contentType: text("content_type").notNull(), // subject_line, body, personalization
@@ -379,25 +356,9 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).pick({
   tags: true,
 });
 
-export const insertCampaignSchema = createInsertSchema(campaigns).pick({
-  publisherId: true,
-  name: true,
-  type: true,
-  description: true,
-  owner: true,
-  status: true,
-  startDate: true,
-  endDate: true,
-}).partial({
-  description: true,
-  owner: true,
-  startDate: true,
-  endDate: true,
-});
-
 export const insertABTestSchema = createInsertSchema(abTests).pick({
   publisherId: true,
-  campaignId: true,
+  assignmentId: true,
   name: true,
   status: true,
   variantA: true,
@@ -484,8 +445,7 @@ export type User = typeof users.$inferSelect;
 export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
 export type Subscriber = typeof subscribers.$inferSelect;
 
-export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
-export type Campaign = typeof campaigns.$inferSelect;
+
 
 export type InsertABTest = z.infer<typeof insertABTestSchema>;
 export type ABTest = typeof abTests.$inferSelect;

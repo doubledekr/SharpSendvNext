@@ -12,7 +12,6 @@ import {
   insertPublisherSchema,
   insertUserSchema,
   insertSubscriberSchema,
-  insertCampaignSchema,
   insertABTestSchema,
   insertEmailIntegrationSchema,
   insertCrmIntegrationSchema,

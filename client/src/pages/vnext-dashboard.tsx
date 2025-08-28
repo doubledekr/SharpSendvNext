@@ -42,25 +42,19 @@ export default function VNextDashboard() {
     retry: false,
   });
   
-  // Fetch campaigns
-  const { data: campaigns, isLoading: campaignsLoading } = useQuery<any[]>({
-    queryKey: ["/api/campaigns"],
-    retry: false,
-  });
-  
   // Calculate real stats from fetched data
   const stats = {
     totalSubscribers: subscribers?.length || 0,
     engagementRate: analytics?.engagementRate || 0,
     monthlyRevenue: analytics?.revenue?.monthly || 0,
-    activeCampaigns: campaigns?.filter((c: any) => c.status === 'active')?.length || 0,
+    totalAssignments: analytics?.assignments?.total || 0,
     pixelsActive: analytics?.pixelStats?.active || 0,
     fatigueAlerts: analytics?.alerts?.fatigue || 0,
     newSegments: analytics?.segments?.new || 0,
     marketSentiment: analytics?.marketSentiment || 0
   };
   
-  const isLoading = analyticsLoading || subscribersLoading || campaignsLoading;
+  const isLoading = analyticsLoading || subscribersLoading;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -74,7 +68,7 @@ export default function VNextDashboard() {
         </div>
         <Button>
           <Zap className="h-4 w-4 mr-2" />
-          Quick Campaign
+          Create Assignment
         </Button>
       </div>
       
@@ -129,10 +123,10 @@ export default function VNextDashboard() {
         
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeCampaigns}</div>
+            <div className="text-2xl font-bold">{stats.totalAssignments}</div>
             <div className="flex gap-1 mt-2">
               <Badge variant="default" className="text-xs">{stats.pixelsActive} pixels</Badge>
               <Badge variant="secondary" className="text-xs">{stats.fatigueAlerts} alerts</Badge>
