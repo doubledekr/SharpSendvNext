@@ -74,6 +74,21 @@ interface SegmentVariation {
   aiScore: number;
 }
 
+interface QueueItem {
+  id: string;
+  subject: string;
+  recipientEmail: string;
+  recipientName: string;
+  status: string;
+  scheduledFor: string;
+  emailType: string;
+  metadata?: {
+    cohort?: string;
+    variationId?: string;
+    segmentName?: string;
+  };
+}
+
 interface EmailMetrics {
   sent: number;
   delivered: number;
@@ -399,6 +414,74 @@ function AssignmentCopywriterFlow() {
   });
 
   // Simulate real-time metrics updates
+  // Send Queue Display Component
+  const SendQueueDisplay = () => {
+    const { data: queueData, isLoading } = useQuery({
+      queryKey: ['/api/send-queue'],
+      refetchInterval: 5000, // Refresh every 5 seconds
+    });
+
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center p-4">
+          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+          Loading queue...
+        </div>
+      );
+    }
+
+    const queueItems = queueData?.data || [];
+
+    if (queueItems.length === 0) {
+      return (
+        <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+          <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500">No emails in send queue</p>
+          <p className="text-sm text-gray-400 mt-1">Add segment variations to start queueing emails</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {queueItems.map((item: QueueItem) => (
+          <div key={item.id} className="border rounded-lg p-4 bg-white dark:bg-gray-800">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant={item.emailType === 'assignment_master' ? 'default' : 'secondary'}>
+                    {item.metadata?.segmentName || item.metadata?.cohort || 'Master'}
+                  </Badge>
+                  <Badge variant="outline" className={
+                    item.status === 'pending' ? 'border-yellow-500 text-yellow-700' :
+                    item.status === 'sent' ? 'border-green-500 text-green-700' :
+                    item.status === 'failed' ? 'border-red-500 text-red-700' :
+                    'border-gray-500 text-gray-700'
+                  }>
+                    {item.status}
+                  </Badge>
+                </div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-1">{item.subject}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  To: {item.recipientName} ({item.recipientEmail})
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  Scheduled: {new Date(item.scheduledFor).toLocaleString()}
+                </p>
+              </div>
+              <div className="text-right">
+                <Clock className="w-4 h-4 text-gray-400 inline mr-1" />
+                <span className="text-xs text-gray-500">
+                  {new Date(item.scheduledFor) > new Date() ? 'Queued' : 'Processing'}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const simulateMetricsUpdates = () => {
     let openRate = 0;
     let clickRate = 0;
@@ -1149,6 +1232,117 @@ Use the toolbar above for rich formatting options, or let AI help you create com
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          {/* Send Queue Tab */}
+          <TabsContent value="queue" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="w-5 h-5" />
+                  Send Queue Management
+                </CardTitle>
+                <CardDescription>
+                  Schedule and manage email variations for sending
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Scheduling Options */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Schedule Send Time</h3>
+                  <Select value={scheduledTime.toString()} onValueChange={(value) => setScheduledTime(Number(value))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select send time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Send Immediately</SelectItem>
+                      <SelectItem value="5">Send in 5 minutes</SelectItem>
+                      <SelectItem value="15">Send in 15 minutes</SelectItem>
+                      <SelectItem value="30">Send in 30 minutes</SelectItem>
+                      <SelectItem value="60">Send in 1 hour</SelectItem>
+                      <SelectItem value="custom">Custom Date/Time</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {scheduledTime.toString() === 'custom' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="customDateTime">Custom Send Time</Label>
+                      <Input
+                        id="customDateTime"
+                        type="datetime-local"
+                        value={customDateTime}
+                        onChange={(e) => setCustomDateTime(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Current Queue Status */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Current Send Queue</h3>
+                  <SendQueueDisplay />
+                </div>
+
+                {/* Add to Queue Button */}
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    {selectedSegments.length > 0 ? (
+                      <span>{selectedSegments.length} segment variations + master email will be queued</span>
+                    ) : (
+                      <span>Master email will be queued (no specific segments selected)</span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => setShowConfirmDialog(true)}
+                    disabled={!subject || !content || isSending}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Adding to Queue...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Add to Send Queue
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tracking & Metrics Tab */}
+          <TabsContent value="tracking" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Email Performance Tracking
+                </CardTitle>
+                <CardDescription>
+                  Real-time analytics and performance metrics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{metrics.sent}</div>
+                    <div className="text-sm text-gray-600">Sent</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{metrics.opened}</div>
+                    <div className="text-sm text-gray-600">Opened</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">{metrics.clicked}</div>
+                    <div className="text-sm text-gray-600">Clicked</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
