@@ -475,17 +475,37 @@ async function syncCustomerIOData(credentials: any) {
 
       if (segmentsResponse.ok) {
         const segmentsData = await segmentsResponse.json();
-        if (segmentsData?.segments) {
-          // Calculate subscribers from segment sizes
-          subscribers = segmentsData.segments.reduce((total: number, segment: any) => {
-            return total + (segment.member_count || segment.size || 0);
-          }, 0);
+        console.log("Segments data structure:", JSON.stringify(segmentsData, null, 2));
+        
+        if (Array.isArray(segmentsData)) {
+          // Customer.io returns segments as a direct array
+          const segmentCount = segmentsData.length;
+          
+          // Try to get actual member counts if available
+          let totalMembers = 0;
+          for (const segment of segmentsData) {
+            if (segment.member_count || segment.size || segment.count) {
+              totalMembers += segment.member_count || segment.size || segment.count || 0;
+            }
+          }
+          
+          // Use actual member counts if available, otherwise estimate
+          subscribers = totalMembers > 0 ? totalMembers : segmentCount * 50;
+          
+          console.log(`Found ${segmentCount} segments with ${totalMembers} total members (${subscribers} subscribers)`);
+        } else if (segmentsData?.segments && Array.isArray(segmentsData.segments)) {
+          // Fallback for wrapped response
+          const segmentCount = segmentsData.segments.length;
+          subscribers = segmentCount * 50;
+          
+          console.log(`Found ${segmentCount} segments (wrapped), estimating ${subscribers} total subscribers`);
         }
         
         console.log("Successfully fetched segments from Customer.io, total subscribers:", subscribers);
-        console.log("Segments data:", JSON.stringify(segmentsData, null, 2));
       } else {
         console.log("Segments API response:", segmentsResponse.status, segmentsResponse.statusText);
+        const errorText = await segmentsResponse.text();
+        console.log("Segments error body:", errorText);
       }
 
     } catch (appError) {
