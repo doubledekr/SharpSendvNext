@@ -865,8 +865,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
   await registerMultiTenantRoutes(app);
-  // Enable real platform integrations (Customer.io, Iterable, Keap with actual API calls)
-  platformIntegrationsRoutes(app);
+  // Temporarily disabled to avoid route conflicts with integrationsRoutes
+  // platformIntegrationsRoutes(app);
   registerEmailRoutes(app);
   app.use("/api/ai", aiProcessingRoutes);
   registerAIContentHelperRoutes(app);
