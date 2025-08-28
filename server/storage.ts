@@ -106,44 +106,7 @@ export class MemStorage implements IStorage {
     this.emailIntegrations.set(sendgridIntegration.id, sendgridIntegration);
 
     // Sample subscribers
-    const subscriberData = [
-      {
-        email: "john.davidson@email.com",
-        name: "John Davidson",
-        segment: "High-Value Investor",
-        engagementScore: "85.0",
-        revenue: "2450.00"
-      },
-      {
-        email: "sarah.chen@email.com",
-        name: "Sarah Chen",
-        segment: "Day Trader",
-        engagementScore: "72.5",
-        revenue: "1850.00"
-      },
-      {
-        email: "mike.thompson@email.com",
-        name: "Mike Thompson",
-        segment: "Long-term Investor",
-        engagementScore: "91.2",
-        revenue: "3200.00"
-      }
-    ];
-
-    subscriberData.forEach(data => {
-      const subscriber: Subscriber = {
-        id: randomUUID(),
-        email: data.email,
-        name: data.name,
-        segment: data.segment,
-        engagementScore: data.engagementScore,
-        revenue: data.revenue,
-        joinedAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000), // Random date within last 90 days
-        isActive: true,
-        metadata: {}
-      };
-      this.subscribers.set(subscriber.id, subscriber);
-    });
+    // No mock subscriber data - only real data from integrations
 
     // Sample A/B test
     const abTest: ABTest = {
