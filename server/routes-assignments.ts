@@ -141,7 +141,7 @@ router.post("/api/assignments", async (req, res) => {
     }
     
     const { 
-      title, description, type, priority, dueDate, notes, tags, brief, opportunityId,
+      title, description, type, priority, dueDate, notes, tags, brief, opportunityId, referenceUrl,
       // New enhanced workflow fields
       targetSegments, emailPlatform, reviewers, reviewDeadline, reviewNotes, autoGenerateVariations
     } = req.body;
@@ -211,6 +211,7 @@ router.post("/api/assignments", async (req, res) => {
         brief: enhancedBrief,
         shareableSlug,
         status: initialStatus,
+        referenceUrl, // Add reference URL to assignment
         // Enhanced workflow fields
         targetSegments: targetSegments || [],
         emailPlatform: emailPlatform || 'auto-detect',
