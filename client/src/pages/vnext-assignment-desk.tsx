@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -60,7 +60,12 @@ interface Opportunity {
   createdAt: string;
 }
 
-export function VNextAssignmentDesk() {
+interface VNextAssignmentDeskProps {
+  prefilledUrl?: string;
+  autoOpenDialog?: boolean;
+}
+
+export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssignmentDeskProps = {}) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [activeView, setActiveView] = useState<"assignments" | "opportunities">("assignments");
@@ -99,6 +104,30 @@ export function VNextAssignmentDesk() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isRunningDetection, setIsRunningDetection] = useState(false);
   const [formStep, setFormStep] = useState<"content" | "details" | "segments" | "review" | "settings">("content");
+
+  // Handle prefilled URL and auto-open
+  useEffect(() => {
+    if (prefilledUrl) {
+      setSourceUrl(prefilledUrl);
+      setIsPrefillOpen(true);
+    }
+    if (autoOpenDialog) {
+      setIsCreateDialogOpen(true);
+    }
+  }, [prefilledUrl, autoOpenDialog]);
+
+  // Listen for external assignment form open events
+  useEffect(() => {
+    const handleOpenAssignmentForm = (event: CustomEvent) => {
+      const { url } = event.detail;
+      setSourceUrl(url);
+      setIsPrefillOpen(true);
+      setIsCreateDialogOpen(true);
+    };
+
+    window.addEventListener('openAssignmentForm', handleOpenAssignmentForm as EventListener);
+    return () => window.removeEventListener('openAssignmentForm', handleOpenAssignmentForm as EventListener);
+  }, []);
 
   // Fetch assignments
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({

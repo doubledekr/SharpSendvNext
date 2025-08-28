@@ -43,7 +43,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import AIEnhancedAssignmentForm from "@/components/ai-enhanced-assignment-form";
+import { openAssignmentFormWithUrl } from "@/pages/vnext-assignment-desk";
 import "../../styles/dashboard-improvements.css";
 import "../../styles/draft-animation.css";
 
@@ -171,8 +171,6 @@ export default function OverviewTab() {
   const [copiedLinks, setCopiedLinks] = useState<Set<number>>(new Set());
   const [showDraftAnimation, setShowDraftAnimation] = useState(false);
   const [editingEvent, setEditingEvent] = useState<string | null>(null);
-  const [showAIAssignmentForm, setShowAIAssignmentForm] = useState(false);
-  const [assignmentFormData, setAssignmentFormData] = useState<any>(null);
   const [editedEvents, setEditedEvents] = useState<Map<string, any>>(new Map());
   const { toast } = useToast();
 
@@ -422,26 +420,23 @@ Your SharpSend Team`,
     }
   };
 
-  // Create assignment from specific market event with AI enhancement
+  // Create assignment from specific market event using existing form
   const handleCreateAssignmentFromEvent = (event: any) => {
-    // Prepare prefilled data for the AI-enhanced form
-    const prefilledData = {
-      title: `${event.title} - Content Assignment`,
-      description: event.description,
-      referenceUrl: event.url || event.articleUrl || "",
-      marketContext: {
-        eventType: event.type,
-        priority: event.priority,
-        source: event.source || 'Market Intelligence',
-        impactScore: event.impactScore || 'Medium',
-        sentimentScore: event.sentimentScore || 'Neutral',
-        emailOpportunity: event.emailOpportunity,
-        assignment: event.assignment
-      }
-    };
-
-    setAssignmentFormData(prefilledData);
-    setShowAIAssignmentForm(true);
+    // Get the news article URL from the event
+    const articleUrl = event.url || event.articleUrl || "";
+    
+    if (articleUrl) {
+      // Open the assignment form with the URL prefilled
+      openAssignmentFormWithUrl(articleUrl);
+    } else {
+      // If no URL, just open the form normally
+      openAssignmentFormWithUrl("");
+    }
+    
+    toast({
+      title: "Opening Assignment Form",
+      description: articleUrl ? "Article URL has been pre-filled for AI analysis" : "Assignment form opened",
+    });
   };
 
   return (
@@ -1562,21 +1557,7 @@ Your SharpSend Team`,
         </div>
       )}
 
-      {/* AI-Enhanced Assignment Form Dialog */}
-      {showAIAssignmentForm && (
-        <Dialog open={showAIAssignmentForm} onOpenChange={setShowAIAssignmentForm}>
-          <DialogContent className="max-w-5xl">
-            <AIEnhancedAssignmentForm
-              prefilledData={assignmentFormData}
-              onClose={() => setShowAIAssignmentForm(false)}
-              onSuccess={() => {
-                // Refresh assignments data
-                queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+
     </div>
   );
 }
