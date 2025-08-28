@@ -37,7 +37,17 @@ import {
   X,
   ArrowLeft,
   ArrowRight,
-  Edit
+  Edit,
+  Bold,
+  Italic,
+  Link,
+  Image,
+  List,
+  Quote,
+  Type,
+  AlignLeft,
+  AlignCenter,
+  AlignRight
 } from 'lucide-react';
 
 interface Assignment {
@@ -76,9 +86,12 @@ interface EmailMetrics {
 // Helper function to render markdown content with links and formatting
 function renderMarkdownContent(text: string): string {
   return text
+    .replace(/&/g, '&amp;') // Fix ampersand display issue
     .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1 ↗</a>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600">$1</blockquote>')
+    .replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>')
     .replace(/\n/g, '<br>');
 }
 
@@ -109,104 +122,45 @@ function AssignmentCopywriterFlow() {
     contents: string[];
   }>({ subjects: [], contents: [] });
 
-  // New variation management system
-  const [variations, setVariations] = useState({
-    master: {
-      subject: '',
-      content: '',
-      isActive: true
-    },
-    variations: {
-      '1': { segment: 'growth_investors', subject: '', content: '', exists: false, segmentName: 'Growth Investors' },
-      '2': { segment: 'day_traders', subject: '', content: '', exists: false, segmentName: 'Day Traders' },
-      '3': { segment: 'income_focused', subject: '', content: '', exists: false, segmentName: 'Income Focused' },
-      '4': { segment: 'conservative', subject: '', content: '', exists: false, segmentName: 'Conservative Investors' },
-      '5': { segment: 'crypto', subject: '', content: '', exists: false, segmentName: 'Crypto Enthusiasts' }
-    }
-  });
+  // Rich text formatting functions
+  const insertFormatting = (format: string) => {
+    const textarea = document.querySelector('[data-testid="textarea-content"]') as HTMLTextAreaElement;
+    if (!textarea) return;
 
-  const [currentView, setCurrentView] = useState('M'); // M, 1, 2, 3, 4, 5
-  const [generatingVariations, setGeneratingVariations] = useState(false);
-
-  // Navigation button configuration
-  const navigationButtons = [
-    { id: 'M', label: 'M', type: 'master', tooltip: 'Master Email (Base Content)' },
-    { id: '1', label: '1', type: 'variation', segment: 'growth_investors', tooltip: 'Growth Investors' },
-    { id: '2', label: '2', type: 'variation', segment: 'day_traders', tooltip: 'Day Traders' },
-    { id: '3', label: '3', type: 'variation', segment: 'income_focused', tooltip: 'Income Focused' },
-    { id: '4', label: '4', type: 'variation', segment: 'conservative', tooltip: 'Conservative Investors' },
-    { id: '5', label: '5', type: 'variation', segment: 'crypto', tooltip: 'Crypto Enthusiasts' }
-  ];
-
-  // Helper functions for the new navigation system
-  const handleNavigationClick = (buttonId: string) => {
-    setCurrentView(buttonId);
-  };
-
-  const getCurrentContent = () => {
-    if (currentView === 'M') {
-      return {
-        subject: subject,
-        content: content,
-        segment: 'Master Email'
-      };
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    
+    let formattedText = '';
+    
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText || 'bold text'}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText || 'italic text'}*`;
+        break;
+      case 'link':
+        formattedText = `[${selectedText || 'link text'}](https://example.com)`;
+        break;
+      case 'list':
+        formattedText = `\n- ${selectedText || 'list item'}`;
+        break;
+      case 'quote':
+        formattedText = `\n> ${selectedText || 'quote text'}`;
+        break;
+      default:
+        return;
     }
     
-    const variation = variations.variations[currentView];
-    if (!variation?.exists) {
-      return null;
-    }
+    const newContent = content.substring(0, start) + formattedText + content.substring(end);
+    setContent(newContent);
     
-    return {
-      subject: variation.subject,
-      content: variation.content,
-      segment: variation.segmentName
-    };
-  };
-
-  const generateVariations = async () => {
-    if (!subject || !content) return;
-    
-    setGeneratingVariations(true);
-    try {
-      const response = await apiRequest('/api/ai/generate-variations', {
-        method: 'POST',
-        body: {
-          masterSubject: subject,
-          masterContent: content,
-          assignmentId: assignmentId
-        }
-      });
-
-      if (response.success && response.variations) {
-        const newVariations = { ...variations };
-        response.variations.forEach((variation: any, index: number) => {
-          const varId = (index + 1).toString();
-          if (newVariations.variations[varId]) {
-            newVariations.variations[varId] = {
-              ...newVariations.variations[varId],
-              subject: variation.subject,
-              content: variation.content,
-              exists: true
-            };
-          }
-        });
-        setVariations(newVariations);
-        
-        toast({
-          title: "Variations Generated",
-          description: `Created ${response.variations.length} AI-powered variations`,
-        });
-      }
-    } catch (error) {
-      console.error('Error generating variations:', error);
-      toast({
-        title: "Generation Failed",
-        description: "Could not generate variations. Please try again.",
-        variant: "destructive"
-      });
-    }
-    setGeneratingVariations(false);
+    // Restore focus and cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+    }, 0);
   };
 
   // Fetch assignment details
@@ -236,7 +190,7 @@ function AssignmentCopywriterFlow() {
         },
         body: JSON.stringify({
           assignmentId: assignment.id,
-          brief: assignment.brief || {
+          brief: {
             objective: assignment.description || assignment.title,
             angle: '',
             keyPoints: [],
@@ -562,8 +516,8 @@ function AssignmentCopywriterFlow() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Write your master email - variations will be generated from this</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Generated Variations</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">AI-generated segment-specific versions from master email</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email Preview</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Real-time preview of your email content</p>
               </div>
             </div>
 
@@ -575,7 +529,7 @@ function AssignmentCopywriterFlow() {
                     <Edit className="w-5 h-5" />
                     Master Email Content
                   </CardTitle>
-                  <CardDescription>Write your master email - variations will be generated from this</CardDescription>
+                  <CardDescription>Create your newsletter content with rich formatting tools</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -584,37 +538,121 @@ function AssignmentCopywriterFlow() {
                       id="subject"
                       placeholder="Enter compelling subject line..."
                       value={subject}
-                      onChange={(e) => {
-                        setSubject(e.target.value);
-                        setVariations(prev => ({
-                          ...prev,
-                          master: { ...prev.master, subject: e.target.value }
-                        }));
-                      }}
+                      onChange={(e) => setSubject(e.target.value)}
                       data-testid="input-subject"
                     />
                   </div>
                   
                   <div>
                     <Label htmlFor="content">Email Content</Label>
+                    
+                    {/* Rich Text Toolbar */}
+                    <div className="flex items-center gap-1 p-2 border rounded-t-md bg-gray-50 dark:bg-gray-800">
+                      <div className="flex items-center gap-1 border-r pr-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => insertFormatting('bold')}
+                          title="Bold"
+                        >
+                          <Bold className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => insertFormatting('italic')}
+                          title="Italic"
+                        >
+                          <Italic className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => insertFormatting('link')}
+                          title="Insert Link"
+                        >
+                          <Link className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 border-r pr-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => insertFormatting('list')}
+                          title="Bullet List"
+                        >
+                          <List className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => insertFormatting('quote')}
+                          title="Quote"
+                        >
+                          <Quote className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 border-r pr-2">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Align Left">
+                          <AlignLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Align Center">
+                          <AlignCenter className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Align Right">
+                          <AlignRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Insert Image">
+                          <Image className="h-4 w-4" />
+                        </Button>
+                        <Select>
+                          <SelectTrigger className="h-8 w-24">
+                            <SelectValue placeholder="Font" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="arial">Arial</SelectItem>
+                            <SelectItem value="helvetica">Helvetica</SelectItem>
+                            <SelectItem value="georgia">Georgia</SelectItem>
+                            <SelectItem value="times">Times</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
                     <Textarea
                       id="content"
-                      placeholder="Write your email content... Use [link text](url) for hyperlinks, **bold** for emphasis"
+                      placeholder="Write your email content... Use the toolbar above for formatting or type markdown:
+
+**Bold text**
+*Italic text*  
+[Link text](https://example.com)
+
+- Bullet point 1
+- Bullet point 2
+
+> Quote or important note
+
+Use the toolbar above for rich formatting options, or let AI help you create compelling content!"
                       value={content}
-                      onChange={(e) => {
-                        setContent(e.target.value);
-                        setVariations(prev => ({
-                          ...prev,
-                          master: { ...prev.master, content: e.target.value }
-                        }));
-                      }}
-                      className="min-h-[300px]"
+                      onChange={(e) => setContent(e.target.value)}
+                      className="min-h-[300px] border-t-0 rounded-t-none"
                       data-testid="textarea-content"
                     />
                     <div className="mt-2 text-sm text-gray-600">
                       <p><strong>Formatting Tips:</strong></p>
                       <p>• Links: [Click here](https://example.com)</p>
                       <p>• Bold: **bold text** • Italic: *italic text*</p>
+                      <p>• Use toolbar buttons or type markdown directly</p>
                     </div>
                   </div>
 
@@ -734,101 +772,15 @@ function AssignmentCopywriterFlow() {
                 </CardContent>
               </Card>
 
-              {/* Right Panel - Variations Preview */}
+              {/* Right Panel - Email Preview */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Variation Navigation</CardTitle>
+                  <CardTitle className="text-base">Email Preview</CardTitle>
+                  <CardDescription>Real-time preview of your email content</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Navigation Buttons */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {navigationButtons.map(button => {
-                      const isActive = currentView === button.id;
-                      const isAvailable = button.type === 'master' || variations.variations[button.id]?.exists;
-                      const isEmpty = button.type === 'variation' && !variations.variations[button.id]?.exists;
-                      
-                      return (
-                        <button
-                          key={button.id}
-                          className={`
-                            min-w-[40px] h-10 rounded border-2 font-semibold text-sm transition-all
-                            ${isActive 
-                              ? 'bg-blue-600 text-white border-blue-700' 
-                              : isAvailable 
-                                ? 'bg-gray-600 text-white border-gray-700 hover:bg-gray-700' 
-                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                            }
-                          `}
-                          onClick={() => isAvailable && handleNavigationClick(button.id)}
-                          title={button.tooltip}
-                          disabled={isEmpty}
-                        >
-                          {button.label}
-                        </button>
-                      );
-                    })}
-                    <Button 
-                      onClick={generateVariations}
-                      disabled={generatingVariations || !subject || !content}
-                      className="bg-green-600 hover:bg-green-700"
-                      size="sm"
-                    >
-                      {generatingVariations ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                          Generating...
-                        </>
-                      ) : (
-                        '+ Generate'
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Current View Indicator */}
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Currently Viewing: {getCurrentContent()?.segment || 'Master Email'}
-                  </div>
-
-                  {/* Email Preview */}
-                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-800 min-h-[300px]">
-                    {getCurrentContent() ? (
-                      <>
-                        <div className="text-sm text-gray-500 mb-3 pb-3 border-b">
-                          <div>From: publisher@example.com</div>
-                          <div>Subject: {getCurrentContent()?.subject || 'Your subject line will appear here'}</div>
-                        </div>
-                        
-                        <div 
-                          className="text-sm text-gray-800 dark:text-gray-200 space-y-2"
-                          dangerouslySetInnerHTML={{
-                            __html: getCurrentContent()?.content ? renderMarkdownContent(getCurrentContent()!.content) : '<span class="text-gray-400">Your email content will appear here...</span>'
-                          }}
-                        />
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-400">
-                        <div className="text-center">
-                          <FileText className="w-8 h-8 mx-auto mb-2" />
-                          <p>No content available for this variation</p>
-                          <p className="text-xs mt-1">Generate variations to see content here</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Segment Info */}
-                  {currentView !== 'M' && variations.variations[currentView]?.exists && (
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        <span>Segment: {variations.variations[currentView]?.segmentName}</span>
-                      </div>
-                      <div className="text-xs mt-1">Recipients: Estimated 2,500-5,000 subscribers</div>
-                    </div>
-                  )}
-
-                  {/* Preview Actions */}
-                  <div className="flex gap-2 pt-2 border-t">
+                  {/* Preview Controls */}
+                  <div className="flex gap-2">
                     <Button variant="outline" size="sm" className="flex items-center gap-1">
                       📱 Mobile
                     </Button>
@@ -836,36 +788,36 @@ function AssignmentCopywriterFlow() {
                       🖥️ Desktop
                     </Button>
                     <Button variant="outline" size="sm" className="flex items-center gap-1">
-                      📧 Test
+                      📧 Test Send
                     </Button>
                   </div>
 
-                  {/* Generate Variations Button for bottom */}
-                  {segments.length === 0 && (
-                    <div className="pt-4 border-t">
-                      <Button 
-                        onClick={() => generateSegmentVariations()}
-                        disabled={!subject || !content || isGenerating}
-                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                        data-testid="button-generate-variations"
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                            Generating AI Variations...
-                          </>
-                        ) : (
-                          <>
-                            <Brain className="w-4 h-4 mr-2" />
-                            🧠 Generate AI Variations
-                          </>
-                        )}
-                      </Button>
-                      <p className="text-xs text-gray-500 text-center mt-2">
-                        Creates 5 personalized variations for different investor segments
-                      </p>
+                  {/* Email Preview */}
+                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-800 min-h-[400px]">
+                    <div className="text-sm text-gray-500 mb-3 pb-3 border-b">
+                      <div>From: publisher@example.com</div>
+                      <div>Subject: {subject || 'Your subject line will appear here'}</div>
                     </div>
-                  )}
+                    
+                    <div 
+                      className="text-sm text-gray-800 dark:text-gray-200 space-y-2 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: content ? renderMarkdownContent(content) : '<span class="text-gray-400">Your email content will appear here as you type...</span>'
+                      }}
+                    />
+                  </div>
+
+                  {/* Email Stats */}
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      <span>Est. Opens: 2.5k-5k</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>Subscribers: 12.5k</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
