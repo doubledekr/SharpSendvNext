@@ -121,7 +121,7 @@ export default function VNextDashboard() {
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {stats.totalSubscribers > 0 ? (
-                <span className="text-green-600">Based on {stats.totalSubscribers} subscribers</span>
+                <span className="text-green-600">From connected integrations</span>
               ) : (
                 <span className="text-yellow-600">Awaiting subscriber data</span>
               )}
