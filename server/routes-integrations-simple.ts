@@ -451,10 +451,11 @@ router.post("/api/integrations/test", async (req, res) => {
           platform: platform.name,
           capabilities: platform.features
         });
-      } catch (error) {
-        return res.json({
+      } catch (error: any) {
+        console.error("Customer.io test connection error:", error);
+        return res.status(400).json({
           success: false,
-          message: `Customer.io connection failed: ${error}`,
+          error: `Customer.io connection failed: ${error.message || error}`,
           platform: platform.name
         });
       }
@@ -646,7 +647,7 @@ async function syncCustomerIOData(credentials: any) {
         const segmentsWithCounts = [];
         let allUsersCount = 0;
 
-        for (const segment of segments) {
+        for (const segment: any of segments) {
           try {
             console.log(`Fetching subscriber count for segment: ${segment.name} (ID: ${segment.id})`);
             
@@ -911,7 +912,7 @@ async function getCustomerIOSegments(credentials: any) {
       const segments = Array.isArray(data) ? data : data.segments || [];
       
       // Transform segments to include real subscriber counts for SharpSend display
-      const transformedSegments = segments.map(segment => ({
+      const transformedSegments = segments.map((segment: any) => ({
         id: segment.id,
         name: segment.name,
         description: segment.description || '',
