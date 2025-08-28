@@ -318,7 +318,7 @@ router.post("/api/integrations/connect", async (req, res) => {
         });
 
         // Test actual connection to Customer.io
-        const { CustomerIoIntegrationService } = await import('../services/customerio-integration');
+        const { CustomerIoIntegrationService } = await import('./services/customerio-integration');
         const service = new CustomerIoIntegrationService({
           siteId: credentials.site_id,
           trackApiKey: credentials.track_api_key,
