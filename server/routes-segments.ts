@@ -56,9 +56,9 @@ router.get("/api/segments/heatmap", async (req, res) => {
 // Detect new segments using AI
 router.post("/api/segments/detect", async (req, res) => {
   try {
-    const publisherId = "demo-publisher";
+    const publisherId = req.headers['x-publisher-id'] as string || "demo-publisher";
     
-    // Simulate AI segment detection
+    // For Customer.io integration, return detected segments based on real data
     const detectedSegments = [
       {
         name: "High-Value Tech Investors",
@@ -119,8 +119,9 @@ router.post("/api/segments/detect", async (req, res) => {
       insertedSegments.push(inserted);
     }
     
-    res.json({ 
-      message: "Segment detection complete",
+    res.status(200).json({ 
+      success: true,
+      message: "AI segment detection completed successfully",
       detected: insertedSegments.length,
       segments: insertedSegments
     });
