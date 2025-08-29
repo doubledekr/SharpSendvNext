@@ -89,7 +89,7 @@ export function VNextSegments() {
   // Create manual segment mutation
   const createSegmentMutation = useMutation({
     mutationFn: async (segmentData: any) => {
-      return await apiRequest("/api/segments", "POST", segmentData);
+      return await apiRequest("POST", "/api/segments", segmentData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/segments"] });
@@ -113,7 +113,7 @@ export function VNextSegments() {
   const detectSegmentsMutation = useMutation({
     mutationFn: async () => {
       setIsDetectingSegments(true);
-      return await apiRequest("/api/segments/detect", "POST", {});
+      return await apiRequest("POST", "/api/segments/detect", {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/segments"] });
@@ -136,7 +136,7 @@ export function VNextSegments() {
   // Adopt segment mutation
   const adoptSegmentMutation = useMutation({
     mutationFn: async (segmentId: string) => {
-      return await apiRequest(`/api/segments/${segmentId}/adopt`, "POST", {});
+      return await apiRequest("POST", `/api/segments/${segmentId}/adopt`, {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/segments"] });
