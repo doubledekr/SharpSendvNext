@@ -1163,7 +1163,14 @@ router.get('/integrations/:integrationId/customers', async (req, res) => {
     const credentials = integration[0].credentials as any;
     
     // ONLY USE REAL CUSTOMER.IO DATA - NO SYNTHETIC DATA
-    console.log('Attempting to fetch real Customer.io subscriber data only');
+    console.log('Fetching real Customer.io subscriber data using saved credentials');
+    console.log('Using integration:', {
+      id: integration[0].id,
+      siteId: credentials.site_id,
+      region: credentials.region,
+      hasAppApiKey: !!credentials.app_api_key,
+      hasTrackApiKey: !!credentials.track_api_key
+    });
     
     try {
       // Import and create Customer.io service dynamically
@@ -1175,14 +1182,26 @@ router.get('/integrations/:integrationId/customers', async (req, res) => {
         region: credentials.region || 'us'
       });
 
+      console.log('Calling Customer.io getCustomers API...');
       const result = await service.getCustomers(100);
+      
+      console.log(`Customer.io API returned ${result.customers?.length || 0} customers`);
+      
+      if (!result.customers || result.customers.length === 0) {
+        console.log('No customers returned from Customer.io API');
+        return res.status(204).json({ 
+          message: 'Customer.io API returned no subscriber data',
+          subscriberCount: 0,
+          source: 'customer_io_api_empty'
+        });
+      }
       
       // Transform real Customer.io data to our format
       const subscribers = result.customers.map((customer: any) => ({
         id: customer.id,
         email: customer.email,
         name: customer.attributes?.first_name || customer.attributes?.name || customer.email.split('@')[0],
-        segment: "Customer.io Subscriber",
+        segment: "Customer.io Subscriber", 
         engagementScore: "0",
         revenue: "0",
         joinedAt: customer.created_at ? new Date(customer.created_at * 1000).toISOString() : new Date().toISOString(),
@@ -1195,18 +1214,28 @@ router.get('/integrations/:integrationId/customers', async (req, res) => {
         lastSyncAt: new Date().toISOString()
       }));
 
-      console.log(`Retrieved ${subscribers.length} real subscribers from Customer.io API`);
+      console.log(`Successfully transformed ${subscribers.length} real subscribers from Customer.io`);
       return res.json(subscribers);
       
-    } catch (apiError) {
-      console.error('Customer.io API failed:', apiError);
+    } catch (apiError: any) {
+      console.error('Customer.io API error details:', {
+        message: apiError.message,
+        status: apiError.response?.status,
+        data: apiError.response?.data,
+        config: apiError.config ? {
+          method: apiError.config.method,
+          url: apiError.config.url,
+          headers: apiError.config.headers ? Object.keys(apiError.config.headers) : 'none'
+        } : 'no config'
+      });
       
-      // NO FALLBACK DATA - Return error instead of synthetic data
+      // NO FALLBACK DATA - Return detailed error for debugging
       return res.status(503).json({ 
         error: 'Customer.io API unavailable', 
         message: 'Unable to fetch real subscriber data from Customer.io',
         subscriberCount: integration[0].stats?.subscribers || 0,
-        details: 'API authentication or quota limit reached'
+        details: apiError.message || 'Unknown API error',
+        statusCode: apiError.response?.status || 'unknown'
       });
     }
     
