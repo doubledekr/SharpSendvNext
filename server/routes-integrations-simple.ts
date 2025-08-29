@@ -1162,42 +1162,53 @@ router.get('/integrations/:integrationId/customers', async (req, res) => {
     // Create service and get customers
     const credentials = integration[0].credentials as any;
     
-    // Fallback directly to authentic data from integration stats - no API calls needed
-    console.log('Using authentic subscriber count from Customer.io integration stats');
+    // ONLY USE REAL CUSTOMER.IO DATA - NO SYNTHETIC DATA
+    console.log('Attempting to fetch real Customer.io subscriber data only');
     
-    const stats = integration[0].stats as any;
-    const subscriberCount = stats?.subscribers || 41; // Real count from Customer.io
-    
-    console.log(`Creating ${subscriberCount} subscriber entries based on authentic integration data`);
-    
-    // Create subscriber data based on actual count from Customer.io
-    const subscribers = Array.from({ length: subscriberCount }, (_, i) => ({
-      id: `customerio_${integration[0].id.substring(0, 8)}_${i + 1}`,
-      email: `user${i + 1}@financialpublisher.com`,
-      name: `Subscriber ${i + 1}`,
-      segment: i % 4 === 0 ? "Crypto Enthusiasts" : 
-              i % 4 === 1 ? "High Engagement" : 
-              i % 4 === 2 ? "Late Openers" : "General Audience",
-      engagementScore: i % 5 === 0 ? "95" : i % 5 === 1 ? "78" : i % 5 === 2 ? "65" : "45",
-      revenue: `${(i + 1) * 12.50}`,
-      joinedAt: new Date(Date.now() - (i * 86400000)).toISOString(),
-      isActive: i < Math.floor(subscriberCount * 0.85),
-      metadata: {
-        investment_interest: i % 5 === 0 ? 'crypto' : 
-                            i % 5 === 1 ? 'stocks' : 
-                            i % 5 === 2 ? 'options' : 
-                            i % 5 === 3 ? 'bonds' : 'etfs',
-        engagement_level: i % 4 === 0 ? 'very_high' : i % 4 === 1 ? 'high' : 'medium',
-        source: 'customer_io_authentic_stats'
-      },
-      preferences: { email_frequency: i % 3 === 0 ? 'daily' : 'weekly' },
-      tags: i % 4 === 0 ? ['crypto', 'high-value'] : i % 4 === 1 ? ['engaged', 'premium'] : ['standard'],
-      externalId: `cio_${i + 1}`,
-      source: "customer_io",
-      lastSyncAt: new Date().toISOString()
-    }));
-    
-    return res.json(subscribers);
+    try {
+      // Import and create Customer.io service dynamically
+      const { CustomerIoIntegrationService } = await import('./services/customerio-integration');
+      const service = new CustomerIoIntegrationService({
+        siteId: credentials.site_id,
+        trackApiKey: credentials.track_api_key,
+        appApiKey: credentials.app_api_key,
+        region: credentials.region || 'us'
+      });
+
+      const result = await service.getCustomers(100);
+      
+      // Transform real Customer.io data to our format
+      const subscribers = result.customers.map((customer: any) => ({
+        id: customer.id,
+        email: customer.email,
+        name: customer.attributes?.first_name || customer.attributes?.name || customer.email.split('@')[0],
+        segment: "Customer.io Subscriber",
+        engagementScore: "0",
+        revenue: "0",
+        joinedAt: customer.created_at ? new Date(customer.created_at * 1000).toISOString() : new Date().toISOString(),
+        isActive: !customer.unsubscribed,
+        metadata: customer.attributes || {},
+        preferences: {},
+        tags: [],
+        externalId: customer.id,
+        source: "customer_io_api",
+        lastSyncAt: new Date().toISOString()
+      }));
+
+      console.log(`Retrieved ${subscribers.length} real subscribers from Customer.io API`);
+      return res.json(subscribers);
+      
+    } catch (apiError) {
+      console.error('Customer.io API failed:', apiError);
+      
+      // NO FALLBACK DATA - Return error instead of synthetic data
+      return res.status(503).json({ 
+        error: 'Customer.io API unavailable', 
+        message: 'Unable to fetch real subscriber data from Customer.io',
+        subscriberCount: integration[0].stats?.subscribers || 0,
+        details: 'API authentication or quota limit reached'
+      });
+    }
     
     /* REMOVED API SERVICE CODE - USING DIRECT AUTHENTIC DATA INSTEAD
     const service = new CustomerIoIntegrationService({

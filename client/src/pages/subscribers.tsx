@@ -373,9 +373,17 @@ export default function SubscribersPage() {
                 </div>
               ) : subscribersError ? (
                 <div className="text-center py-8 text-red-500" data-testid="error-subscribers">
-                  Error: {subscribersError.message}
-                  <br />
-                  <small>Integration ID: {customerIoIntegration?.id}</small>
+                  <h3 className="font-semibold mb-2">Customer.io API Error</h3>
+                  <p className="mb-2">Unable to fetch real subscriber data from Customer.io</p>
+                  <p className="text-sm text-gray-600">
+                    The Customer.io integration shows {customerIoIntegration?.stats?.subscribers || 0} subscribers, 
+                    but the API is currently unavailable.
+                  </p>
+                  <details className="mt-4 text-xs">
+                    <summary>Technical Details</summary>
+                    <p>Error: {subscribersError.message}</p>
+                    <p>Integration ID: {customerIoIntegration?.id}</p>
+                  </details>
                 </div>
               ) : filteredSubscribers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground" data-testid="no-subscribers">
