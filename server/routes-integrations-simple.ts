@@ -523,7 +523,7 @@ router.post("/integrations/connect", async (req, res) => {
 });
 
 // Test connection
-router.post("/api/integrations/test", async (req, res) => {
+router.post("/integrations/test", async (req, res) => {
   try {
     const { platformId, credentials } = req.body;
     
@@ -606,7 +606,7 @@ router.post("/api/integrations/test", async (req, res) => {
 });
 
 // Disconnect from a platform
-router.delete("/api/integrations/:id", (req, res) => {
+router.delete("/integrations/:id", (req, res) => {
   try {
     const { id } = req.params;
     
@@ -635,7 +635,7 @@ router.delete("/api/integrations/:id", (req, res) => {
 });
 
 // Sync data from a platform
-router.post("/api/integrations/:id/sync", async (req, res) => {
+router.post("/integrations/:id/sync", async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -917,7 +917,7 @@ async function syncCustomerIOData(credentials: any) {
 }
 
 // Request custom integration
-router.post("/api/integrations/request-custom", (req, res) => {
+router.post("/integrations/request-custom", (req, res) => {
   try {
     const { platformName, contactEmail, requirements } = req.body;
     
@@ -947,7 +947,7 @@ router.post("/api/integrations/request-custom", (req, res) => {
 // Additional Customer.io API endpoints for full bidirectional integration
 
 // Get Customer.io segments for assignment targeting  
-router.get("/api/integrations/customer-io/:id/segments", async (req, res) => {
+router.get("/integrations/customer-io/:id/segments", async (req, res) => {
   try {
     const { id } = req.params;
     const integration = connectedIntegrations.find(i => i.id === id && i.platformId === 'customer_io');
@@ -975,7 +975,7 @@ router.get("/api/integrations/customer-io/:id/segments", async (req, res) => {
 });
 
 // Create campaign in Customer.io from SharpSend assignment
-router.post("/api/integrations/customer-io/:id/create-campaign", async (req, res) => {
+router.post("/integrations/customer-io/:id/create-campaign", async (req, res) => {
   try {
     const { id } = req.params;
     const { campaignData } = req.body;
@@ -1006,7 +1006,7 @@ router.post("/api/integrations/customer-io/:id/create-campaign", async (req, res
 });
 
 // Update customer profile in Customer.io
-router.post("/api/integrations/customer-io/:id/update-customer", async (req, res) => {
+router.post("/integrations/customer-io/:id/update-customer", async (req, res) => {
   try {
     const { id } = req.params;
     const { customerId, attributes } = req.body;
