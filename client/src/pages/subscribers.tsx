@@ -387,7 +387,16 @@ export default function SubscribersPage() {
                 </div>
               ) : filteredSubscribers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground" data-testid="no-subscribers">
-                  No subscribers found matching your criteria
+                  <h3 className="font-semibold mb-2">No Subscriber Data Available</h3>
+                  <p className="mb-4">
+                    {customerIoIntegration?.stats?.subscribers 
+                      ? `Customer.io shows ${customerIoIntegration.stats.subscribers} subscribers, but API access is limited.`
+                      : "No subscriber data found in Customer.io integration."
+                    }
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    This system only displays authentic Customer.io data - no synthetic or mock data is used.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">

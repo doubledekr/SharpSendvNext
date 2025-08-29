@@ -1173,69 +1173,104 @@ router.get('/integrations/:integrationId/customers', async (req, res) => {
     });
     
     try {
-      // Import and create Customer.io service dynamically
-      const { CustomerIoIntegrationService } = await import('./services/customerio-integration');
-      const service = new CustomerIoIntegrationService({
+      // Use the comprehensive segment management service
+      const { SegmentManagementService } = await import('./services/segment-management');
+      const segmentService = new SegmentManagementService({
         siteId: credentials.site_id,
         trackApiKey: credentials.track_api_key,
         appApiKey: credentials.app_api_key,
         region: credentials.region || 'us'
       });
 
-      console.log('Calling Customer.io getCustomers API...');
-      const result = await service.getCustomers(100);
+      console.log('Using segment-based approach to get real Customer.io subscribers...');
       
-      console.log(`Customer.io API returned ${result.customers?.length || 0} customers`);
+      // Get all segments first
+      const segments = await segmentService.getAllSegments();
+      console.log(`Found ${segments.length} Customer.io segments`);
       
-      if (!result.customers || result.customers.length === 0) {
-        console.log('No customers returned from Customer.io API');
+      if (segments.length === 0) {
+        console.log('No segments found - Customer.io workspace may be empty');
         return res.status(204).json({ 
-          message: 'Customer.io API returned no subscriber data',
+          message: 'No Customer.io segments found',
           subscriberCount: 0,
-          source: 'customer_io_api_empty'
+          source: 'customer_io_no_segments'
         });
       }
-      
-      // Transform real Customer.io data to our format
-      const subscribers = result.customers.map((customer: any) => ({
-        id: customer.id,
-        email: customer.email,
-        name: customer.attributes?.first_name || customer.attributes?.name || customer.email.split('@')[0],
-        segment: "Customer.io Subscriber", 
-        engagementScore: "0",
-        revenue: "0",
-        joinedAt: customer.created_at ? new Date(customer.created_at * 1000).toISOString() : new Date().toISOString(),
-        isActive: !customer.unsubscribed,
-        metadata: customer.attributes || {},
-        preferences: {},
-        tags: [],
-        externalId: customer.id,
-        source: "customer_io_api",
-        lastSyncAt: new Date().toISOString()
-      }));
 
-      console.log(`Successfully transformed ${subscribers.length} real subscribers from Customer.io`);
+      // Get subscribers from the largest segment (most representative)
+      const largestSegment = segments.reduce((prev, current) => 
+        prev.subscriberCount > current.subscriberCount ? prev : current
+      );
+
+      console.log(`Getting subscribers from largest segment: ${largestSegment.name} (${largestSegment.subscriberCount} subscribers)`);
+      
+      const subscribers = await segmentService.getSegmentSubscribers(largestSegment.id, 100);
+      
+      if (subscribers.length === 0) {
+        console.log('No subscribers found in segments');
+        return res.status(204).json({ 
+          message: 'Customer.io segments exist but contain no subscribers',
+          subscriberCount: integration[0].stats?.subscribers || 0,
+          segmentCount: segments.length,
+          source: 'customer_io_empty_segments'
+        });
+      }
+
+      console.log(`Successfully retrieved ${subscribers.length} real subscribers from Customer.io segment`);
       return res.json(subscribers);
       
     } catch (apiError: any) {
-      console.error('Customer.io API error details:', {
+      console.error('Customer.io segment-based API error:', {
         message: apiError.message,
         status: apiError.response?.status,
-        data: apiError.response?.data,
-        config: apiError.config ? {
-          method: apiError.config.method,
-          url: apiError.config.url,
-          headers: apiError.config.headers ? Object.keys(apiError.config.headers) : 'none'
-        } : 'no config'
+        data: apiError.response?.data
       });
       
-      // NO FALLBACK DATA - Return detailed error for debugging
+      // Try direct customer API as fallback
+      try {
+        console.log('Falling back to direct Customer.io customer API...');
+        const { CustomerIoIntegrationService } = await import('./services/customerio-integration');
+        const service = new CustomerIoIntegrationService({
+          siteId: credentials.site_id,
+          trackApiKey: credentials.track_api_key,
+          appApiKey: credentials.app_api_key,
+          region: credentials.region || 'us'
+        });
+
+        const result = await service.getCustomers(50); // Smaller limit for fallback
+        
+        if (result.customers && result.customers.length > 0) {
+          const subscribers = result.customers.map((customer: any) => ({
+            id: customer.id,
+            email: customer.email,
+            name: customer.attributes?.first_name || customer.attributes?.name || customer.email.split('@')[0],
+            segment: "Customer.io Subscriber", 
+            engagementScore: "0",
+            revenue: "0",
+            joinedAt: customer.created_at ? new Date(customer.created_at * 1000).toISOString() : new Date().toISOString(),
+            isActive: !customer.unsubscribed,
+            metadata: customer.attributes || {},
+            preferences: {},
+            tags: [],
+            externalId: customer.id,
+            source: "customer_io_direct_api",
+            lastSyncAt: new Date().toISOString()
+          }));
+
+          console.log(`Fallback successful: ${subscribers.length} subscribers from direct API`);
+          return res.json(subscribers);
+        }
+      } catch (fallbackError) {
+        console.error('Direct API fallback also failed:', fallbackError);
+      }
+      
+      // NO SYNTHETIC DATA - Return clear error message
       return res.status(503).json({ 
         error: 'Customer.io API unavailable', 
-        message: 'Unable to fetch real subscriber data from Customer.io',
-        subscriberCount: integration[0].stats?.subscribers || 0,
-        details: apiError.message || 'Unknown API error',
-        statusCode: apiError.response?.status || 'unknown'
+        message: 'Unable to fetch subscriber data from Customer.io. All API endpoints returned errors.',
+        authenticSubscriberCount: integration[0].stats?.subscribers || 0,
+        details: 'Customer.io API may be experiencing issues or credentials need verification',
+        statusCode: apiError.response?.status || 'multiple_failures'
       });
     }
     
