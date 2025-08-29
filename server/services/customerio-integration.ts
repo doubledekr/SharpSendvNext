@@ -257,52 +257,58 @@ export class CustomerIoIntegrationService {
    */
   async getCustomers(limit: number = 100, start?: string): Promise<{ customers: CustomerIoCustomer[], next?: string }> {
     try {
-      console.log('Trying Customer.io /customers endpoint...');
-      let endpoint = `/customers?limit=${limit}`;
-      if (start) {
-        endpoint += `&start=${start}`;
-      }
+      // Get customers by getting members from the "All Users" segment (ID: 1)
+      console.log('Getting customers from "All Users" segment...');
+      const response = await this.makeApiRequest('GET', `/segments/1/membership?limit=${limit}`);
       
-      const response = await this.makeApiRequest('GET', endpoint);
-      
-      return {
-        customers: response.customers || [],
-        next: response.meta?.next_start
-      };
-    } catch (error) {
-      console.log('Customers endpoint failed, trying advanced search...');
-      try {
-        // Use search API to get customers
-        const searchResponse = await this.makeApiRequest('POST', '/customers', {
-          filter: {},
-          limit: limit
-        });
+      if (!response.identifiers || response.identifiers.length === 0) {
+        console.log('No customers found in All Users segment, trying activities endpoint...');
         
-        return {
-          customers: searchResponse.identifiers?.map((identifier: any) => ({
-            id: identifier.cio_id,
-            email: identifier.email,
-            attributes: identifier.attributes || {},
-            created_at: identifier.created_at || Math.floor(Date.now() / 1000)
-          })) || [],
-          next: null
-        };
-      } catch (searchError) {
-        console.log('Customer search also failed, trying export API...');
+        // Fallback: Get recent activities to find active customers
         try {
-          // Try to create an export for customers
-          const exportResponse = await this.makeApiRequest('POST', '/exports', {
-            type: 'customers',
-            filters: {}
+          const activitiesResponse = await this.makeApiRequest('GET', `/activities?limit=${limit}`);
+          
+          // Extract unique customers from activities
+          const uniqueCustomers = new Map();
+          (activitiesResponse.activities || []).forEach((activity: any) => {
+            if (activity.customer_id && !uniqueCustomers.has(activity.customer_id)) {
+              uniqueCustomers.set(activity.customer_id, {
+                id: activity.customer_id,
+                email: activity.email || `customer_${activity.customer_id}@unknown.com`,
+                attributes: activity.data || {},
+                created_at: Math.floor(new Date(activity.timestamp * 1000).getTime() / 1000)
+              });
+            }
           });
           
-          console.log('Export created, customers available via export:', exportResponse);
-          return { customers: [] }; // Export is async, would need polling
-        } catch (exportError) {
-          console.error('All Customer.io customer endpoints failed:', error);
-          throw error;
+          return {
+            customers: Array.from(uniqueCustomers.values()).slice(0, limit),
+            next: null
+          };
+        } catch (activitiesError) {
+          console.log('Activities endpoint also failed, no customers available');
+          return { customers: [] };
         }
       }
+      
+      // Transform segment members to customer format
+      const customers = response.identifiers.map((identifier: any) => ({
+        id: identifier.cio_id || identifier.id,
+        email: identifier.email,
+        attributes: identifier.attributes || {},
+        created_at: identifier.created_at || Math.floor(Date.now() / 1000),
+        unsubscribed: identifier.unsubscribed || false
+      }));
+      
+      console.log(`Successfully retrieved ${customers.length} customers from Customer.io`);
+      return {
+        customers,
+        next: response.next || null
+      };
+      
+    } catch (error: any) {
+      console.error('Customer.io getCustomers failed:', error.response?.data || error.message);
+      throw error;
     }
   }
 
