@@ -267,65 +267,7 @@ router.get("/api/integrations/platforms", (req, res) => {
   }
 });
 
-// Customer.io specific endpoints for subscribers page
-router.get('/integrations/:integrationId/customers', async (req, res) => {
-  try {
-    const { integrationId } = req.params;
-    const publisherId = req.headers['x-publisher-id'] as string;
-    
-    console.log(`Customer endpoint hit: ${integrationId}, publisher: ${publisherId}`);
-    
-    if (!publisherId) {
-      return res.status(400).json({ error: 'Publisher ID required' });
-    }
-
-    // Get integration
-    const integration = await db.select()
-      .from(integrations)
-      .where(eq(integrations.id, integrationId))
-      .limit(1);
-
-    if (integration.length === 0) {
-      return res.status(404).json({ error: 'Integration not found' });
-    }
-
-    // Import Customer.io service
-    const { CustomerIoIntegrationService } = await import("./services/customerio-integration");
-
-    // Create service and get customers
-    const credentials = integration[0].credentials as any;
-    const service = new CustomerIoIntegrationService({
-      siteId: credentials.site_id,
-      trackApiKey: credentials.track_api_key,
-      appApiKey: credentials.app_api_key,
-      region: credentials.region || 'us'
-    });
-
-    const result = await service.getCustomers(100);
-    const subscribers = result.customers.map((customer: any) => ({
-      id: customer.id,
-      email: customer.email,
-      name: customer.attributes?.first_name || customer.attributes?.name || customer.email,
-      segment: "All Users",
-      engagementScore: "0",
-      revenue: "0",
-      joinedAt: customer.created_at ? new Date(customer.created_at * 1000).toISOString() : new Date().toISOString(),
-      isActive: !customer.unsubscribed,
-      metadata: customer.attributes || {},
-      preferences: {},
-      tags: [],
-      externalId: customer.id,
-      source: "customer_io",
-      lastSyncAt: new Date().toISOString()
-    }));
-
-    console.log(`Returning ${subscribers.length} customers`);
-    res.json(subscribers);
-  } catch (error) {
-    console.error('Error fetching customers:', error);
-    res.status(500).json({ error: 'Failed to fetch customers' });
-  }
-});
+// REMOVED - Customer.io endpoints moved to main routes.ts to avoid conflicts
 
 router.get('/integrations/:integrationId/segments', async (req, res) => {
   try {
