@@ -55,35 +55,99 @@ export default function SubscribersPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch subscribers from Customer.io integration
-  const { data: subscribers = [], isLoading: isLoadingSubscribers } = useQuery({
-    queryKey: ["/api/integrations/23b4d6e1-6985-4c94-a990-56ed3131d9c2/customers"],
+  // Test with simple API first to make sure backend connection works
+  const { data: integrations = [] } = useQuery({
+    queryKey: ["/api/integrations/connected"],
+    retry: 1,
+  });
+
+  // Get the Customer.io integration ID - handle both array and object response formats
+  const customerIoIntegration = Array.isArray(integrations) 
+    ? integrations.find((int: any) => int.platformId === "customer_io")
+    : integrations?.integrations?.find((int: any) => int.platformId === "customer_io");
+
+  // Fetch subscribers from Customer.io integration - use a simpler direct approach first
+  const { data: subscribersResponse, isLoading: isLoadingSubscribers, error: subscribersError } = useQuery({
+    queryKey: ["/api/integrations/customers", customerIoIntegration?.id],
     queryFn: async () => {
-      const response = await fetch("/api/integrations/23b4d6e1-6985-4c94-a990-56ed3131d9c2/customers", {
+      if (!customerIoIntegration?.id) {
+        throw new Error("Customer.io integration not found");
+      }
+
+      console.log("Fetching subscribers for integration:", customerIoIntegration.id);
+      const response = await fetch(`/api/integrations/${customerIoIntegration.id}/customers`, {
+        method: "GET",
         headers: {
+          "Content-Type": "application/json",
           "x-publisher-id": "b1953bbb-178c-41ed-ac31-21fd2ab16c3d"
         }
       });
-      if (!response.ok) throw new Error("Failed to fetch subscribers");
-      return response.json();
+      
+      console.log("Subscribers response status:", response.status);
+      const text = await response.text();
+      console.log("Raw response:", text.substring(0, 200));
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch subscribers: ${response.status}`);
+      }
+      
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        throw new Error("Invalid JSON response from server");
+      }
     },
+    enabled: !!customerIoIntegration?.id,
     retry: 1,
   });
 
   // Fetch segments from Customer.io integration
-  const { data: segments = [], isLoading: isLoadingSegments } = useQuery({
-    queryKey: ["/api/integrations/23b4d6e1-6985-4c94-a990-56ed3131d9c2/segments"],
+  const { data: segmentsResponse, isLoading: isLoadingSegments, error: segmentsError } = useQuery({
+    queryKey: ["/api/integrations/segments", customerIoIntegration?.id],
     queryFn: async () => {
-      const response = await fetch("/api/integrations/23b4d6e1-6985-4c94-a990-56ed3131d9c2/segments", {
+      if (!customerIoIntegration?.id) {
+        throw new Error("Customer.io integration not found");
+      }
+
+      console.log("Fetching segments for integration:", customerIoIntegration.id);
+      const response = await fetch(`/api/integrations/${customerIoIntegration.id}/segments`, {
+        method: "GET",
         headers: {
+          "Content-Type": "application/json",
           "x-publisher-id": "b1953bbb-178c-41ed-ac31-21fd2ab16c3d"
         }
       });
-      if (!response.ok) throw new Error("Failed to fetch segments");
-      return response.json();
+      
+      console.log("Segments response status:", response.status);
+      const text = await response.text();
+      console.log("Raw response:", text.substring(0, 200));
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch segments: ${response.status}`);
+      }
+      
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        throw new Error("Invalid JSON response from server");
+      }
     },
+    enabled: !!customerIoIntegration?.id,
     retry: 1,
   });
+
+  // Extract the actual data
+  const subscribers = subscribersResponse || [];
+  const segments = segmentsResponse || [];
+
+  // Debug information
+  console.log("Integration data:", customerIoIntegration);
+  console.log("Subscribers error:", subscribersError);
+  console.log("Segments error:", segmentsError);
+  console.log("Loaded subscribers:", subscribers?.length);
+  console.log("Loaded segments:", segments?.length);
 
   // Create segment mutation
   const createSegmentMutation = useMutation({
@@ -307,6 +371,12 @@ export default function SubscribersPage() {
                 <div className="text-center py-8" data-testid="loading-subscribers">
                   Loading subscribers...
                 </div>
+              ) : subscribersError ? (
+                <div className="text-center py-8 text-red-500" data-testid="error-subscribers">
+                  Error: {subscribersError.message}
+                  <br />
+                  <small>Integration ID: {customerIoIntegration?.id}</small>
+                </div>
               ) : filteredSubscribers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground" data-testid="no-subscribers">
                   No subscribers found matching your criteria
@@ -372,6 +442,12 @@ export default function SubscribersPage() {
               {isLoadingSegments ? (
                 <div className="text-center py-8" data-testid="loading-segments">
                   Loading segments...
+                </div>
+              ) : segmentsError ? (
+                <div className="text-center py-8 text-red-500" data-testid="error-segments">
+                  Error: {segmentsError.message}
+                  <br />
+                  <small>Integration ID: {customerIoIntegration?.id}</small>
                 </div>
               ) : segments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground" data-testid="no-segments">
