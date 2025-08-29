@@ -283,7 +283,7 @@ export class CustomerIoIntegrationService {
           
           return {
             customers: Array.from(uniqueCustomers.values()).slice(0, limit),
-            next: null
+            next: undefined
           };
         } catch (activitiesError) {
           console.log('Activities endpoint also failed, no customers available');
@@ -303,7 +303,7 @@ export class CustomerIoIntegrationService {
       console.log(`Successfully retrieved ${customers.length} customers from Customer.io`);
       return {
         customers,
-        next: response.next || null
+        next: response.next || undefined
       };
       
     } catch (error: any) {
@@ -361,25 +361,29 @@ export class CustomerIoIntegrationService {
    * Create and send a broadcast
    */
   async sendBroadcast(broadcastData: {
-    name: string;
-    from: string;
     subject: string;
-    body: string;
+    content: string;
+    segment?: string;
+    campaignName: string;
+    sendNow?: boolean;
+    name?: string;
+    from?: string;
+    body?: string;
     preheader?: string;
     segmentId?: string;
     tags?: string[];
     sendAt?: Date;
-  }): Promise<{ success: boolean; broadcastId: number; message: string }> {
+  }): Promise<{ success: boolean; broadcastId?: number; campaignId?: string; message: string; error?: string }> {
     try {
       // Create newsletter first
       const newsletterPayload = {
         newsletter: {
-          name: `SharpSend_${broadcastData.name}`,
+          name: broadcastData.campaignName || `SharpSend_${broadcastData.name || 'Campaign'}`,
           subject: broadcastData.subject,
-          from: broadcastData.from,
-          body: broadcastData.body,
+          from: broadcastData.from || 'SharpSend <hello@sharpsend.io>',
+          body: broadcastData.content || broadcastData.body || '',
           preheader_text: broadcastData.preheader,
-          tags: broadcastData.tags
+          tags: broadcastData.tags || ['sharpsend', 'broadcast']
         }
       };
 
@@ -389,21 +393,24 @@ export class CustomerIoIntegrationService {
       // Create broadcast
       const broadcastPayload: any = {
         broadcast: {
-          name: `SharpSend_${broadcastData.name}`,
+          name: broadcastData.campaignName || `SharpSend_${broadcastData.name || 'Campaign'}`,
           newsletter_id: newsletterId,
-          tags: broadcastData.tags || ['sharpsend']
+          tags: broadcastData.tags || ['sharpsend', 'broadcast']
         }
       };
 
+      // Use segment ID 1 for "All Users" or specified segment
       if (broadcastData.segmentId) {
         broadcastPayload.broadcast.segment_id = broadcastData.segmentId;
+      } else if (broadcastData.segment === "all_users") {
+        broadcastPayload.broadcast.segment_id = 1; // All Users segment
       }
 
       const broadcastResponse = await this.makeApiRequest('POST', '/broadcasts', broadcastPayload);
       const broadcastId = broadcastResponse.broadcast.id;
 
       // Trigger the broadcast
-      if (broadcastData.sendAt) {
+      if (broadcastData.sendAt && !broadcastData.sendNow) {
         // Schedule for later
         await this.makeApiRequest('POST', `/broadcasts/${broadcastId}/schedule`, {
           scheduled_for: Math.floor(broadcastData.sendAt.getTime() / 1000)
@@ -416,15 +423,17 @@ export class CustomerIoIntegrationService {
       return {
         success: true,
         broadcastId,
-        message: broadcastData.sendAt 
+        campaignId: String(broadcastId),
+        message: broadcastData.sendAt && !broadcastData.sendNow
           ? `Broadcast scheduled for ${broadcastData.sendAt.toISOString()}`
-          : 'Broadcast sent successfully'
+          : 'Email broadcast sent successfully to all Customer.io subscribers'
       };
     } catch (error: any) {
+      console.error('Customer.io sendBroadcast error:', error.response?.data || error.message);
       return {
         success: false,
-        broadcastId: 0,
-        message: `Failed to send broadcast: ${error.message}`
+        error: error.response?.data?.message || error.message || 'Unknown error occurred',
+        message: `Failed to send broadcast: ${error.response?.data?.message || error.message || 'Unknown error'}`
       };
     }
   }

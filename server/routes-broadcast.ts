@@ -332,43 +332,73 @@ router.post("/:id/send", async (req: AuthenticatedRequest, res: Response) => {
       details: { totalRecipients: existingItem[0].audienceCount || 0 }
     });
 
-    // TODO: Implement actual email sending logic here
-    // For now, simulate a successful send
+    // Implement actual email sending via Customer.io
     setTimeout(async () => {
       try {
-        // Update to sent status
-        await db
-          .update(broadcastQueue)
-          .set({
-            status: "sent",
-            sentAt: new Date(),
-            updatedAt: new Date()
-          })
-          .where(eq(broadcastQueue.id, id));
+        // Get the assignment content for the email
+        const assignment = await db
+          .select()
+          .from(assignments)
+          .where(eq(assignments.id, existingItem[0].assignmentId))
+          .limit(1);
 
-        // Update assignment status to "published"
-        await db
-          .update(assignments)
-          .set({ 
-            status: "published",
-            updatedAt: new Date()
-          })
-          .where(eq(assignments.id, existingItem[0].assignmentId));
+        if (!assignment.length) {
+          throw new Error("Assignment not found");
+        }
 
-        // Log completion
-        await db.insert(broadcastSendLogs).values({
-          publisherId,
-          broadcastId: id,
-          status: "completed",
-          message: "Broadcast sent successfully",
-          details: { 
-            totalRecipients: existingItem[0].audienceCount || 0,
-            sent: existingItem[0].audienceCount || 0,
-            failed: 0
-          }
+        const assignmentData = assignment[0];
+        
+        // Initialize Customer.io integration
+        const { CustomerIoIntegration } = await import("../services/customerio-integration");
+        const customerIo = new CustomerIoIntegration();
+        
+        // Send broadcast via Customer.io
+        const broadcastResult = await customerIo.sendBroadcast({
+          subject: existingItem[0].emailSubject || assignmentData.title,
+          content: assignmentData.content || `Assignment: ${assignmentData.title}\n\n${assignmentData.description}`,
+          segment: "all_users", // Send to all subscribers
+          campaignName: `Broadcast_${existingItem[0].id}`,
+          sendNow: true
         });
+
+        if (broadcastResult.success) {
+          // Update to sent status
+          await db
+            .update(broadcastQueue)
+            .set({
+              status: "sent",
+              sentAt: new Date(),
+              updatedAt: new Date()
+            })
+            .where(eq(broadcastQueue.id, id));
+
+          // Update assignment status to "published"
+          await db
+            .update(assignments)
+            .set({ 
+              status: "published",
+              updatedAt: new Date()
+            })
+            .where(eq(assignments.id, existingItem[0].assignmentId));
+
+          // Log completion
+          await db.insert(broadcastSendLogs).values({
+            publisherId,
+            broadcastId: id,
+            status: "completed",
+            message: "Email sent successfully via Customer.io",
+            details: { 
+              totalRecipients: existingItem[0].audienceCount || 0,
+              sent: existingItem[0].audienceCount || 0,
+              failed: 0,
+              customerIoCampaignId: broadcastResult.campaignId
+            }
+          });
+        } else {
+          throw new Error(broadcastResult.error || "Customer.io send failed");
+        }
       } catch (error) {
-        console.error("Error completing broadcast send:", error);
+        console.error("Error sending broadcast via Customer.io:", error);
         // Update to failed status
         await db
           .update(broadcastQueue)
@@ -382,11 +412,11 @@ router.post("/:id/send", async (req: AuthenticatedRequest, res: Response) => {
           publisherId,
           broadcastId: id,
           status: "failed",
-          message: "Broadcast send failed",
+          message: `Email send failed: ${String(error)}`,
           details: { error: String(error) }
         });
       }
-    }, 2000); // Simulate 2 second send process
+    }, 2000); // Small delay to update UI before sending
 
     res.json({ message: "Broadcast send initiated", status: "sending" });
   } catch (error) {
