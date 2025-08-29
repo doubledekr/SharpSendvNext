@@ -43,25 +43,28 @@ export class SegmentManagementService {
       const response = await this.customerIoService.getSegments();
       const segments = response.segments || [];
 
-      // Enrich segments with subscriber counts and metadata
+      // Enrich segments with REAL subscriber counts from Customer.io membership
       const enrichedSegments = await Promise.all(
         segments.map(async (segment: any) => {
           try {
-            const countResponse = await this.customerIoService.makeApiRequest('GET', `/segments/${segment.id}/customer_count`);
-            const subscriberCount = countResponse.count || 0;
+            // Get actual members to get real subscriber count
+            const membershipResponse = await this.customerIoService.makeApiRequest('GET', `/segments/${segment.id}/membership?limit=1000`);
+            const realSubscriberCount = membershipResponse.identifiers?.length || 0;
+
+            console.log(`Segment "${segment.name}" (ID: ${segment.id}) has ${realSubscriberCount} real subscribers`);
 
             return {
               id: segment.id.toString(),
               name: segment.name,
               description: segment.description,
               type: segment.type || 'manual',
-              subscriberCount,
+              subscriberCount: realSubscriberCount,
               source: 'customer_io' as const,
               createdAt: segment.created_at || new Date().toISOString(),
               lastUpdated: new Date().toISOString()
             };
           } catch (error) {
-            console.error(`Failed to get count for segment ${segment.id}:`, error);
+            console.error(`Failed to get real member count for segment ${segment.id}:`, error);
             return {
               id: segment.id.toString(),
               name: segment.name,

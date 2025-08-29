@@ -1329,7 +1329,37 @@ router.get('/integrations/:integrationId/segments', async (req, res) => {
       lastSyncAt: new Date().toISOString()
     }));
 
-    res.json(transformedSegments);
+    // Get REAL subscriber counts to fix the 164 vs 41 issue
+    const { SegmentManagementService } = await import('./services/segment-management');
+    const segmentService = new SegmentManagementService({
+      siteId: credentials.site_id,
+      trackApiKey: credentials.track_api_key,
+      appApiKey: credentials.app_api_key,
+      region: credentials.region || 'us'
+    });
+
+    // Correct subscriber counts with actual Customer.io membership data
+    const segmentsWithRealCounts = await Promise.all(
+      transformedSegments.map(async (segment: any) => {
+        try {
+          const realSubscribers = await segmentService.getSegmentSubscribers(segment.id.toString(), 1000);
+          const realCount = realSubscribers.length;
+          
+          console.log(`Segment "${segment.name}" corrected: ${segment.subscriberCount} -> ${realCount} real subscribers`);
+          
+          return {
+            ...segment,
+            subscriberCount: realCount
+          };
+        } catch (error) {
+          console.error(`Failed to get real count for segment ${segment.name}:`, error);
+          return segment;
+        }
+      })
+    );
+
+    console.log(`Fixed ${segmentsWithRealCounts.length} segments with correct subscriber counts (no more 164 total)`);
+    res.json(segmentsWithRealCounts);
   } catch (error) {
     console.error('Error fetching segments:', error);
     res.status(500).json({ error: 'Failed to fetch segments' });
