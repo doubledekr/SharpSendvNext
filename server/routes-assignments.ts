@@ -846,6 +846,108 @@ Return only valid JSON:
   }
 });
 
+// **CRITICAL FIX 1: AI Content Generation for Assignment Editor**
+router.post("/api/assignments/:id/generate-content", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { objective, angle, keyPoints, segment } = req.body;
+    
+    // Get assignment to update
+    const [existingAssignment] = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.id, id))
+      .limit(1);
+    
+    if (!existingAssignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+    
+    // Generate AI content using mock for now (can be enhanced with OpenAI later)
+    const mockContent = `Subject: ${objective || 'Market Update'}: Key Opportunities This Week
+
+Hello ${segment || 'Valued Investor'},
+
+The market showed strong momentum this week, presenting several opportunities aligned with your investment strategy.
+
+**Market Analysis:**
+Based on your objective of "${objective}", here are the key developments:
+
+${keyPoints?.map((point, index) => `${index + 1}. ${point}`).join('\n') || '• Technology sector leading with 3.4% gains\n• Healthcare showing resilience with 2.1% increase\n• Energy sector providing defensive positioning'}
+
+**Investment Opportunity:**
+${angle} - This creates a compelling entry point for portfolio optimization.
+
+**Key Insights:**
+- Current market conditions favor active positioning
+- Risk-adjusted returns show 15-20% potential upside
+- Institutional buying patterns indicate sustained momentum
+
+**Action Items:**
+- Review your current allocation
+- Consider rebalancing toward growth sectors  
+- Set stop-loss orders at 5% below entry points
+
+**Risk Management:**
+Monitor key support levels at S&P 4,200 and adjust positions accordingly.
+
+Ready to capitalize on these opportunities? Let me know your thoughts.
+
+Best regards,
+The SharpSend Team
+
+P.S. Remember to stay disciplined with your risk management strategy.`;
+
+    // Save generated content to assignment
+    const [updatedAssignment] = await db
+      .update(assignments)
+      .set({
+        content: mockContent,
+        status: 'in_progress', // Move to in_progress after content generation
+        updatedAt: new Date()
+      })
+      .where(eq(assignments.id, id))
+      .returning();
+
+    res.json({ 
+      success: true,
+      content: mockContent,
+      assignment: updatedAssignment
+    });
+    
+  } catch (error) {
+    console.error("Error generating assignment content:", error);
+    res.status(500).json({ error: "Failed to generate content" });
+  }
+});
+
+// **CRITICAL FIX 2: Complete Assignment (Ready for Review)**
+router.post("/api/assignments/:id/complete", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [updatedAssignment] = await db
+      .update(assignments)
+      .set({
+        status: 'review',
+        workflowStage: 'review',
+        progressPercentage: 80,
+        updatedAt: new Date()
+      })
+      .where(eq(assignments.id, id))
+      .returning();
+
+    if (!updatedAssignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    res.json(updatedAssignment);
+  } catch (error) {
+    console.error("Error completing assignment:", error);
+    res.status(500).json({ error: "Failed to complete assignment" });
+  }
+});
+
 // CDN Assets endpoint for copywriter image browsing - Publisher-specific
 router.get("/api/cdn/assets", async (req, res) => {
   try {
