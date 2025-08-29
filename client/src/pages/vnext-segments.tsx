@@ -86,6 +86,20 @@ export function VNextSegments() {
     queryKey: ["/api/segments"],
   });
 
+  // Fetch integration data to get actual unique subscriber count
+  const { data: integrationData } = useQuery({
+    queryKey: ["/api/integrations/connected"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/integrations/connected");
+      return await response.json() as { success: boolean; integrations: any[] };
+    }
+  });
+
+  // Get actual unique subscriber count from Customer.io integration
+  const actualSubscriberCount = integrationData?.integrations?.find(
+    i => i.platformId === 'customer_io'
+  )?.stats?.subscribers || 0;
+
   // Create manual segment mutation
   const createSegmentMutation = useMutation({
     mutationFn: async (segmentData: any) => {
@@ -473,10 +487,10 @@ export function VNextSegments() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {segments.reduce((sum, s) => sum + s.subscriberCount, 0).toLocaleString()}
+                {actualSubscriberCount.toLocaleString()}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Across all segments
+                Unique subscribers total
               </p>
             </CardContent>
           </Card>
