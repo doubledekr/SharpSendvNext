@@ -700,6 +700,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Demo routes removed
   app.use("/api/platform-send", platformSendRoutes);
   app.use(assignmentRoutes);
+  app.use("/api/broadcast-queue", broadcastRoutes);
+  app.use("/api/approvals", approvalsRoutes);
+  app.use("/api/segments", segmentsRoutes);
+  app.use("/api/email-generation", emailGenerationRoutes);
+  app.use("/api/assets", assetRoutes);
+  app.use("/api/opportunities", opportunityRoutes);
+  app.use("/api/opportunity-detector", opportunityDetectorRoutes);
+  app.use("/api/integrations", integrationsRoutes);
+  app.use("/api/cohorts", cohortsRoutes);
+  app.use("/api/sharpsend-intelligence", sharpSendIntelligenceRoutes);
+  app.use("/api/images", imageTemplateRoutes);
   
   // Public object serving endpoint for CDN access  
   app.get("/public-objects/:filePath(*)", async (req, res) => {
