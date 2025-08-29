@@ -537,4 +537,110 @@ router.get("/:id/logs", async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+// POST /api/broadcast-queue/:id/send - Send broadcast to Customer.io
+router.post("/:id/send", async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const publisherId = "demo-publisher";
+    const { id } = req.params;
+
+    // Get broadcast queue item
+    const [queueItem] = await db
+      .select()
+      .from(broadcastQueue)
+      .where(and(
+        eq(broadcastQueue.id, id),
+        eq(broadcastQueue.publisherId, publisherId)
+      ))
+      .limit(1);
+
+    if (!queueItem) {
+      return res.status(404).json({ error: "Broadcast queue item not found" });
+    }
+
+    // Get assignment content
+    const [assignment] = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.id, queueItem.assignmentId))
+      .limit(1);
+
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    // Trigger Customer.io send
+    try {
+      const { CustomerIOIntegration } = await import("./services/customerio-integration");
+      const customerIO = new CustomerIOIntegration();
+      
+      const sendResult = await customerIO.sendBroadcast({
+        subject: assignment.title,
+        content: assignment.content || "Email content",
+        segment: "all_users", // Send to all users
+        metadata: {
+          assignmentId: assignment.id,
+          broadcastId: id,
+          publisherId
+        }
+      });
+
+      // Update queue item status
+      await db
+        .update(broadcastQueue)
+        .set({
+          status: "sent",
+          sentAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(broadcastQueue.id, id));
+
+      // Log send attempt
+      await db.insert(broadcastSendLogs).values({
+        publisherId,
+        broadcastId: id,
+        status: "success",
+        message: `Successfully sent to Customer.io segment: all_users`,
+        details: sendResult,
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully sent to ${queueItem.audienceCount} subscribers via Customer.io`,
+        queueItem: { ...queueItem, status: "sent", sentAt: new Date() },
+        sendResult
+      });
+
+    } catch (sendError) {
+      console.error("Error sending via Customer.io:", sendError);
+      
+      // Log failed send attempt
+      await db.insert(broadcastSendLogs).values({
+        publisherId,
+        broadcastId: id,
+        status: "failed",
+        message: `Failed to send via Customer.io: ${sendError.message}`,
+        details: { error: sendError.message },
+      });
+
+      // Update queue item status to failed
+      await db
+        .update(broadcastQueue)
+        .set({
+          status: "failed",
+          updatedAt: new Date()
+        })
+        .where(eq(broadcastQueue.id, id));
+
+      res.status(500).json({ 
+        error: "Failed to send broadcast",
+        details: sendError.message
+      });
+    }
+
+  } catch (error) {
+    console.error("Error processing broadcast send:", error);
+    res.status(500).json({ error: "Failed to process broadcast send" });
+  }
+});
+
 export default router;

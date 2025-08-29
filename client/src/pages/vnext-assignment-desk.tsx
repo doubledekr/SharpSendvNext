@@ -1644,21 +1644,39 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                             )}
 
                             {assignment.status === "completed" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toast({
-                                    title: "Email Variations Generated",
-                                    description: "This assignment has been processed with segment-specific email variations including Growth Investors, Conservative Investors, Day Traders, and Crypto Enthusiasts.",
-                                  });
-                                }}
-                                className="text-xs sm:text-sm text-green-600 border-green-200 hover:bg-green-50"
-                              >
-                                <Sparkles className="h-4 w-4 mr-1" />
-                                View Variations
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast({
+                                      title: "Email Variations Generated",
+                                      description: "This assignment has been processed with segment-specific email variations including Growth Investors, Conservative Investors, Day Traders, and Crypto Enthusiasts.",
+                                    });
+                                  }}
+                                  className="text-xs sm:text-sm text-green-600 border-green-200 hover:bg-green-50"
+                                >
+                                  <Sparkles className="h-4 w-4 mr-1" />
+                                  View Variations
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    approveAssignmentMutation.mutate({
+                                      id: assignment.id,
+                                      comments: "Automatically approved after segment variations completed"
+                                    });
+                                  }}
+                                  disabled={approveAssignmentMutation.isPending}
+                                  className="text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white"
+                                  data-testid={`button-approve-completed-${assignment.id}`}
+                                >
+                                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Approve & Queue
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </div>

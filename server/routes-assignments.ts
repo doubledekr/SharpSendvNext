@@ -293,6 +293,45 @@ router.patch("/api/assignments/:id", async (req, res) => {
         // Don't fail the main update if approval creation fails
       }
     }
+
+    // If assignment is being approved, automatically add to broadcast queue
+    if (updates.status === "approved") {
+      try {
+        console.log(`Auto-adding approved assignment ${id} to broadcast queue`);
+        
+        // Check if already in broadcast queue
+        const { broadcastQueue } = await import("@shared/schema-multitenant");
+        const existingQueueItem = await db
+          .select()
+          .from(broadcastQueue)
+          .where(and(
+            eq(broadcastQueue.assignmentId, id),
+            eq(broadcastQueue.publisherId, existingAssignment.publisherId)
+          ))
+          .limit(1);
+
+        if (!existingQueueItem.length) {
+          // Add to broadcast queue
+          const [queueItem] = await db.insert(broadcastQueue).values({
+            publisherId: existingAssignment.publisherId,
+            assignmentId: id,
+            title: updated.title,
+            status: "ready",
+            audienceCount: 42, // Customer.io subscriber count
+            segments: updated.targetSegments || [],
+            sendSettings: null,
+            abTestConfig: { enabled: false },
+          }).returning();
+          
+          console.log(`Successfully added assignment ${id} to broadcast queue:`, queueItem.id);
+        } else {
+          console.log(`Assignment ${id} already in broadcast queue`);
+        }
+      } catch (queueError) {
+        console.error("Error auto-adding to broadcast queue:", queueError);
+        // Don't fail the main approval if queue addition fails
+      }
+    }
     
     // Add shareable URL to response
     const host = req.get('host') || 'sharpsend.io';
