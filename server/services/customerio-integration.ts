@@ -224,11 +224,71 @@ export class CustomerIoIntegrationService {
   }
 
   /**
-   * Get segments
+   * Get segments with subscriber counts
    */
   async getSegments(): Promise<{ segments: CustomerIoSegment[] }> {
     const response = await this.makeApiRequest('GET', '/segments');
-    return { segments: response.segments || [] };
+    const segments = response.segments || [];
+    
+    // Get subscriber counts for each segment
+    const segmentsWithCounts = await Promise.all(
+      segments.map(async (segment: any) => {
+        try {
+          const countResponse = await this.makeApiRequest('GET', `/segments/${segment.id}/customer_count`);
+          return {
+            ...segment,
+            subscriber_count: countResponse.count || 0
+          };
+        } catch (error) {
+          console.error(`Failed to get count for segment ${segment.id}:`, error);
+          return {
+            ...segment,
+            subscriber_count: 0
+          };
+        }
+      })
+    );
+    
+    return { segments: segmentsWithCounts };
+  }
+
+  /**
+   * Get all customers/subscribers from Customer.io
+   */
+  async getCustomers(limit: number = 100, start?: string): Promise<{ customers: CustomerIoCustomer[], next?: string }> {
+    try {
+      let endpoint = `/customers?limit=${limit}`;
+      if (start) {
+        endpoint += `&start=${start}`;
+      }
+      
+      const response = await this.makeApiRequest('GET', endpoint);
+      
+      return {
+        customers: response.customers || [],
+        next: response.meta?.next_start
+      };
+    } catch (error) {
+      console.error('Failed to get customers:', error);
+      return { customers: [] };
+    }
+  }
+
+  /**
+   * Get customers in a specific segment
+   */
+  async getSegmentCustomers(segmentId: string, limit: number = 100): Promise<{ customers: CustomerIoCustomer[] }> {
+    try {
+      const endpoint = `/segments/${segmentId}/customers?limit=${limit}`;
+      const response = await this.makeApiRequest('GET', endpoint);
+      
+      return {
+        customers: response.customers || []
+      };
+    } catch (error) {
+      console.error(`Failed to get customers for segment ${segmentId}:`, error);
+      return { customers: [] };
+    }
   }
 
   /**

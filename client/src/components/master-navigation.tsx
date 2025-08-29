@@ -87,6 +87,12 @@ export function MasterNavigation() {
       description: "Audience Management"
     },
     {
+      title: "Subscribers",
+      href: "/subscribers",
+      icon: Users,
+      description: "Customer.io Subscribers"
+    },
+    {
       title: "A/B Testing",
       href: "/ab-testing",
       icon: FlaskConical,

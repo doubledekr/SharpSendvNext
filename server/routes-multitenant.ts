@@ -3,6 +3,10 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { tenantStorage } from "./storage-multitenant";
+import { CustomerIoIntegrationService } from "./services/customerio-integration";
+import { integrations } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
+import { db } from "./db";
 import {
   requireTenant,
   getTenantInfo,
@@ -61,6 +65,118 @@ function requireRole(role: string) {
     // Implement role checking logic here if needed
     next();
   };
+}
+
+// Helper functions for Customer.io integration
+async function getCustomerIoIntegration(publisherId: string): Promise<CustomerIoIntegrationService | null> {
+  const [integration] = await db
+    .select()
+    .from(integrations)
+    .where(and(
+      eq(integrations.publisherId, publisherId),
+      eq(integrations.platformId, "customer_io"),
+      eq(integrations.status, "connected")
+    ));
+
+  if (!integration) return null;
+
+  const credentials = integration.credentials as any;
+  return new CustomerIoIntegrationService({
+    siteId: credentials.site_id,
+    trackApiKey: credentials.track_api_key,
+    appApiKey: credentials.app_api_key,
+    region: credentials.region || 'us'
+  });
+}
+
+async function getCustomerIoSubscribers(publisherId: string) {
+  const service = await getCustomerIoIntegration(publisherId);
+  if (!service) return [];
+
+  const result = await service.getCustomers(100);
+  return result.customers.map((customer: any) => ({
+    id: customer.id,
+    email: customer.email,
+    name: customer.attributes?.first_name || customer.attributes?.name || customer.email,
+    segment: "All Users",
+    engagementScore: "0",
+    revenue: "0",
+    joinedAt: customer.created_at ? new Date(customer.created_at * 1000).toISOString() : new Date().toISOString(),
+    isActive: !customer.unsubscribed,
+    metadata: customer.attributes || {},
+    preferences: {},
+    tags: [],
+    externalId: customer.id,
+    source: "customer_io",
+    lastSyncAt: new Date().toISOString()
+  }));
+}
+
+async function getCustomerIoSegments(publisherId: string) {
+  const service = await getCustomerIoIntegration(publisherId);
+  if (!service) return [];
+
+  const result = await service.getSegments();
+  return result.segments.map((segment: any) => ({
+    id: segment.id,
+    publisherId,
+    externalId: segment.id,
+    name: segment.name,
+    description: segment.description,
+    type: segment.type === "manual" ? "manual" : "dynamic",
+    source: "customer_io",
+    subscriberCount: segment.subscriber_count || 0,
+    conditions: segment.filter || {},
+    metadata: segment,
+    createdAt: segment.created ? new Date(segment.created * 1000).toISOString() : new Date().toISOString(),
+    updatedAt: segment.updated ? new Date(segment.updated * 1000).toISOString() : new Date().toISOString(),
+    lastSyncAt: new Date().toISOString()
+  }));
+}
+
+async function createCustomerIoSegment(publisherId: string, segmentData: any) {
+  const service = await getCustomerIoIntegration(publisherId);
+  if (!service) throw new Error("Customer.io integration not found");
+
+  const segment = await service.createSegment(segmentData);
+  return {
+    id: segment.id,
+    publisherId,
+    externalId: segment.id,
+    name: segment.name,
+    description: segment.description,
+    type: "manual",
+    source: "customer_io",
+    subscriberCount: 0,
+    conditions: segment.filter || {},
+    metadata: segment,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastSyncAt: new Date().toISOString()
+  };
+}
+
+async function getCustomerIoSegmentSubscribers(publisherId: string, segmentId: string) {
+  const service = await getCustomerIoIntegration(publisherId);
+  if (!service) return [];
+
+  const result = await service.getSegmentCustomers(segmentId);
+  return result.customers.map((customer: any) => ({
+    id: customer.id,
+    email: customer.email,
+    name: customer.attributes?.first_name || customer.attributes?.name || customer.email,
+    segment: segmentId,
+    engagementScore: "0",
+    revenue: "0",
+    joinedAt: customer.created_at ? new Date(customer.created_at * 1000).toISOString() : new Date().toISOString(),
+    isActive: !customer.unsubscribed,
+    metadata: customer.attributes || {},
+    preferences: {},
+    tags: [],
+    externalId: customer.id,
+    source: "customer_io",
+    lastSyncAt: new Date().toISOString()
+  }));
 }
 
 // Logging middleware
@@ -248,11 +364,61 @@ export async function registerMultiTenantRoutes(app: Express): Promise<void> {
     logTenantOperation("GET_SUBSCRIBERS"),
     async (req: AuthenticatedRequest, res) => {
       try {
-        const subscribers = await tenantStorage.getSubscribers(req.tenant!.id);
+        // Get subscribers from Customer.io integration
+        const subscribers = await getCustomerIoSubscribers(req.tenant!.id);
         res.json(subscribers);
       } catch (error) {
         console.error("Subscribers fetch error:", error);
         res.status(500).json({ error: "Failed to fetch subscribers" });
+      }
+    }
+  );
+
+  // Get segments from Customer.io
+  app.get("/api/segments",
+    authenticateAndSetTenant,
+    requireTenant,
+    logTenantOperation("GET_SEGMENTS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const segments = await getCustomerIoSegments(req.tenant!.id);
+        res.json(segments);
+      } catch (error) {
+        console.error("Segments fetch error:", error);
+        res.status(500).json({ error: "Failed to fetch segments" });
+      }
+    }
+  );
+
+  // Create new segment in Customer.io
+  app.post("/api/segments",
+    authenticateAndSetTenant,
+    requireTenant,
+    requireRole("editor"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { name, description, filter } = req.body;
+        const segment = await createCustomerIoSegment(req.tenant!.id, { name, description, filter });
+        res.status(201).json(segment);
+      } catch (error) {
+        console.error("Segment creation error:", error);
+        res.status(500).json({ error: "Failed to create segment" });
+      }
+    }
+  );
+
+  // Get segment subscribers
+  app.get("/api/segments/:segmentId/subscribers",
+    authenticateAndSetTenant,
+    requireTenant,
+    logTenantOperation("GET_SEGMENT_SUBSCRIBERS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const subscribers = await getCustomerIoSegmentSubscribers(req.tenant!.id, req.params.segmentId);
+        res.json(subscribers);
+      } catch (error) {
+        console.error("Segment subscribers fetch error:", error);
+        res.status(500).json({ error: "Failed to fetch segment subscribers" });
       }
     }
   );

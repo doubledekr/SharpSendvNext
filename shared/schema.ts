@@ -53,6 +53,27 @@ export const subscribers = pgTable("subscribers", {
   metadata: jsonb("metadata").$type<Record<string, any>>(),
   preferences: jsonb("preferences").$type<Record<string, any>>(),
   tags: text("tags").array(),
+  // Customer.io integration fields
+  externalId: text("external_id"), // Customer.io customer ID
+  source: text("source").default("local"), // local, customer_io, mailchimp, etc
+  lastSyncAt: timestamp("last_sync_at"),
+});
+
+// Segments table for Customer.io segments
+export const segments = pgTable("segments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  externalId: text("external_id"), // Customer.io segment ID  
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull().default("manual"), // manual, dynamic, auto
+  source: text("source").default("local"), // local, customer_io, etc
+  subscriberCount: integer("subscriber_count").default(0),
+  conditions: jsonb("conditions").$type<Record<string, any>>(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  lastSyncAt: timestamp("last_sync_at"),
 });
 
 // Email platform integrations - persistent storage
@@ -868,6 +889,9 @@ export type User = typeof users.$inferSelect;
 
 export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
 export type Subscriber = typeof subscribers.$inferSelect;
+
+export type InsertSegment = typeof segments.$inferInsert;
+export type Segment = typeof segments.$inferSelect;
 
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Campaign = typeof campaigns.$inferSelect;
