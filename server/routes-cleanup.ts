@@ -17,8 +17,8 @@ const router = Router();
 // Clear all test data for demo publisher
 router.post('/api/cleanup/test-data', async (req: Request, res: Response) => {
   try {
-    // Using the actual demo publisher ID from database
-    const demoPublisherId = 'b1953bbb-178c-41ed-ac31-21fd2ab16c3d';
+    // Both schemas use the same publisher ID
+    const publisherId = 'demo-publisher';
     
     console.log('Starting cleanup of test data for demo publisher...');
     
@@ -26,7 +26,7 @@ router.post('/api/cleanup/test-data', async (req: Request, res: Response) => {
     try {
       const deletedLogs = await db
         .delete(broadcastSendLogs)
-        .where(eq(broadcastSendLogs.publisherId, demoPublisherId))
+        .where(eq(broadcastSendLogs.publisherId, publisherId))
         .returning();
       console.log(`Deleted ${deletedLogs.length} broadcast send logs`);
     } catch (e) {
@@ -37,7 +37,7 @@ router.post('/api/cleanup/test-data', async (req: Request, res: Response) => {
     try {
       const deletedBroadcasts = await db
         .delete(broadcastQueue)
-        .where(eq(broadcastQueue.publisherId, demoPublisherId))
+        .where(eq(broadcastQueue.publisherId, publisherId))
         .returning();
       console.log(`Deleted ${deletedBroadcasts.length} broadcast queue items`);
     } catch (e) {
@@ -48,7 +48,7 @@ router.post('/api/cleanup/test-data', async (req: Request, res: Response) => {
     try {
       const deletedVariations = await db
         .delete(emailVariations)
-        .where(eq(emailVariations.publisherId, demoPublisherId))
+        .where(eq(emailVariations.publisherId, publisherId))
         .returning();
       console.log(`Deleted ${deletedVariations.length} email variations`);
     } catch (e) {
@@ -59,7 +59,7 @@ router.post('/api/cleanup/test-data', async (req: Request, res: Response) => {
     try {
       const deletedPixelEvents = await db
         .delete(imagePixelEvents)
-        .where(eq(imagePixelEvents.publisherId, demoPublisherId))
+        .where(eq(imagePixelEvents.publisherId, publisherId))
         .returning();
       console.log(`Deleted ${deletedPixelEvents.length} image pixel events`);
     } catch (e) {
@@ -70,20 +70,18 @@ router.post('/api/cleanup/test-data', async (req: Request, res: Response) => {
     try {
       const deletedAttachments = await db
         .delete(imageAttachments)
-        .where(eq(imageAttachments.publisherId, demoPublisherId))
+        .where(eq(imageAttachments.publisherId, publisherId))
         .returning();
       console.log(`Deleted ${deletedAttachments.length} image attachments`);
     } catch (e) {
       console.log('No image attachments table or already empty');
     }
     
-    // AI content history table doesn't exist, skip it
-    
     // Clear assignments - LAST as other tables may reference it
     try {
       const deletedAssignments = await db
         .delete(assignments)
-        .where(eq(assignments.publisherId, demoPublisherId))
+        .where(eq(assignments.publisherId, publisherId))
         .returning();
       console.log(`Deleted ${deletedAssignments.length} assignments`);
     } catch (e) {
