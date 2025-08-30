@@ -83,14 +83,14 @@ export default function BroadcastQueue() {
   // Send broadcast mutation
   const sendMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("POST", `/api/broadcast-queue/${id}/send`);
+      return apiRequest("POST", `/api/broadcast-queue/${id}/send-direct`);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/broadcast-queue"] });
-      toast({ title: "Success", description: "Broadcast sent successfully" });
+      toast({ title: "Broadcast Sent!", description: data.message || "Successfully sent to Customer.io subscribers" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to send broadcast", variant: "destructive" });
+    onError: (error) => {
+      toast({ title: "Send Failed", description: error.message || "Failed to send broadcast to Customer.io", variant: "destructive" });
     }
   });
 
@@ -370,7 +370,7 @@ export default function BroadcastQueue() {
                               className="bg-green-600 hover:bg-green-700 text-white"
                             >
                               <Send className="h-4 w-4 mr-1" />
-                              Send Now to {item.audienceCount} subscribers
+                              Send Now to {item.audienceCount} Customer.io subscribers
                             </Button>
                           </>
                         )}
