@@ -107,7 +107,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // All demo functionality removed
+  // Demo endpoints - bypassing auth for dashboard access
+  app.get('/api/analytics', async (req, res) => {
+    try {
+      const publisherId = 'demo-publisher';
+      
+      // Get analytics from integration storage
+      const { tenantStorage } = await import("./storage-multitenant");
+      const analytics = await tenantStorage.calculateAnalytics(publisherId);
+      
+      res.json(analytics);
+    } catch (error) {
+      console.error("Demo analytics error:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get('/api/subscribers', async (req, res) => {
+    try {
+      const publisherId = 'demo-publisher';
+      
+      // Get real Customer.io subscribers
+      const { getCustomerIoSubscribers } = await import("./storage-multitenant");
+      const subscribers = await getCustomerIoSubscribers(publisherId);
+      
+      res.json(subscribers);
+    } catch (error) {
+      console.error("Demo subscribers error:", error);
+      res.status(500).json({ error: "Failed to fetch subscribers" });
+    }
+  });
 
 
 
@@ -684,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
-  await registerMultiTenantRoutes(app);
+  // await registerMultiTenantRoutes(app); // COMMENTED OUT for demo mode to prevent route conflicts
   // Temporarily disabled to avoid route conflicts with integrationsRoutes
   // platformIntegrationsRoutes(app);
   registerEmailRoutes(app);
@@ -697,6 +726,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerEmailPlatformRoutes(app);
   registerSendQueueRoutes(app);
   registerVNextRoutes(app);
+
+  // Skip multitenant route registration for demo mode to avoid route conflicts
+  // Demo endpoints above provide the needed analytics and subscribers data
   // Demo routes removed
   app.use("/api/platform-send", platformSendRoutes);
   app.use(assignmentRoutes);

@@ -72,10 +72,10 @@ export default function VNextDashboard() {
     retry: false,
   });
   
-  // Calculate real stats from fetched data - use analytics integration data
+  // Calculate real stats from fetched data - prioritize real Customer.io data
   const stats = {
-    totalSubscribers: analytics?.totalSubscribers || 0, // Use integration data instead of database subscribers
-    engagementRate: analytics?.engagementRate || 0,
+    totalSubscribers: subscribers?.length || analytics?.totalSubscribers || 0, // Use real subscriber count from API
+    engagementRate: analytics?.avgOpenRate || analytics?.engagementRate || 0,
     monthlyRevenue: analytics?.revenue?.monthly || analytics?.monthlyRevenue || 0,
     totalAssignments: analytics?.assignments?.total || 0,
     pixelsActive: analytics?.pixelStats?.active || 0,
