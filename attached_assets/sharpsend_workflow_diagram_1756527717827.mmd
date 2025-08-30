@@ -1,0 +1,131 @@
+graph TD
+    %% Assignment Creation Flow
+    subgraph "Assignment Creation"
+        AC[Assignment Created]
+        AD[Assignment Details]
+        AS[Segment Selection]
+        AR[Assignment Review]
+        AST[Assignment Settings]
+    end
+
+    %% Content Generation
+    subgraph "Content Development"
+        CG[AI Content Generation]
+        CD[Content Draft]
+        CV[Content Variations]
+        CS[Content Saved to DB]
+    end
+
+    %% Approval Workflow
+    subgraph "Approval System"
+        AA[Assignment Approval]
+        AR1[Reviewer Assignment]
+        AF[Approval Feedback]
+        AST1[Status: Approved]
+    end
+
+    %% Broadcast Queue System
+    subgraph "Broadcast Queue"
+        BQ[Add to Broadcast Queue]
+        BS[Broadcast Settings]
+        BT[Target Segments]
+        BA[A/B Test Config]
+    end
+
+    %% Email Service Integration
+    subgraph "Email Service Providers"
+        CIO_SEND[Customer.io Campaign]
+        ITER_SEND[Iterable Campaign]
+        MC_SEND[Mailchimp Campaign]
+        SS_SEND[SharpSend Email Server]
+    end
+
+    %% Database Tables (schema-multitenant.ts)
+    subgraph "Database Tables"
+        ASSIGN_DB[(assignments)]
+        DRAFT_DB[(drafts)]
+        QUEUE_DB[(broadcastQueue)]
+        SEND_DB[(emailSendQueue)]
+        SUBS_DB[(subscribers)]
+        SEGS_DB[(segments)]
+        INTEG_DB[(integrations)]
+    end
+
+    %% Publisher Isolation
+    subgraph "Publisher Isolation"
+        PUB_A[Publisher A: acme.sharpsend.io]
+        PUB_B[Publisher B: techpub.sharpsend.io]
+        PUB_C[Publisher C: fintech.sharpsend.io]
+    end
+
+    %% Workflow Flow
+    AC --> AD
+    AD --> AS
+    AS --> AR
+    AR --> AST
+    AST --> CG
+
+    CG --> CD
+    CD --> CV
+    CV --> CS
+    CS --> ASSIGN_DB
+
+    ASSIGN_DB --> AA
+    AA --> AR1
+    AR1 --> AF
+    AF --> AST1
+
+    AST1 --> BQ
+    BQ --> BS
+    BS --> BT
+    BT --> BA
+    BA --> QUEUE_DB
+
+    QUEUE_DB --> CIO_SEND
+    QUEUE_DB --> ITER_SEND
+    QUEUE_DB --> MC_SEND
+    QUEUE_DB --> SS_SEND
+
+    %% Database Relationships
+    ASSIGN_DB --> DRAFT_DB
+    QUEUE_DB --> SEND_DB
+    ASSIGN_DB -.-> SUBS_DB
+    ASSIGN_DB -.-> SEGS_DB
+    QUEUE_DB -.-> INTEG_DB
+
+    %% Publisher Isolation
+    PUB_A -.-> ASSIGN_DB
+    PUB_B -.-> ASSIGN_DB
+    PUB_C -.-> ASSIGN_DB
+
+    %% Current Problem (Broken Flow)
+    BROKEN[❌ BROKEN: Assignment → Broadcast Queue]
+    ASSIGN_DB -.->|Foreign Key Mismatch| BROKEN
+    BROKEN -.->|No Connection| QUEUE_DB
+
+    %% Fixed Flow (After Consolidation)
+    FIXED[✅ FIXED: Direct Connection]
+    AST1 -.->|After Fix| FIXED
+    FIXED -.->|Proper FK| QUEUE_DB
+
+    %% Styling
+    classDef creation fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef content fill:#f1f8e9,stroke:#388e3c,stroke-width:2px
+    classDef approval fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    classDef broadcast fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef publisher fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef broken fill:#ffebee,stroke:#d32f2f,stroke-width:3px
+    classDef fixed fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px
+
+    class AC,AD,AS,AR,AST creation
+    class CG,CD,CV,CS content
+    class AA,AR1,AF,AST1 approval
+    class BQ,BS,BT,BA broadcast
+    class ASSIGN_DB,DRAFT_DB,QUEUE_DB,SEND_DB,SUBS_DB,SEGS_DB,INTEG_DB database
+    class CIO_SEND,ITER_SEND,MC_SEND,SS_SEND external
+    class PUB_A,PUB_B,PUB_C publisher
+    class BROKEN broken
+    class FIXED fixed
+

@@ -1,0 +1,195 @@
+erDiagram
+    %% Core Multi-Tenant Tables
+    publishers {
+        varchar id PK
+        text name
+        text subdomain UK "acme, techpub, fintech"
+        text customDomain "Optional custom domain"
+        text cdnUrl "CDN URL for assets"
+        text tier "starter, growth, pro"
+        jsonb settings
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    users {
+        varchar id PK
+        varchar publisherId FK
+        text username
+        text email
+        text password
+        text role "admin, editor, reviewer"
+        timestamp lastLoginAt
+        timestamp createdAt
+    }
+
+    subscribers {
+        varchar id PK
+        varchar publisherId FK
+        text email
+        text name
+        text segment
+        decimal engagementScore
+        decimal revenue
+        text externalId "Customer.io ID"
+        text source "local, customer_io, etc"
+        jsonb metadata
+        jsonb preferences
+        timestamp joinedAt
+        timestamp lastSyncAt
+    }
+
+    segments {
+        varchar id PK
+        varchar publisherId FK
+        text externalId "Customer.io segment ID"
+        text name
+        text description
+        text type "manual, dynamic, auto"
+        text source "local, customer_io"
+        integer subscriberCount
+        jsonb conditions
+        timestamp lastSyncAt
+    }
+
+    %% Assignment Workflow Tables
+    assignments {
+        varchar id PK
+        varchar publisherId FK
+        varchar title
+        text description
+        varchar priority "low, medium, high"
+        varchar status "unassigned, in_progress, approved"
+        varchar approvalStatus "pending, approved, rejected"
+        text approvalComments
+        varchar approvedBy FK
+        timestamp approvedAt
+        jsonb approvalHistory
+        jsonb targetSegments
+        jsonb brief
+        jsonb masterDraft
+        timestamp dueDate
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    drafts {
+        varchar id PK
+        varchar assignmentId FK
+        varchar publisherId FK
+        varchar subject
+        text content
+        jsonb segments
+        varchar status "draft, review, approved"
+        text feedback
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    %% Broadcast System Tables
+    broadcastQueue {
+        varchar id PK
+        varchar publisherId FK
+        varchar assignmentId FK
+        text title
+        varchar status "ready, scheduled, sending, sent"
+        timestamp scheduledAt
+        timestamp sentAt
+        integer audienceCount
+        jsonb segments
+        jsonb sendSettings
+        jsonb abTestConfig
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    broadcastSendLogs {
+        varchar id PK
+        varchar publisherId FK
+        varchar broadcastId FK
+        varchar status "started, progress, completed, failed"
+        text message
+        jsonb details
+        timestamp createdAt
+    }
+
+    emailSendQueue {
+        varchar id PK
+        varchar publisherId FK
+        varchar campaignId FK
+        text emailType
+        text recipientEmail
+        text subject
+        text content
+        timestamp scheduledFor
+        varchar status "pending, sending, sent, failed"
+        integer priority
+        jsonb metadata
+        timestamp createdAt
+    }
+
+    %% Integration Tables
+    emailIntegrations {
+        varchar id PK
+        varchar publisherId FK
+        text platform "customer_io, iterable, mailchimp"
+        boolean isConnected
+        text apiKey
+        text apiSecret
+        text accessToken
+        timestamp lastSync
+        jsonb config
+        jsonb detectedSegments
+        timestamp createdAt
+    }
+
+    %% A/B Testing
+    abTests {
+        varchar id PK
+        varchar publisherId FK
+        varchar assignmentId FK
+        text name
+        varchar status "active, completed, cancelled"
+        jsonb variantA
+        jsonb variantB
+        decimal confidenceLevel
+        timestamp createdAt
+        timestamp endedAt
+    }
+
+    %% Pixel Tracking
+    pixelTracking {
+        varchar id PK
+        varchar publisherId FK
+        varchar campaignId FK
+        varchar segmentName
+        integer recipientCount
+        varchar trackingUrl
+        integer opens
+        timestamp lastOpened
+        timestamp createdAt
+    }
+
+    %% Relationships
+    publishers ||--o{ users : "has many"
+    publishers ||--o{ subscribers : "has many"
+    publishers ||--o{ segments : "has many"
+    publishers ||--o{ assignments : "has many"
+    publishers ||--o{ broadcastQueue : "has many"
+    publishers ||--o{ emailIntegrations : "has many"
+    publishers ||--o{ abTests : "has many"
+    publishers ||--o{ pixelTracking : "has many"
+
+    assignments ||--o{ drafts : "has many"
+    assignments ||--o{ abTests : "has many"
+    assignments ||--|| broadcastQueue : "flows to"
+
+    broadcastQueue ||--o{ broadcastSendLogs : "has many"
+    broadcastQueue ||--o{ emailSendQueue : "generates"
+
+    users ||--o{ assignments : "assigned to"
+    users ||--o{ assignments : "approved by"
+
+    segments ||--o{ subscribers : "contains"
+    emailIntegrations ||--o{ segments : "syncs"
+

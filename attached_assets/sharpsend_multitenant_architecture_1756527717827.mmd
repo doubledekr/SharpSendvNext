@@ -1,0 +1,169 @@
+graph TB
+    %% User Access Layer
+    subgraph "User Access Layer"
+        UA[acme.sharpsend.io]
+        UB[techpub.sharpsend.io]
+        UC[fintech.sharpsend.io]
+        UD[cdn.acme.sharpsend.io]
+    end
+
+    %% Load Balancer & Routing
+    subgraph "Routing Layer"
+        LB[Load Balancer]
+        SR[Subdomain Router]
+        MW[Publisher Middleware]
+    end
+
+    %% Application Layer
+    subgraph "SharpSend Application"
+        API[API Server]
+        AUTH[Authentication]
+        TENANT[Tenant Context]
+    end
+
+    %% Core Workflow
+    subgraph "Core Workflow (schema-multitenant.ts)"
+        ASSIGN[Assignments Table]
+        DRAFT[Drafts Table]
+        APPROVE[Approval System]
+        QUEUE[Broadcast Queue]
+        SEND[Email Send Queue]
+    end
+
+    %% Publisher Isolation
+    subgraph "Publisher A (acme)"
+        PA[Publisher: acme]
+        UA_ASSIGN[Assignments]
+        UA_SUBS[Subscribers: 2,450]
+        UA_SEGS[Segments: Growth, Conservative]
+        UA_QUEUE[Broadcast Queue]
+    end
+
+    subgraph "Publisher B (techpub)"
+        PB[Publisher: techpub]
+        UB_ASSIGN[Assignments]
+        UB_SUBS[Subscribers: 1,890]
+        UB_SEGS[Segments: Tech, Crypto]
+        UB_QUEUE[Broadcast Queue]
+    end
+
+    subgraph "Publisher C (fintech)"
+        PC[Publisher: fintech]
+        UC_ASSIGN[Assignments]
+        UC_SUBS[Subscribers: 3,200]
+        UC_SEGS[Segments: Banking, Fintech]
+        UC_QUEUE[Broadcast Queue]
+    end
+
+    %% Database Layer
+    subgraph "Consolidated Database (schema-multitenant.ts)"
+        DB[(PostgreSQL)]
+        PUB_TABLE[Publishers Table]
+        ASSIGN_TABLE[Assignments Table]
+        QUEUE_TABLE[Broadcast Queue Table]
+        SUBS_TABLE[Subscribers Table]
+        SEGS_TABLE[Segments Table]
+        INTEG_TABLE[Integrations Table]
+    end
+
+    %% External Integrations
+    subgraph "Email Service Providers"
+        CIO[Customer.io]
+        ITER[Iterable]
+        MC[Mailchimp]
+        SG[SendGrid]
+    end
+
+    %% CDN Layer
+    subgraph "CDN Layer"
+        CDN[CloudFront CDN]
+        ASSETS[Image Assets]
+        TEMPLATES[Email Templates]
+    end
+
+    %% Workflow Connections
+    UA --> LB
+    UB --> LB
+    UC --> LB
+    UD --> CDN
+
+    LB --> SR
+    SR --> MW
+    MW --> API
+    API --> AUTH
+    AUTH --> TENANT
+
+    %% Publisher Isolation
+    TENANT --> PA
+    TENANT --> PB
+    TENANT --> PC
+
+    PA --> UA_ASSIGN
+    PA --> UA_SUBS
+    PA --> UA_SEGS
+    PA --> UA_QUEUE
+
+    PB --> UB_ASSIGN
+    PB --> UB_SUBS
+    PB --> UB_SEGS
+    PB --> UB_QUEUE
+
+    PC --> UC_ASSIGN
+    PC --> UC_SUBS
+    PC --> UC_SEGS
+    PC --> UC_QUEUE
+
+    %% Database Connections
+    UA_ASSIGN --> ASSIGN_TABLE
+    UB_ASSIGN --> ASSIGN_TABLE
+    UC_ASSIGN --> ASSIGN_TABLE
+
+    UA_QUEUE --> QUEUE_TABLE
+    UB_QUEUE --> QUEUE_TABLE
+    UC_QUEUE --> QUEUE_TABLE
+
+    UA_SUBS --> SUBS_TABLE
+    UB_SUBS --> SUBS_TABLE
+    UC_SUBS --> SUBS_TABLE
+
+    UA_SEGS --> SEGS_TABLE
+    UB_SEGS --> SEGS_TABLE
+    UC_SEGS --> SEGS_TABLE
+
+    %% Core Workflow
+    ASSIGN --> DRAFT
+    DRAFT --> APPROVE
+    APPROVE --> QUEUE
+    QUEUE --> SEND
+
+    %% Database Structure
+    DB --> PUB_TABLE
+    DB --> ASSIGN_TABLE
+    DB --> QUEUE_TABLE
+    DB --> SUBS_TABLE
+    DB --> SEGS_TABLE
+    DB --> INTEG_TABLE
+
+    %% External Integrations
+    QUEUE --> CIO
+    QUEUE --> ITER
+    QUEUE --> MC
+    QUEUE --> SG
+
+    %% CDN Integration
+    CDN --> ASSETS
+    CDN --> TEMPLATES
+
+    %% Styling
+    classDef publisher fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef workflow fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef database fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef routing fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+
+    class PA,PB,PC,UA_ASSIGN,UB_ASSIGN,UC_ASSIGN,UA_SUBS,UB_SUBS,UC_SUBS publisher
+    class ASSIGN,DRAFT,APPROVE,QUEUE,SEND workflow
+    class DB,PUB_TABLE,ASSIGN_TABLE,QUEUE_TABLE,SUBS_TABLE,SEGS_TABLE,INTEG_TABLE database
+    class CIO,ITER,MC,SG,CDN,ASSETS,TEMPLATES external
+    class LB,SR,MW,API,AUTH,TENANT routing
+

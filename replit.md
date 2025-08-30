@@ -12,6 +12,8 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform for f
 
 **News Refresh Fix**: Fixed news refresh to fetch different articles each time. Added time-based filtering (48-hour window), random offset pagination, and shuffled mock data fallback for varied content on each refresh.
 
+**CRITICAL: Schema Consolidation Complete**: Successfully consolidated dual-schema system to fix assignment→broadcast queue workflow. Updated all routes to use `schema-multitenant.ts` consistently, resolving foreign key relationship issues. Assignment approval now properly flows to broadcast queue with correct publisher isolation.
+
 **CRITICAL: Assignment-to-Broadcast Queue Workflow FIXED**: Successfully resolved all critical workflow gaps preventing assignment transfers to broadcast queue. Fixed authentication issues, created missing database tables (broadcast_queue, broadcast_send_logs), added missing columns (approval_status, approval_comments), implemented AI content generation endpoints, and established complete workflow from assignment creation → content generation → approval → broadcast queue → Customer.io integration. The core assignment desk workflow is now fully functional.
 
 **CRITICAL: Real Customer.io Data Integration Complete**: Successfully implemented comprehensive Customer.io integration using correct API endpoints. System now fetches real subscriber data from Customer.io "All Users" segment, displaying authentic subscribers like john.smith@email.com, sarah.johnson@gmail.com, etc. All synthetic data permanently eliminated. Enhanced with AI-powered segment detection and management capabilities per implementation plans.

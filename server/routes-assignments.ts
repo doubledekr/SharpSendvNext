@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "./db";
-import { assignments, emailVariations, imageAttachments, imagePixelEvents, emailSendQueue, trackingPixels, subscribers } from "@shared/schema";
+import { assignments, emailSendQueue, subscribers } from "@shared/schema-multitenant";
+import { emailVariations, imageAttachments, imagePixelEvents, trackingPixels } from "@shared/schema";
 import { eq, and, desc, notInArray } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
@@ -300,7 +301,7 @@ router.patch("/api/assignments/:id", async (req, res) => {
         console.log(`Auto-adding approved assignment ${id} to broadcast queue`);
         
         // Check if already in broadcast queue
-        const { broadcastQueue } = await import("@shared/schema");
+        const { broadcastQueue } = await import("@shared/schema-multitenant");
         const existingQueueItem = await db
           .select()
           .from(broadcastQueue)
