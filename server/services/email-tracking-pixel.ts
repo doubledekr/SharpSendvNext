@@ -169,7 +169,7 @@ export class EmailTrackingPixel {
   /**
    * Track an email open event
    */
-  public trackOpen(trackingId: string, userAgent?: string, ipAddress?: string): boolean {
+  public trackOpen(trackingId: string, userAgent?: string, ipAddress?: string, metadata?: any): boolean {
     const trackingEvent = this.trackingData.get(trackingId);
     
     if (!trackingEvent) {
@@ -211,6 +211,11 @@ export class EmailTrackingPixel {
         this.campaignOpens.set(trackingEvent.campaignId, new Set());
       }
       this.campaignOpens.get(trackingEvent.campaignId)!.add(trackingEvent.subscriberId);
+    }
+    
+    // Store Customer.io specific metadata if provided
+    if (metadata) {
+      trackingEvent.metadata = { ...trackingEvent.metadata, ...metadata };
     }
     
     return true;

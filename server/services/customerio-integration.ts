@@ -447,6 +447,41 @@ export class CustomerIoIntegrationService {
   }
 
   /**
+   * Send Sharpsend email with tracking through Customer.io
+   */
+  async sendSharpSendEmail(emailData: {
+    subject: string;
+    content: string;
+    assignmentId: string;
+    campaignId: string;
+    trackingDomain: string;
+    segment?: string;
+    sendNow?: boolean;
+  }): Promise<{ success: boolean; broadcastId?: number; message: string }> {
+    
+    // Inject Sharpsend tracking pixel with Customer.io personalization
+    const trackingPixel = `<img src="${emailData.trackingDomain}/api/tracking/pixel/${emailData.assignmentId}-{{customer.id}}-${emailData.campaignId}.gif" alt="" width="1" height="1" border="0" style="display:block;width:1px;height:1px;border:0;" />`;
+    
+    let enhancedContent = emailData.content;
+    
+    // Inject pixel before closing body tag or at the end
+    if (enhancedContent.includes('</body>')) {
+      enhancedContent = enhancedContent.replace('</body>', `${trackingPixel}</body>`);
+    } else {
+      enhancedContent += trackingPixel;
+    }
+    
+    // Send through existing Customer.io broadcast method
+    return await this.sendBroadcast({
+      subject: emailData.subject,
+      content: enhancedContent,
+      segment: emailData.segment || "all_users",
+      campaignName: `SharpSend_${emailData.campaignId}`,
+      sendNow: emailData.sendNow !== false
+    });
+  }
+
+  /**
    * Send transactional message
    */
   async sendTransactional(messageData: {

@@ -273,17 +273,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Email Tracking Pixel Routes
+  // Enhanced Email Tracking Pixel Routes for Customer.io integration
   app.get("/api/tracking/pixel/:trackingId.gif", async (req, res) => {
     try {
       const { trackingId } = req.params;
       const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
       const tracker = EmailTrackingPixel.getInstance();
       
-      // Track the open event
+      // Handle both simple and Customer.io personalized tracking IDs
+      // Format: assignmentId-customerId-campaignId or simple trackingId
+      const cleanTrackingId = trackingId.replace('.gif', '');
       const userAgent = req.headers['user-agent'];
       const ipAddress = req.ip;
-      tracker.trackOpen(trackingId.replace('.gif', ''), userAgent, ipAddress);
+      
+      // Parse Customer.io format: assignmentId-customerId-campaignId
+      if (cleanTrackingId.includes('-')) {
+        const parts = cleanTrackingId.split('-');
+        if (parts.length === 3) {
+          const [assignmentId, customerId, campaignId] = parts;
+          
+          // Track with enhanced data
+          tracker.trackOpen(cleanTrackingId, userAgent, ipAddress, {
+            assignmentId,
+            customerId,
+            campaignId,
+            source: 'customer_io'
+          });
+          
+          console.log(`📊 CUSTOMER.IO EMAIL OPENED:
+Assignment: ${assignmentId}
+Customer: ${customerId}  
+Campaign: ${campaignId}
+User Agent: ${userAgent}
+IP: ${ipAddress}`);
+        } else {
+          // Fallback to simple tracking
+          tracker.trackOpen(cleanTrackingId, userAgent, ipAddress);
+        }
+      } else {
+        // Simple tracking ID
+        tracker.trackOpen(cleanTrackingId, userAgent, ipAddress);
+      }
       
       // Return a 1x1 transparent GIF
       const pixel = Buffer.from(
@@ -975,14 +1005,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`📧 Subject: ${assignment.title}`);
         console.log(`👥 Audience: All Customer.io subscribers`);
         
-        // Send actual broadcast via Customer.io
-        const sendResult = await customerIO.sendBroadcast({
+        // Send email using enhanced SharpSend method with integrated tracking
+        const sendResult = await customerIO.sendSharpSendEmail({
           subject: assignment.title,
           content: emailContent,
+          assignmentId: assignment.id,
+          campaignId: id,
+          trackingDomain: baseUrl,
           segment: "all_users",
-          campaignName: `SharpSend_${assignment.title.replace(/[^a-zA-Z0-9]/g, '_')}`,
-          from: 'SharpSend Intelligence <hello@sharpsend.io>',
-          tags: ['sharpsend', 'broadcast', 'financial_intelligence'],
           sendNow: true
         });
         

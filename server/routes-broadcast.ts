@@ -372,12 +372,14 @@ router.post("/:id/send", async (req: AuthenticatedRequest, res: Response) => {
         const { CustomerIoIntegration } = await import("../services/customerio-integration");
         const customerIo = new CustomerIoIntegration();
         
-        // Send broadcast via Customer.io
-        const broadcastResult = await customerIo.sendBroadcast({
+        // Enhanced broadcast using SharpSend tracking integration
+        const broadcastResult = await customerIo.sendSharpSendEmail({
           subject: existingItem[0].emailSubject || assignmentData.title,
           content: assignmentData.content || `Assignment: ${assignmentData.title}\n\n${assignmentData.description}`,
-          segment: "all_users", // Send to all subscribers
-          campaignName: `Broadcast_${existingItem[0].id}`,
+          assignmentId: assignmentData.id,
+          campaignId: existingItem[0].id,
+          trackingDomain: process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000',
+          segment: "all_users",
           sendNow: true
         });
 
