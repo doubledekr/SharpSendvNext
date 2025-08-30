@@ -295,7 +295,7 @@ router.patch("/api/assignments/:id", async (req, res) => {
     }
 
     // If assignment is being approved, automatically add to broadcast queue
-    if (updates.status === "approved") {
+    if (updates.status === "approved" || updates.approvalStatus === "approved") {
       try {
         console.log(`Auto-adding approved assignment ${id} to broadcast queue`);
         
@@ -316,7 +316,7 @@ router.patch("/api/assignments/:id", async (req, res) => {
             publisherId: existingAssignment.publisherId,
             assignmentId: id,
             title: updated.title,
-            status: "ready",
+            status: "queued",
             audienceCount: 42, // Customer.io subscriber count
             segments: updated.targetSegments || [],
             sendSettings: null,

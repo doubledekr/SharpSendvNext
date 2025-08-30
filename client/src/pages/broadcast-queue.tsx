@@ -347,7 +347,7 @@ export default function BroadcastQueue() {
                       </div>
 
                       <div className="flex items-center space-x-2 ml-4">
-                        {item.status === "queued" && (
+                        {(item.status === "queued" || item.status === "ready") && (
                           <>
                             <Button
                               size="sm"
@@ -357,18 +357,20 @@ export default function BroadcastQueue() {
                                 setScheduleDialogOpen(true);
                               }}
                               data-testid={`button-schedule-${item.id}`}
+                              className="border-blue-200 text-blue-600 hover:bg-blue-50"
                             >
                               <Calendar className="h-4 w-4 mr-1" />
-                              Schedule
+                              Schedule Send
                             </Button>
                             <Button
                               size="sm"
                               onClick={() => sendMutation.mutate(item.id)}
                               disabled={sendMutation.isPending}
                               data-testid={`button-send-${item.id}`}
+                              className="bg-green-600 hover:bg-green-700 text-white"
                             >
                               <Send className="h-4 w-4 mr-1" />
-                              Send Now
+                              Send Now to {item.audienceCount} subscribers
                             </Button>
                           </>
                         )}
@@ -428,6 +430,26 @@ export default function BroadcastQueue() {
                 min={new Date().toISOString().slice(0, 16)}
                 data-testid="input-schedule-datetime"
               />
+              <p className="text-sm text-gray-500 mt-1">
+                Email will be sent to {selectedBroadcast?.audienceCount || 0} Customer.io subscribers
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Time Zone Optimization</Label>
+                <select className="w-full mt-1 p-2 border rounded">
+                  <option value="UTC">Send at exact time (UTC)</option>
+                  <option value="recipient">Optimize for recipient time zones</option>
+                </select>
+              </div>
+              <div>
+                <Label>Send Optimization</Label>
+                <select className="w-full mt-1 p-2 border rounded">
+                  <option value="standard">Standard delivery</option>
+                  <option value="optimized">AI-optimized timing</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex justify-end space-x-2">
@@ -442,8 +464,9 @@ export default function BroadcastQueue() {
                 onClick={handleScheduleSubmit}
                 disabled={!scheduleDateTime || scheduleMutation.isPending}
                 data-testid="button-confirm-schedule"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Schedule Broadcast
+                Schedule for Customer.io
               </Button>
             </div>
           </div>
