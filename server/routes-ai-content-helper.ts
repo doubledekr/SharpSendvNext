@@ -81,7 +81,7 @@ Write 2 email newsletter content variations for financial newsletter subscribers
 - 150-300 words
 - Include the key points naturally
 - End with a clear call-to-action
-- Use markdown formatting for structure (##, **, etc.)
+- Use plain text without markdown formatting (no ##, **, etc.)
 - Tailored for investors interested in this topic
 
 ${existingContent ? `Current content exists - provide fresh alternatives that cover the same topics differently.` : ''}

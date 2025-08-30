@@ -1404,6 +1404,20 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                             {assignment.description && (
                               <p className="text-sm text-muted-foreground mb-2">{assignment.description}</p>
                             )}
+                            {assignment.referenceUrl && (
+                              <div className="flex items-center gap-2 mt-2">
+                                <Link className="h-3 w-3 text-blue-600" />
+                                <a 
+                                  href={assignment.referenceUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Reference Article
+                                </a>
+                              </div>
+                            )}
                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                               {assignment.dueDate && (
                                 <div className="flex items-center gap-1">

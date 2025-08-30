@@ -371,7 +371,7 @@ export const assignments = pgTable("assignments", {
   assignmentLink: varchar("assignment_link"), // Keep existing field
   copywriterId: varchar("copywriter_id"), // Keep existing field  
   marketContext: jsonb("market_context"), // Keep existing field
-  referenceUrl: text("reference_url"), // URL to article or source that copywriter should reference
+  referenceUrl: text("reference_url"), // The linked article URL for reference
   // New fields to match frontend expectations
   type: text("type").default("newsletter"), // newsletter, article, research, analysis
   assignedTo: varchar("assigned_to"),
