@@ -6,7 +6,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   TrendingUp, TrendingDown, AlertTriangle, Newspaper, 
   DollarSign, Activity, Zap, Send, ArrowUp, ArrowDown,
-  Clock, Bell, ChevronRight, Plus, FileText, ExternalLink
+  Clock, Bell, ChevronRight, Plus, FileText, ExternalLink,
+  RefreshCw
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,25 +31,41 @@ export default function VNextMarketSentiment() {
   const [fearGreedIndex, setFearGreedIndex] = useState(65);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [isLoadingNews, setIsLoadingNews] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   // Fetch real news from MarketAux API
-  useEffect(() => {
-    const fetchMarketNews = async () => {
-      try {
-        const response = await fetch('/api/market-news');
-        const data = await response.json();
-        if (data.news && data.news.length > 0) {
-          setNewsItems(data.news);
-        }
-      } catch (error) {
-        console.error("Error fetching market news:", error);
-      } finally {
-        setIsLoadingNews(false);
+  const fetchMarketNews = async () => {
+    try {
+      const response = await fetch('/api/market-news');
+      const data = await response.json();
+      if (data.news && data.news.length > 0) {
+        setNewsItems(data.news);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching market news:", error);
+    } finally {
+      setIsLoadingNews(false);
+      setIsRefreshing(false);
+    }
+  };
 
+  // Manual refresh function
+  const handleRefreshNews = async () => {
+    setIsRefreshing(true);
+    toast({
+      title: "Refreshing news feed",
+      description: "Fetching latest market news...",
+    });
+    await fetchMarketNews();
+    toast({
+      title: "News refreshed",
+      description: "Latest market news loaded successfully",
+    });
+  };
+
+  useEffect(() => {
     fetchMarketNews();
     // Refresh news every 5 minutes
     const interval = setInterval(fetchMarketNews, 5 * 60 * 1000);
@@ -189,10 +206,22 @@ export default function VNextMarketSentiment() {
               <CardTitle>Finance News Feed (NA Region)</CardTitle>
               <CardDescription>Real-time opportunities for targeted campaigns</CardDescription>
             </div>
-            <Badge variant="default" className="gap-1">
-              <Bell className="h-3 w-3" />
-              Live
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshNews}
+                disabled={isRefreshing}
+                className="gap-1"
+              >
+                <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Badge variant="default" className="gap-1">
+                <Bell className="h-3 w-3" />
+                Live
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">

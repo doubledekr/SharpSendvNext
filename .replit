@@ -38,7 +38,7 @@ localPort = 5000
 externalPort = 80
 
 [agent]
-integrations = ["javascript_database==1.0.0", "javascript_log_in_with_replit==1.0.0"]
+integrations = ["javascript_log_in_with_replit==1.0.0", "javascript_database==1.0.0"]
 
 [objectStorage]
 defaultBucketID = "replit-objstore-16145d6e-064d-4324-a86a-8fac1e6f5901"

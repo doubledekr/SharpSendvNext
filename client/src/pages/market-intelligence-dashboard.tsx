@@ -47,10 +47,45 @@ interface MarketIntelligenceData {
 export default function MarketIntelligenceDashboard() {
   const [data, setData] = useState<MarketIntelligenceData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [apiStatus, setApiStatus] = useState({
     marketaux: 'unknown',
     polygon: 'unknown'
   });
+
+  // Refresh news function
+  const handleRefreshNews = async () => {
+    setIsRefreshing(true);
+    try {
+      const newsResponse = await fetch('/api/market-news');
+      const newsData = await newsResponse.json();
+      
+      if (data) {
+        const news = newsData.news ? newsData.news.map((item: any, index: number) => ({
+          id: item.id || String(index + 1),
+          title: item.headline,
+          description: item.suggestedAction || '',
+          url: item.articleUrl || '#',
+          source: item.source,
+          publishedAt: new Date().toISOString(),
+          sentiment: item.sentiment === 'bullish' ? 'positive' : 
+                    item.sentiment === 'bearish' ? 'negative' : 'neutral',
+          relevanceScore: item.impact === 'high' ? 0.9 : 
+                        item.impact === 'medium' ? 0.7 : 0.5
+        })) : [];
+        
+        setData({
+          ...data,
+          news,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing news:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const testAPIs = async () => {
     setLoading(true);
@@ -278,10 +313,22 @@ export default function MarketIntelligenceDashboard() {
             {/* Financial News */}
             <Card className="bg-dark-surface border-dark-border">
               <CardHeader>
-                <CardTitle className="text-xl font-semibold text-white flex items-center space-x-2">
-                  <Eye className="h-6 w-6" />
-                  <span>Latest Financial News</span>
-                </CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl font-semibold text-white flex items-center space-x-2">
+                    <Eye className="h-6 w-6" />
+                    <span>Latest Financial News</span>
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefreshNews}
+                    disabled={isRefreshing}
+                    className="gap-1"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
