@@ -225,11 +225,12 @@ router.delete("/:id", async (req: AuthenticatedRequest, res: Response) => {
       .delete(broadcastQueue)
       .where(eq(broadcastQueue.id, id));
 
-    // Update assignment status back to "approved" 
+    // When removing from broadcast queue, update assignment status back to "approved" 
     await db
       .update(assignments)
       .set({ 
         status: "approved",
+        workflowStage: "approval",
         updatedAt: new Date()
       })
       .where(eq(assignments.id, existingItem[0].assignmentId));

@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image, ThumbsUp, ThumbsDown, MessageCircle, XCircle, Send, Eye } from "lucide-react";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image, ThumbsUp, ThumbsDown, MessageCircle, XCircle, Send, Eye, Trash2 } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -567,19 +567,24 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
   };
 
   const filterAssignments = (assignments: Assignment[]) => {
+    // First exclude assignments that are in broadcast queue (queued, broadcasting, sent)
+    const activeAssignments = assignments.filter(a => 
+      !["queued", "broadcasting", "sent"].includes(a.status)
+    );
+    
     switch (selectedTab) {
       case "unassigned":
-        return assignments.filter(a => a.status === "unassigned");
+        return activeAssignments.filter(a => a.status === "unassigned");
       case "in_progress":
-        return assignments.filter(a => ["assigned", "in_progress"].includes(a.status));
+        return activeAssignments.filter(a => ["assigned", "in_progress"].includes(a.status));
       case "review":
-        return assignments.filter(a => a.status === "review");
+        return activeAssignments.filter(a => a.status === "review");
       case "approved":
-        return assignments.filter(a => a.status === "approved");
+        return activeAssignments.filter(a => a.status === "approved");
       case "completed":
-        return assignments.filter(a => ["completed", "published"].includes(a.status));
+        return activeAssignments.filter(a => ["completed", "published"].includes(a.status));
       default:
-        return assignments;
+        return activeAssignments;
     }
   };
 
