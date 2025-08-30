@@ -300,7 +300,7 @@ router.patch("/api/assignments/:id", async (req, res) => {
         console.log(`Auto-adding approved assignment ${id} to broadcast queue`);
         
         // Check if already in broadcast queue
-        const { broadcastQueue } = await import("@shared/schema-multitenant");
+        const { broadcastQueue } = await import("@shared/schema");
         const existingQueueItem = await db
           .select()
           .from(broadcastQueue)
@@ -393,6 +393,43 @@ router.post("/api/assignments/:id/approve", async (req, res) => {
       })
       .where(eq(assignments.id, id))
       .returning();
+
+    // Automatically add approved assignment to broadcast queue
+    try {
+      console.log(`Auto-adding approved assignment ${id} to broadcast queue`);
+      
+      // Check if already in broadcast queue
+      const { broadcastQueue } = await import("@shared/schema");
+      const existingQueueItem = await db
+        .select()
+        .from(broadcastQueue)
+        .where(and(
+          eq(broadcastQueue.assignmentId, id),
+          eq(broadcastQueue.publisherId, existingAssignment.publisherId)
+        ))
+        .limit(1);
+
+      if (!existingQueueItem.length) {
+        // Add to broadcast queue
+        const [queueItem] = await db.insert(broadcastQueue).values({
+          publisherId: existingAssignment.publisherId,
+          assignmentId: id,
+          title: updated.title,
+          status: "queued",
+          audienceCount: 42, // Customer.io subscriber count
+          segments: updated.targetSegments || [],
+          sendSettings: null,
+          abTestConfig: { enabled: false },
+        }).returning();
+        
+        console.log(`✅ Successfully added assignment ${id} to broadcast queue:`, queueItem.id);
+      } else {
+        console.log(`Assignment ${id} already in broadcast queue`);
+      }
+    } catch (queueError) {
+      console.error("❌ Error auto-adding to broadcast queue:", queueError);
+      // Don't fail the main approval if queue addition fails
+    }
     
     res.json(updated);
   } catch (error) {
