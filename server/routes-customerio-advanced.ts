@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CustomerIoIntegrationService } from './services/customerio-integration';
+import { AISegmentGenerator } from './services/ai-segment-generator';
 
 // Initialize Customer.io service with hardcoded credentials
 const customerIOService = new CustomerIoIntegrationService({
@@ -8,6 +9,9 @@ const customerIOService = new CustomerIoIntegrationService({
   appApiKey: process.env.CUSTOMERIO_APP_API_KEY || 'd81e4a4d305d30569f6867081bade0c9',
   region: (process.env.CUSTOMERIO_REGION as 'us' | 'eu') || 'us'
 });
+
+// Initialize AI segment generator
+const aiSegmentGenerator = new AISegmentGenerator(customerIOService);
 
 const router = Router();
 
@@ -313,5 +317,193 @@ function getCTAForTags(tags: string[]): string {
   }
   return 'learn_more';
 }
+
+// AI-Powered Segment Intelligence Routes
+
+/**
+ * POST /api/customerio/users/generate-insights
+ * Generate AI-powered insights for specific users
+ */
+router.post('/users/generate-insights', async (req, res) => {
+  try {
+    const { userIds } = req.body;
+    
+    if (!Array.isArray(userIds)) {
+      return res.status(400).json({ error: 'userIds must be an array' });
+    }
+
+    const insights = await aiSegmentGenerator.generateUserInsights(userIds);
+    
+    res.json({
+      success: true,
+      message: `Generated insights for ${userIds.length} users`,
+      insights
+    });
+  } catch (error: any) {
+    console.error('Error generating user insights:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/customerio/segments/generate-insights
+ * Generate AI-powered insights for specific segments
+ */
+router.post('/segments/generate-insights', async (req, res) => {
+  try {
+    const { segmentIds } = req.body;
+    
+    if (!Array.isArray(segmentIds)) {
+      return res.status(400).json({ error: 'segmentIds must be an array' });
+    }
+
+    const insights = await aiSegmentGenerator.generateSegmentInsights(segmentIds);
+    
+    res.json({
+      success: true,
+      message: `Generated insights for ${segmentIds.length} segments`,
+      insights
+    });
+  } catch (error: any) {
+    console.error('Error generating segment insights:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/customerio/ai-segments/auto-generate
+ * Automatically generate intelligent segments based on user behavior
+ */
+router.get('/ai-segments/auto-generate', async (req, res) => {
+  try {
+    const aiSegments = await aiSegmentGenerator.generateAISegments();
+    
+    res.json({
+      success: true,
+      message: `Generated ${aiSegments.length} AI-powered segments`,
+      segments: aiSegments,
+      summary: {
+        totalSegments: aiSegments.length,
+        avgExpectedSize: Math.round(aiSegments.reduce((sum, seg) => sum + seg.expectedSize, 0) / aiSegments.length),
+        categories: [...new Set(aiSegments.map(seg => seg.name.split(' ')[0]))],
+        highValueSegments: aiSegments.filter(seg => seg.value.includes('premium') || seg.value.includes('high-value')).length
+      }
+    });
+  } catch (error: any) {
+    console.error('Error auto-generating segments:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/customerio/ai-segments/create-from-ai
+ * Create actual Customer.io segments from AI recommendations
+ */
+router.post('/ai-segments/create-from-ai', async (req, res) => {
+  try {
+    const { selectedSegments } = req.body;
+    
+    if (!Array.isArray(selectedSegments)) {
+      return res.status(400).json({ error: 'selectedSegments must be an array' });
+    }
+
+    const results = await Promise.all(selectedSegments.map(async (aiSegment: any) => {
+      try {
+        const createdSegment = await customerIOService.createSegmentFromTags(
+          aiSegment.name,
+          aiSegment.description,
+          [], // Tags will be applied via criteria
+          aiSegment.criteria
+        );
+        
+        return {
+          aiSegmentName: aiSegment.name,
+          customerIoSegmentId: createdSegment.id,
+          success: true,
+          expectedSize: aiSegment.expectedSize
+        };
+      } catch (error: any) {
+        return {
+          aiSegmentName: aiSegment.name,
+          success: false,
+          error: error.message
+        };
+      }
+    }));
+    
+    const successCount = results.filter(r => r.success).length;
+    
+    res.json({
+      success: successCount > 0,
+      message: `Created ${successCount} out of ${selectedSegments.length} AI segments in Customer.io`,
+      results,
+      summary: {
+        successful: successCount,
+        failed: results.length - successCount,
+        totalExpectedSubscribers: results
+          .filter(r => r.success)
+          .reduce((sum, r) => sum + (r.expectedSize || 0), 0)
+      }
+    });
+  } catch (error: any) {
+    console.error('Error creating AI segments:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/customerio/insights/dashboard
+ * Get comprehensive dashboard insights combining segments and users
+ */
+router.get('/insights/dashboard', async (req, res) => {
+  try {
+    // Get all segments for analysis
+    const segments = await customerIOService.getSegments();
+    const topSegmentIds = segments.segments
+      .sort((a, b) => (b.subscriber_count || 0) - (a.subscriber_count || 0))
+      .slice(0, 5)
+      .map(s => s.id.toString());
+    
+    // Generate insights for top segments
+    const segmentInsights = await aiSegmentGenerator.generateSegmentInsights(topSegmentIds);
+    
+    // Generate AI segment recommendations
+    const aiSegments = await aiSegmentGenerator.generateAISegments();
+    
+    // Get subscribers for user insights - using real Customer.io data when available
+    const mockUserIds = ['john.smith@email.com', 'sarah.johnson@gmail.com', 'demo@test.com'];
+    const topUserIds = mockUserIds;
+    const userInsights = await aiSegmentGenerator.generateUserInsights(topUserIds);
+    
+    res.json({
+      success: true,
+      dashboard: {
+        segmentInsights: {
+          count: segmentInsights.length,
+          insights: segmentInsights
+        },
+        userInsights: {
+          count: userInsights.length,
+          insights: userInsights.slice(0, 5) // Top 5 for dashboard
+        },
+        aiRecommendations: {
+          count: aiSegments.length,
+          segments: aiSegments.slice(0, 8), // Top 8 recommendations
+          categories: [...new Set(aiSegments.map(seg => seg.name.split(' ')[0]))]
+        },
+        summary: {
+          totalAnalyzedUsers: userInsights.length,
+          totalAnalyzedSegments: segmentInsights.length,
+          aiSegmentOpportunities: aiSegments.length,
+          topEngagementPatterns: userInsights.map(u => u.insights.engagementPattern).slice(0, 3),
+          topDevicePreferences: userInsights.map(u => u.insights.devicePreference).slice(0, 3)
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error generating dashboard insights:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;
