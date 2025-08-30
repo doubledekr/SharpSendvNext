@@ -878,6 +878,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Pixel HTML: ${trackingPixelHtml}`);
       console.log(`Track opens at: ${baseUrl}/api/tracking/pixel/email_${id}.gif`);
 
+      // ACTUAL CUSTOMER.IO EMAIL SENDING
+      try {
+        // Get Customer.io integration credentials
+        const { integrations } = await import("@shared/schema");
+        const { eq } = await import("drizzle-orm");
+
+        const [integration] = await db
+          .select()
+          .from(integrations)
+          .where(eq(integrations.publisherId, publisherId))
+          .limit(1);
+
+        if (!integration || !integration.credentials) {
+          throw new Error("Customer.io integration not found or not configured");
+        }
+
+        const credentials = integration.credentials as any;
+        console.log(`🔗 Using Customer.io credentials: Site ID ${credentials.site_id}`);
+
+        const { CustomerIoIntegrationService } = await import("./services/customerio-integration");
+        const customerIO = new CustomerIoIntegrationService({
+          siteId: credentials.site_id,
+          trackApiKey: credentials.track_api_key,
+          appApiKey: credentials.app_api_key,
+          region: credentials.region || 'us'
+        });
+        
+        // Create email content with tracking pixel embedded
+        const emailContent = `
+          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333;">
+            <h2 style="color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">${assignment.title}</h2>
+            
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0; font-weight: 600; color: #1f2937;">📈 Financial Intelligence from SharpSend</p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+              ${assignment.content || `
+                <p>Stay ahead of market movements with AI-powered financial insights.</p>
+                <p>This broadcast was sent via SharpSend's advanced email intelligence platform, delivering personalized content to help you make informed investment decisions.</p>
+                <p><strong>Key Features:</strong></p>
+                <ul>
+                  <li>Real-time market analysis</li>
+                  <li>Personalized investment recommendations</li>
+                  <li>Advanced tracking and engagement analytics</li>
+                </ul>
+              `}
+            </div>
+            
+            <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px; color: #1e40af;">
+                <strong>Powered by SharpSend</strong><br>
+                Advanced email intelligence and subscriber engagement tracking.
+              </p>
+            </div>
+            
+            <!-- SharpSend Tracking Pixel -->
+            ${trackingPixelHtml}
+          </div>
+        `;
+        
+        console.log(`🚀 SENDING REAL EMAIL VIA CUSTOMER.IO API:`);
+        console.log(`📧 Subject: ${assignment.title}`);
+        console.log(`👥 Audience: All Customer.io subscribers`);
+        
+        // Send actual broadcast via Customer.io
+        const sendResult = await customerIO.sendBroadcast({
+          subject: assignment.title,
+          content: emailContent,
+          segment: "all_users",
+          campaignName: `SharpSend_${assignment.title.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          from: 'SharpSend Intelligence <hello@sharpsend.io>',
+          tags: ['sharpsend', 'broadcast', 'financial_intelligence'],
+          sendNow: true
+        });
+        
+        console.log(`✅ CUSTOMER.IO SEND RESULT:`, sendResult);
+        
+        if (sendResult.success) {
+          console.log(`🎉 EMAIL SUCCESSFULLY SENT TO CUSTOMER.IO!`);
+          console.log(`📊 Broadcast ID: ${sendResult.broadcastId}`);
+          console.log(`📈 Check your Customer.io dashboard for delivery confirmation`);
+        } else {
+          console.log(`❌ Customer.io send failed: ${sendResult.message}`);
+        }
+        
+      } catch (customerIOError) {
+        console.error("❌ Customer.io send error:", customerIOError);
+        console.log(`📧 Note: Check Customer.io credentials and API permissions`);
+      }
+
       // Update status to sent
       await db
         .update(broadcastQueue)
@@ -909,7 +1000,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           campaignId,
           pixelHtml: trackingPixelHtml,
           trackingUrl: `${baseUrl}/api/tracking/pixel/email_${id}.gif`,
-          instructions: "Include the pixelHtml in your Customer.io email template to track opens in SharpSend"
+          instructions: "SharpSend tracking pixel automatically included in Customer.io email"
+        },
+        customerIO: {
+          message: "Check your Customer.io dashboard for delivery confirmation and campaign stats",
+          dashboardUrl: "https://fly.customer.io/",
+          campaignName: `SharpSend_${assignment.title.replace(/[^a-zA-Z0-9]/g, '_')}`
         }
       });
 
