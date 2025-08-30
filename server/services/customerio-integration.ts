@@ -253,6 +253,178 @@ export class CustomerIoIntegrationService {
   }
 
   /**
+   * Track individual user with SharpSend attributes and tags
+   */
+  async trackUserWithTags(userId: string, attributes: Record<string, any>, tags: string[] = []): Promise<void> {
+    try {
+      const tagAttributes: Record<string, any> = {};
+      
+      // Create tag attributes
+      tags.forEach(tag => {
+        tagAttributes[`sharpsend_tag_${tag}`] = true;
+      });
+      
+      // Add tag array and metadata
+      tagAttributes.sharpsend_tags = tags;
+      tagAttributes.sharpsend_last_tagged = new Date().toISOString();
+      
+      // Merge with custom attributes
+      const userData = {
+        ...attributes,
+        ...tagAttributes,
+        sharpsend_last_updated: new Date().toISOString()
+      };
+
+      await this.makeTrackRequest('PUT', `/customers/${userId}`, userData);
+      console.log(`Successfully tracked user ${userId} with ${tags.length} tags`);
+    } catch (error) {
+      console.error('Failed to track user with tags:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create dynamic segment based on tags and criteria
+   */
+  async createSegmentFromTags(name: string, description: string, requiredTags: string[], additionalCriteria: any[] = []): Promise<CustomerIoSegment> {
+    try {
+      // Build conditions for tagged users
+      const tagConditions = requiredTags.map(tag => ({
+        attribute: `sharpsend_tag_${tag}`,
+        operator: "eq",
+        value: true
+      }));
+
+      const conditions = {
+        and: [
+          ...tagConditions,
+          ...additionalCriteria
+        ]
+      };
+
+      const segmentData = {
+        segment: {
+          name: `SharpSend_${name}`,
+          description,
+          type: "dynamic",
+          conditions
+        }
+      };
+
+      const response = await this.makeApiRequest('POST', '/segments', segmentData);
+      console.log(`Created segment "${name}" with ${requiredTags.length} tag requirements`);
+      return response.segment;
+    } catch (error) {
+      console.error('Failed to create segment from tags:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add users to manual segment by updating their attributes
+   */
+  async addUsersToSegment(segmentId: string, userIds: string[]): Promise<void> {
+    try {
+      for (const userId of userIds) {
+        const segmentAttributes = {
+          [`segment_manual_${segmentId}`]: true,
+          sharpsend_segment_assignments: new Date().toISOString()
+        };
+        
+        await this.makeTrackRequest('PUT', `/customers/${userId}`, segmentAttributes);
+      }
+      console.log(`Added ${userIds.length} users to segment ${segmentId}`);
+    } catch (error) {
+      console.error('Failed to add users to segment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Auto-tag users based on behavior analysis
+   */
+  async autoTagUsersByBehavior(userData: { 
+    userId: string, 
+    engagementScore: number, 
+    openRate: number, 
+    clickRate: number,
+    contentPreferences: string[],
+    subscriptionTier: string,
+    lifetimeValue: number 
+  }[]): Promise<void> {
+    try {
+      for (const user of userData) {
+        const tags: string[] = [];
+        
+        // Engagement-based tags
+        if (user.engagementScore > 0.8) tags.push('high_engagement');
+        if (user.openRate > 0.7) tags.push('consistent_reader');
+        if (user.clickRate > 0.3) tags.push('active_clicker');
+        
+        // Content preference tags
+        if (user.contentPreferences.includes('crypto')) tags.push('crypto_enthusiast');
+        if (user.contentPreferences.includes('stocks')) tags.push('stock_focused');
+        if (user.contentPreferences.includes('options')) tags.push('options_trader');
+        
+        // Revenue-based tags
+        if (user.subscriptionTier === 'premium') tags.push('premium_subscriber');
+        if (user.lifetimeValue > 500) tags.push('high_value');
+        
+        // Track user with generated tags
+        await this.trackUserWithTags(user.userId, {
+          sharpsend_engagement_score: user.engagementScore,
+          sharpsend_open_rate: user.openRate,
+          sharpsend_click_rate: user.clickRate,
+          sharpsend_subscription_tier: user.subscriptionTier,
+          sharpsend_lifetime_value: user.lifetimeValue,
+          sharpsend_content_preferences: user.contentPreferences
+        }, tags);
+      }
+      console.log(`Auto-tagged ${userData.length} users based on behavior`);
+    } catch (error) {
+      console.error('Failed to auto-tag users:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get segment members with their tags and attributes
+   */
+  async getSegmentMembersWithTags(segmentId: string): Promise<any[]> {
+    try {
+      // Get segment members
+      const response = await this.makeApiRequest('GET', `/segments/${segmentId}/membership`);
+      const members = response.identifiers || [];
+      
+      // Enhance with tag data
+      const enhancedMembers = members.map((member: any) => {
+        const tags = [];
+        const tagAttributes = {};
+        
+        // Extract SharpSend tags from attributes
+        for (const [key, value] of Object.entries(member.attributes || {})) {
+          if (key.startsWith('sharpsend_tag_') && value) {
+            const tagName = key.replace('sharpsend_tag_', '');
+            tags.push(tagName);
+            tagAttributes[key] = value;
+          }
+        }
+        
+        return {
+          ...member,
+          sharpsendTags: tags,
+          sharpsendTagAttributes: tagAttributes
+        };
+      });
+      
+      return enhancedMembers;
+    } catch (error) {
+      console.error('Failed to get segment members with tags:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get all customers/subscribers from Customer.io
    */
   async getCustomers(limit: number = 100, start?: string): Promise<{ customers: CustomerIoCustomer[], next?: string }> {
