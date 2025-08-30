@@ -29,6 +29,7 @@ import cohortsRoutes from "./routes-cohorts";
 import { sharpSendIntelligenceRoutes } from "./routes-sharpsend-intelligence";
 import cleanupRoutes from "./routes-cleanup";
 import customerioAdvancedRoutes from "./routes-customerio-advanced";
+import customerioDemo from "./routes-customerio-demo";
 // Demo environment removed - no demo functionality
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
@@ -775,6 +776,7 @@ IP: ${ipAddress}`);
   app.use("/api/cohorts", cohortsRoutes);
   app.use("/api/sharpsend-intelligence", sharpSendIntelligenceRoutes);
   app.use("/api/customerio", customerioAdvancedRoutes);
+  app.use("/api/customerio", customerioDemo);
   app.use("/api/images", imageTemplateRoutes);
   app.use(cleanupRoutes);
   
