@@ -409,15 +409,29 @@ export class CustomerIoIntegrationService {
       const broadcastResponse = await this.makeApiRequest('POST', '/broadcasts', broadcastPayload);
       const broadcastId = broadcastResponse.broadcast.id;
 
+      console.log(`🚀 CUSTOMER.IO BROADCAST CREATED:
+Newsletter ID: ${newsletterId}
+Broadcast ID: ${broadcastId}
+Segment ID: ${broadcastPayload.broadcast.segment_id || 'all_users'}
+About to trigger broadcast...`);
+
       // Trigger the broadcast
       if (broadcastData.sendAt && !broadcastData.sendNow) {
         // Schedule for later
+        console.log(`⏰ SCHEDULING BROADCAST FOR: ${broadcastData.sendAt.toISOString()}`);
         await this.makeApiRequest('POST', `/broadcasts/${broadcastId}/schedule`, {
           scheduled_for: Math.floor(broadcastData.sendAt.getTime() / 1000)
         });
       } else {
-        // Send immediately
-        await this.makeApiRequest('POST', `/broadcasts/${broadcastId}/trigger`);
+        // Send immediately to real subscribers
+        console.log(`📤 TRIGGERING IMMEDIATE BROADCAST TO REAL CUSTOMER.IO SUBSCRIBERS...`);
+        const triggerResponse = await this.makeApiRequest('POST', `/broadcasts/${broadcastId}/trigger`);
+        console.log(`✅ BROADCAST TRIGGERED SUCCESSFULLY:
+Response: ${JSON.stringify(triggerResponse, null, 2)}
+🎯 EMAIL SENT TO REAL CUSTOMER.IO SUBSCRIBERS!
+📧 Subject: ${broadcastData.subject}
+📊 Campaign: ${broadcastData.campaignName}
+🔗 Check your Customer.io dashboard at https://fly.customer.io/ for delivery stats`);
       }
 
       return {
@@ -471,14 +485,31 @@ export class CustomerIoIntegrationService {
       enhancedContent += trackingPixel;
     }
     
-    // Send through existing Customer.io broadcast method
-    return await this.sendBroadcast({
+    // Log the enhanced email content with tracking pixel
+    console.log(`📧 ENHANCED EMAIL CONTENT WITH TRACKING PIXEL:
+Subject: ${emailData.subject}
+Campaign: SharpSend_${emailData.campaignId}
+Tracking Pixel: ${trackingPixel}
+Content Length: ${enhancedContent.length} characters
+Segment: ${emailData.segment || "all_users"}
+🎯 About to send to REAL Customer.io subscribers...`);
+
+    // Send through existing Customer.io broadcast method to REAL subscribers
+    const result = await this.sendBroadcast({
       subject: emailData.subject,
       content: enhancedContent,
       segment: emailData.segment || "all_users",
       campaignName: `SharpSend_${emailData.campaignId}`,
       sendNow: emailData.sendNow !== false
     });
+
+    console.log(`📬 CUSTOMER.IO SEND RESULT:
+Success: ${result.success}
+Message: ${result.message}
+Broadcast ID: ${result.broadcastId}
+Campaign ID: ${result.campaignId}`);
+
+    return result;
   }
 
   /**

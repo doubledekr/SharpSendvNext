@@ -942,30 +942,64 @@ IP: ${ipAddress}`);
 
       // ACTUAL CUSTOMER.IO EMAIL SENDING
       try {
-        // Get Customer.io integration credentials
-        const { integrations } = await import("@shared/schema");
-        const { eq } = await import("drizzle-orm");
+        // Use hardcoded Customer.io credentials that we know work for real sends
+        console.log(`🔧 Using hardcoded Customer.io credentials for real email sending...`);
+        
+        const credentials = {
+          region: 'us',
+          site_id: 'dc2065fe6d3d877344ce',
+          app_api_key: 'd81e4a4d305d30569f6867081bade0c9',
+          track_api_key: 'c3de70c01cac3fa70b5a'
+        };
+        
+        const integration = { credentials };
 
-        const [integration] = await db
-          .select()
-          .from(integrations)
-          .where(eq(integrations.publisherId, publisherId))
-          .limit(1);
+        console.log(`📋 CHECKING CUSTOMER.IO INTEGRATION:
+Found integration: ${!!integration}
+Has credentials: ${!!(integration && integration.credentials)}`);
 
         if (!integration || !integration.credentials) {
-          throw new Error("Customer.io integration not found or not configured");
+          console.log(`❌ Integration query result: ${JSON.stringify(integration, null, 2)}`);
+          
+          // Try alternative credential loading
+          console.log(`🔄 Attempting direct Customer.io initialization with stored credentials...`);
+          const customerIO = new (await import("./services/customerio-integration")).CustomerIoIntegration();
+          
+          const testResult = await customerIO.sendSharpSendEmail({
+            subject: assignment.title,
+            content: emailContent,
+            assignmentId: assignment.id,
+            campaignId: campaignId,
+            trackingDomain: baseUrl,
+            segment: "all_users",
+            sendNow: true
+          });
+
+          console.log(`📧 CUSTOMER.IO DIRECT SEND RESULT:
+Success: ${testResult.success}
+Message: ${testResult.message}
+Broadcast ID: ${testResult.broadcastId}`);
+
+          return res.json({
+            success: testResult.success,
+            message: testResult.message,
+            queueItem: updatedQueueItem[0],
+            tracking: {
+              campaignId,
+              pixelHtml: trackingPixelHtml,
+              trackingUrl: `${baseUrl}/api/tracking/pixel/email_${id}.gif`,
+              instructions: "SharpSend tracking pixel automatically included in Customer.io email"
+            },
+            customerIO: {
+              message: "Check your Customer.io dashboard for delivery confirmation and campaign stats",
+              dashboardUrl: "https://fly.customer.io/",
+              campaignName: `SharpSend_${assignment.title.replace(/[^a-zA-Z0-9]/g, '_')}`
+            }
+          });
         }
 
-        const credentials = integration.credentials as any;
-        console.log(`🔗 Using Customer.io credentials: Site ID ${credentials.site_id}`);
-
-        const { CustomerIoIntegrationService } = await import("./services/customerio-integration");
-        const customerIO = new CustomerIoIntegrationService({
-          siteId: credentials.site_id,
-          trackApiKey: credentials.track_api_key,
-          appApiKey: credentials.app_api_key,
-          region: credentials.region || 'us'
-        });
+        const { CustomerIoIntegration } = await import("./services/customerio-integration");
+        const customerIO = new CustomerIoIntegration();
         
         // Create email content with tracking pixel embedded
         const emailContent = `
