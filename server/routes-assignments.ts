@@ -398,8 +398,8 @@ router.post("/api/assignments/:id/approve", async (req, res) => {
     try {
       console.log(`Auto-adding approved assignment ${id} to broadcast queue`);
       
-      // Check if already in broadcast queue
-      const { broadcastQueue } = await import("@shared/schema");
+      // Import broadcast queue table from the correct schema
+      const { broadcastQueue } = await import("@shared/schema-multitenant");
       const existingQueueItem = await db
         .select()
         .from(broadcastQueue)
@@ -410,12 +410,12 @@ router.post("/api/assignments/:id/approve", async (req, res) => {
         .limit(1);
 
       if (!existingQueueItem.length) {
-        // Add to broadcast queue
+        // Add to broadcast queue with "queued" status to prevent auto-sending
         const [queueItem] = await db.insert(broadcastQueue).values({
           publisherId: existingAssignment.publisherId,
           assignmentId: id,
           title: updated.title,
-          status: "queued",
+          status: "queued", // Items require manual scheduling/sending
           audienceCount: 42, // Customer.io subscriber count
           segments: updated.targetSegments || [],
           sendSettings: null,

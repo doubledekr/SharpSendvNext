@@ -127,13 +127,13 @@ router.post("/", async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ error: "Assignment is already in broadcast queue" });
     }
 
-    // Create broadcast queue item
+    // Create broadcast queue item - set to "queued" status instead of "ready" to prevent auto-sending
     const newQueueItem = await db
       .insert(broadcastQueue)
       .values({
         ...validatedData,
         title: validatedData.title || assignmentData.title,
-        status: "ready",
+        status: "queued", // Changed from "ready" to "queued" to prevent auto-sending
         abTestConfig: validatedData.abTestConfig || { enabled: false },
       })
       .returning();
@@ -330,8 +330,8 @@ router.post("/:id/send", async (req: AuthenticatedRequest, res: Response) => {
       return res.status(404).json({ error: "Broadcast queue item not found" });
     }
 
-    if (!["ready", "scheduled"].includes(existingItem[0].status)) {
-      return res.status(400).json({ error: "Can only send items that are ready or scheduled" });
+    if (!["ready", "scheduled", "queued"].includes(existingItem[0].status)) {
+      return res.status(400).json({ error: "Can only send items that are ready, scheduled, or queued" });
     }
 
     // Update to sending status
