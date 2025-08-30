@@ -60,31 +60,51 @@ export default function VNextDashboard() {
     }
   };
   
-  // Fetch real analytics data from multitenant endpoint (requires auth)
+  // Fetch real analytics data - try authenticated endpoint first, fallback to demo
   const { data: analytics, isLoading: analyticsLoading } = useQuery<any>({
     queryKey: ["/api/analytics"],
     retry: false,
+    meta: { suppressErrorToast: true }
   });
   
-  // Fetch subscriber count
-  const { data: subscribers, isLoading: subscribersLoading } = useQuery<any[]>({
-    queryKey: ["/api/subscribers"],
+  // Fallback to demo analytics if authenticated fails
+  const { data: demoAnalytics, isLoading: demoAnalyticsLoading } = useQuery<any>({
+    queryKey: ["/api/analytics-demo"],
+    enabled: !analytics && !analyticsLoading,
     retry: false,
   });
   
+  // Fetch subscriber count - try authenticated endpoint first, fallback to demo
+  const { data: subscribers, isLoading: subscribersLoading } = useQuery<any[]>({
+    queryKey: ["/api/subscribers"],
+    retry: false,
+    meta: { suppressErrorToast: true }
+  });
+  
+  // Fallback to demo subscribers if authenticated fails
+  const { data: demoSubscribers, isLoading: demoSubscribersLoading } = useQuery<any[]>({
+    queryKey: ["/api/subscribers-demo"],
+    enabled: !subscribers && !subscribersLoading,
+    retry: false,
+  });
+  
+  // Use authenticated data first, fallback to demo data
+  const finalAnalytics = analytics || demoAnalytics;
+  const finalSubscribers = subscribers || demoSubscribers;
+  
   // Calculate real stats from fetched data - prioritize real Customer.io data
   const stats = {
-    totalSubscribers: subscribers?.length || analytics?.totalSubscribers || 0, // Use real subscriber count from API
-    engagementRate: analytics?.avgOpenRate || analytics?.engagementRate || 0,
-    monthlyRevenue: analytics?.revenue?.monthly || analytics?.monthlyRevenue || 0,
-    totalAssignments: analytics?.assignments?.total || 0,
-    pixelsActive: analytics?.pixelStats?.active || 0,
-    fatigueAlerts: analytics?.alerts?.fatigue || 0,
-    newSegments: analytics?.segments?.new || 0,
-    marketSentiment: analytics?.marketSentiment || 0
+    totalSubscribers: finalSubscribers?.length || finalAnalytics?.totalSubscribers || 0, // Use real subscriber count from API
+    engagementRate: finalAnalytics?.avgOpenRate || finalAnalytics?.engagementRate || 0,
+    monthlyRevenue: finalAnalytics?.revenue?.monthly || finalAnalytics?.monthlyRevenue || 0,
+    totalAssignments: finalAnalytics?.assignments?.total || 0,
+    pixelsActive: finalAnalytics?.pixelStats?.active || 0,
+    fatigueAlerts: finalAnalytics?.alerts?.fatigue || 0,
+    newSegments: finalAnalytics?.segments?.new || 0,
+    marketSentiment: finalAnalytics?.marketSentiment || 0
   };
   
-  const isLoading = analyticsLoading || subscribersLoading;
+  const isLoading = (analyticsLoading || demoAnalyticsLoading) || (subscribersLoading || demoSubscribersLoading);
 
   return (
     <div className="container mx-auto p-6 space-y-6">

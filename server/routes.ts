@@ -107,8 +107,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Demo endpoints - bypassing auth for dashboard access
-  app.get('/api/analytics', async (req, res) => {
+  // Demo endpoints with fallback - bypassing auth for dashboard access when no token
+  app.get('/api/analytics-demo', async (req, res) => {
     try {
       const publisherId = 'demo-publisher';
       
@@ -123,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/subscribers', async (req, res) => {
+  app.get('/api/subscribers-demo', async (req, res) => {
     try {
       const publisherId = 'demo-publisher';
       
@@ -712,8 +712,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Register all route modules AFTER demo login - but comment out multitenant to avoid conflicts
-  // await registerMultiTenantRoutes(app); // COMMENTED OUT for demo mode to prevent route conflicts
+  // Register all route modules AFTER demo login
+  await registerMultiTenantRoutes(app);
   // Temporarily disabled to avoid route conflicts with integrationsRoutes
   // platformIntegrationsRoutes(app);
   registerEmailRoutes(app);
