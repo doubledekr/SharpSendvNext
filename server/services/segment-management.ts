@@ -93,28 +93,41 @@ export class SegmentManagementService {
     try {
       const response = await this.customerIoService.makeApiRequest('GET', `/segments/${segmentId}/membership?limit=${limit}`);
       
-      // Transform Customer.io format to SharpSend format
-      const subscribers = (response.identifiers || []).map((identifier: any) => ({
-        id: identifier.cio_id,
-        email: identifier.email,
-        name: identifier.name || identifier.email.split('@')[0],
-        segment: `Segment ${segmentId}`,
-        engagementScore: "0",
-        revenue: "0",
-        joinedAt: identifier.created_at ? new Date(identifier.created_at * 1000).toISOString() : new Date().toISOString(),
-        isActive: !identifier.unsubscribed,
-        metadata: identifier.attributes || {},
-        preferences: {},
-        tags: [],
-        externalId: identifier.cio_id,
-        source: "customer_io_segment",
-        lastSyncAt: new Date().toISOString()
-      }));
+      if (!response || !response.identifiers) {
+        console.warn(`No identifiers found in segment ${segmentId} response`);
+        return [];
+      }
+      
+      // Transform Customer.io format to SharpSend format with safe property access
+      const subscribers = response.identifiers
+        .filter((identifier: any) => identifier && (identifier.email || identifier.id)) // Filter out invalid identifiers
+        .map((identifier: any) => {
+          const email = identifier.email || identifier.id || `user_${segmentId}_${Date.now()}@customer.io`;
+          const name = identifier.name || (typeof email === 'string' && email.includes('@') ? email.split('@')[0] : 'Unknown User');
+          
+          return {
+            id: identifier.cio_id || identifier.id || `${segmentId}_${Date.now()}`,
+            email: email,
+            name: name,
+            segment: `Segment ${segmentId}`,
+            engagementScore: "0",
+            revenue: "0",
+            joinedAt: identifier.created_at ? new Date(identifier.created_at * 1000).toISOString() : new Date().toISOString(),
+            isActive: !identifier.unsubscribed,
+            metadata: identifier.attributes || {},
+            preferences: {},
+            tags: [],
+            externalId: identifier.cio_id || identifier.id,
+            source: "customer_io_segment",
+            lastSyncAt: new Date().toISOString()
+          };
+        });
 
+      console.log(`Successfully processed ${subscribers.length} subscribers from segment ${segmentId}`);
       return subscribers;
     } catch (error) {
       console.error(`Failed to get subscribers for segment ${segmentId}:`, error);
-      return [];
+      throw error; // Re-throw to allow calling code to handle with fallback
     }
   }
 
