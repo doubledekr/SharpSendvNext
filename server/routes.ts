@@ -857,6 +857,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Subject: ${assignment.title}`);
       console.log(`To: ${queueItem.audienceCount} subscribers`);
 
+      // Generate SharpSend tracking pixel for this broadcast
+      const { EmailTrackingPixel } = await import("./services/email-tracking-pixel");
+      const tracker = EmailTrackingPixel.getInstance();
+      
+      // Create tracking campaign for this broadcast
+      const campaignId = `broadcast_${id}`;
+      const baseUrl = `https://localhost:5000`; // In production, use actual domain
+      
+      // Generate pixel HTML that Customer.io will include in emails
+      const trackingPixelHtml = tracker.generatePixelTag(
+        `email_${id}`, 
+        'customer_io_broadcast', 
+        baseUrl, 
+        campaignId
+      );
+      
+      console.log(`📊 SHARPSEND TRACKING PIXEL GENERATED:`);
+      console.log(`Campaign ID: ${campaignId}`);
+      console.log(`Pixel HTML: ${trackingPixelHtml}`);
+      console.log(`Track opens at: ${baseUrl}/api/tracking/pixel/email_${id}.gif`);
+
       // Update status to sent
       await db
         .update(broadcastQueue)
@@ -883,7 +904,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         message: `Successfully sent "${assignment.title}" to ${queueItem.audienceCount} Customer.io subscribers`,
-        queueItem: { ...queueItem, status: "sent", sentAt: new Date() }
+        queueItem: { ...queueItem, status: "sent", sentAt: new Date() },
+        tracking: {
+          campaignId,
+          pixelHtml: trackingPixelHtml,
+          trackingUrl: `${baseUrl}/api/tracking/pixel/email_${id}.gif`,
+          instructions: "Include the pixelHtml in your Customer.io email template to track opens in SharpSend"
+        }
       });
 
     } catch (error) {

@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { TrackingPixelInstructions } from "@/components/tracking-pixel-instructions";
 
 interface BroadcastQueueItem {
   id: string;
@@ -362,6 +363,7 @@ export default function BroadcastQueue() {
                               <Calendar className="h-4 w-4 mr-1" />
                               Schedule Send
                             </Button>
+                            <TrackingPixelInstructions broadcastId={item.id} />
                             <Button
                               size="sm"
                               onClick={() => sendMutation.mutate(item.id)}
