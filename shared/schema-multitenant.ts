@@ -463,7 +463,7 @@ export const insertCrmIntegrationSchema = createInsertSchema(crmIntegrations).pi
 
 export const insertAiContentHistorySchema = createInsertSchema(aiContentHistory).pick({
   publisherId: true,
-  campaignId: true,
+  assignmentId: true,
   prompt: true,
   generatedContent: true,
   contentType: true,
