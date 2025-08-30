@@ -46,7 +46,7 @@ export class MarketAlertService {
           filter_entities: true,
           language: 'en',
           // Removed published_after due to format issues
-          categories: categories?.join(',') || 'general,forex,crypto,merger'
+          categories: categories?.join(',') || 'earnings,ipo,ma,finance,bonds,commodities'
         }
       });
 
@@ -328,26 +328,95 @@ export class MarketAlertService {
       {
         id: '1',
         type: 'earnings',
-        title: 'NVIDIA Reports Q3 Earnings Beat, Revenue Up 94% YoY',
-        description: 'NVIDIA Corporation reported exceptional Q3 results with AI chip demand continuing to surge.',
-        symbol: 'NVDA',
-        sector: 'Technology',
+        title: 'JPMorgan Chase Q4 Earnings Beat Estimates by 12%, NII Guidance Raised',
+        description: 'JPMorgan reports strong Q4 results with net interest income exceeding analyst expectations. CEO Dimon cites resilient consumer spending.',
+        symbol: 'JPM',
+        sector: 'Financial',
         impact: 'high',
         timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        source: 'Financial Wire',
+        source: 'Bloomberg',
         sentiment: 'positive',
         priceImpact: 0.8
       },
       {
         id: '2',
         type: 'fed_announcement',
-        title: 'Fed Holds Rates Steady, Signals Potential December Cut',
-        description: 'Federal Reserve maintains current rates but hints at possible reduction in December meeting.',
+        title: 'Fed Minutes Reveal Growing Consensus for Rate Pause Through Q2 2025',
+        description: 'Federal Reserve meeting minutes show members favor maintaining current rates amid persistent inflation concerns and labor market strength.',
         sector: 'Mixed',
         impact: 'high',
         timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
+        source: 'Reuters',
+        sentiment: 'neutral'
+      },
+      {
+        id: '3',
+        type: 'merger',
+        title: 'KKR Announces $23B Take-Private Deal for Healthcare REIT',
+        description: 'Private equity giant KKR to acquire Medical Properties Trust in largest healthcare real estate transaction of 2025.',
+        symbol: 'MPW',
+        sector: 'RealEstate',
+        impact: 'high',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
+        source: 'Wall Street Journal',
+        sentiment: 'positive',
+        priceImpact: 0.6
+      },
+      {
+        id: '4',
+        type: 'ipo',
+        title: 'Stripe Files for IPO at $95B Valuation, Roadshow Begins Next Week',
+        description: 'Fintech giant Stripe officially files S-1, targeting the largest tech IPO since 2021. Goldman Sachs and JPMorgan leading underwriters.',
+        sector: 'Technology',
+        impact: 'high',
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
+        source: 'Financial Times',
+        sentiment: 'positive'
+      },
+      {
+        id: '5',
+        type: 'general_news',
+        title: 'Bond Yields Surge to 5% as Treasury Auction Shows Weak Demand',
+        description: '10-year Treasury yields hit highest level since 2007 after disappointing 30-year bond auction. Flight from bonds accelerates.',
+        sector: 'Mixed',
+        impact: 'high',
+        timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000),
+        source: 'CNBC',
+        sentiment: 'negative'
+      },
+      {
+        id: '6',
+        type: 'general_news',
+        title: 'Hedge Fund Citadel Returns 15% in January, Outperforms S&P by 10%',
+        description: 'Ken Griffin\'s Citadel posts exceptional January returns driven by macro trades and equity volatility strategies.',
+        sector: 'Financial',
+        impact: 'medium',
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000),
+        source: 'Institutional Investor',
+        sentiment: 'positive'
+      },
+      {
+        id: '7',
+        type: 'dividend',
+        title: 'Berkshire Hathaway Initiates First-Ever Dividend at $0.50/Share',
+        description: 'Warren Buffett surprises markets with Berkshire\'s inaugural dividend announcement, signaling capital allocation shift.',
+        symbol: 'BRK.B',
+        sector: 'Financial',
+        impact: 'high',
+        timestamp: new Date(Date.now() - 14 * 60 * 60 * 1000),
         source: 'MarketWatch',
         sentiment: 'positive'
+      },
+      {
+        id: '8',
+        type: 'general_news',
+        title: 'Oil Futures Spike 8% on OPEC+ Production Cut Extension',
+        description: 'Crude oil surges past $95/barrel as Saudi Arabia and Russia extend voluntary production cuts through Q3 2025.',
+        sector: 'Energy',
+        impact: 'high',
+        timestamp: new Date(Date.now() - 16 * 60 * 60 * 1000),
+        source: 'Energy Intelligence',
+        sentiment: 'negative'
       }
     ];
   }

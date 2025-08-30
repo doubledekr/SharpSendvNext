@@ -54,7 +54,7 @@ export class MarketIntelligenceService {
 
     try {
       const response = await fetch(
-        `https://api.marketaux.com/v1/news/all?industries=Financial&limit=5&api_token=${this.marketauxApiKey}`
+        `https://api.marketaux.com/v1/news/all?industries=Financial,Finance&categories=earnings,ipo,ma,finance,bonds,commodities&limit=10&api_token=${this.marketauxApiKey}`
       );
       
       if (!response.ok) {
