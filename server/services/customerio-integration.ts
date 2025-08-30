@@ -657,3 +657,46 @@ Campaign ID: ${result.campaignId}`);
     }
   }
 }
+
+// Export a wrapper class for backwards compatibility and simplified initialization
+export class CustomerIoIntegration {
+  private service: CustomerIoIntegrationService;
+
+  constructor() {
+    // Load credentials from environment or use defaults
+    const config: CustomerIoConfig = {
+      siteId: process.env.CUSTOMERIO_SITE_ID || 'dc2065fe6d3d877344ce',
+      trackApiKey: process.env.CUSTOMERIO_TRACK_API_KEY || 'c3de70c01cac3fa70b5a',
+      appApiKey: process.env.CUSTOMERIO_APP_API_KEY || 'd81e4a4d305d30569f6867081bade0c9',
+      region: (process.env.CUSTOMERIO_REGION as 'us' | 'eu') || 'us'
+    };
+    
+    console.log(`🔧 CustomerIoIntegration initialized with Site ID: ${config.siteId}`);
+    this.service = new CustomerIoIntegrationService(config);
+  }
+
+  // Delegate all methods to the service
+  async testConnection() {
+    return this.service.testConnection();
+  }
+
+  async getSubscribers() {
+    return this.service.getSubscribers();
+  }
+
+  async sendBroadcast(data: any) {
+    return this.service.sendBroadcast(data);
+  }
+
+  async sendSharpSendEmail(data: any) {
+    return this.service.sendSharpSendEmail(data);
+  }
+
+  async getSegments() {
+    return this.service.getSegments();
+  }
+
+  async getCampaigns() {
+    return this.service.getCampaigns();
+  }
+}

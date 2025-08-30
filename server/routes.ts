@@ -998,8 +998,8 @@ Broadcast ID: ${testResult.broadcastId}`);
           });
         }
 
-        const { CustomerIoIntegration } = await import("./services/customerio-integration");
-        const customerIO = new CustomerIoIntegration();
+        const { CustomerIoIntegrationService } = await import("./services/customerio-integration");
+        const customerIO = new CustomerIoIntegrationService(credentials);
         
         // Create email content with tracking pixel embedded
         const emailContent = `

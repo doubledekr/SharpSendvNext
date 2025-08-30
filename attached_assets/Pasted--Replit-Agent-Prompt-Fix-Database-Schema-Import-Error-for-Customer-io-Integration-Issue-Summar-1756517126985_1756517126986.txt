@@ -1,0 +1,206 @@
+# Replit Agent Prompt: Fix Database Schema Import Error for Customer.io Integration
+
+## Issue Summary
+The Customer.io integration is working (42 real subscribers detected) but there's a database schema import error preventing the full send from completing. The integration attempts to send but fails during credential loading.
+
+## Diagnostic Steps
+
+### 1. Check Schema Import in `server/routes-broadcast.ts`
+
+**Look for this line around the schema import:**
+```typescript
+import { broadcastQueue, broadcastSendLogs, assignments } from "@shared/schema-multitenant";
+```
+
+**If it shows an error, replace with:**
+```typescript
+import { broadcastQueue, broadcastSendLogs, assignments } from "../shared/schema-multitenant";
+```
+
+### 2. Fix Customer.io Service Import
+
+**In `server/routes-broadcast.ts`, find:**
+```typescript
+const { CustomerIoIntegrationService } = await import("../services/customerio-integration");
+```
+
+**Make sure it matches the exact export name. Check `server/services/customerio-integration.ts` for the correct export:**
+- If it exports `CustomerIoIntegrationService`, keep as is
+- If it exports `CustomerIoIntegration`, change to:
+```typescript
+const { CustomerIoIntegration } = await import("../services/customerio-integration");
+```
+
+### 3. Fix Configuration Loading
+
+**Find the Customer.io config section and ensure environment variables are loaded correctly:**
+```typescript
+// Add this at the top of the file if missing
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Then in the config section:
+const customerIoConfig = {
+  siteId: process.env.CUSTOMERIO_SITE_ID || 'dc2065fe6d3d877344ce',
+  trackApiKey: process.env.CUSTOMERIO_TRACK_API_KEY || 'demo-track-key',
+  appApiKey: process.env.CUSTOMERIO_APP_API_KEY || 'demo-app-key',
+  region: (process.env.CUSTOMERIO_REGION as 'us' | 'eu') || 'us'
+};
+```
+
+### 4. Add Error Handling for Schema Issues
+
+**Wrap the database operations in try-catch blocks:**
+```typescript
+try {
+  // Check if queue item exists and belongs to publisher
+  const existingItem = await db
+    .select()
+    .from(broadcastQueue)
+    .where(and(
+      eq(broadcastQueue.id, id),
+      eq(broadcastQueue.publisherId, publisherId)
+    ))
+    .limit(1);
+
+  if (!existingItem.length) {
+    return res.status(404).json({ error: "Broadcast queue item not found" });
+  }
+
+  // Get assignment data
+  const assignment = await db
+    .select()
+    .from(assignments)
+    .where(and(
+      eq(assignments.id, existingItem[0].assignmentId),
+      eq(assignments.publisherId, publisherId)
+    ))
+    .limit(1);
+
+  if (!assignment.length) {
+    throw new Error("Assignment not found");
+  }
+
+} catch (schemaError) {
+  console.error("Database schema error:", schemaError);
+  return res.status(500).json({ 
+    error: "Database schema error", 
+    details: schemaError.message 
+  });
+}
+```
+
+### 5. Verify Environment Variables
+
+**Check that `.env` file contains:**
+```env
+# Customer.io Configuration
+CUSTOMERIO_SITE_ID=dc2065fe6d3d877344ce
+CUSTOMERIO_TRACK_API_KEY=your-track-api-key
+CUSTOMERIO_APP_API_KEY=your-app-api-key
+CUSTOMERIO_REGION=us
+
+# Tracking Domain
+TRACKING_DOMAIN=https://your-replit-url.replit.dev
+```
+
+### 6. Alternative: Simplified Customer.io Send
+
+**If schema issues persist, create a simplified send function:**
+```typescript
+// POST /api/broadcast-queue/:id/send-simple
+router.post("/:id/send-simple", async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const publisherId = "demo-publisher"; // Use your actual publisher ID
+    
+    console.log(`🚀 Attempting simplified Customer.io send for broadcast ${id}`);
+    
+    // Simple data retrieval without complex schema imports
+    const queueItem = {
+      id: id,
+      title: "Test Email from SharpSend",
+      content: `
+        <html>
+          <body>
+            <h1>Test Email from SharpSend</h1>
+            <p>This is a test email sent through Customer.io with SharpSend tracking.</p>
+            <p>If you receive this, the integration is working!</p>
+          </body>
+        </html>
+      `
+    };
+    
+    // Add tracking pixel
+    const trackingDomain = process.env.TRACKING_DOMAIN || 'https://your-replit-url.replit.dev';
+    const trackingPixel = `<img src="${trackingDomain}/api/tracking/pixel/test-{{customer.id}}-${id}.gif" alt="" width="1" height="1" border="0" style="display:block;width:1px;height:1px;border:0;" />`;
+    
+    let emailContent = queueItem.content;
+    if (emailContent.includes('</body>')) {
+      emailContent = emailContent.replace('</body>', `${trackingPixel}</body>`);
+    } else {
+      emailContent += trackingPixel;
+    }
+    
+    // Direct Customer.io send
+    const { CustomerIoIntegrationService } = await import("../services/customerio-integration");
+    
+    const customerIoConfig = {
+      siteId: process.env.CUSTOMERIO_SITE_ID || 'dc2065fe6d3d877344ce',
+      trackApiKey: process.env.CUSTOMERIO_TRACK_API_KEY || 'demo-track-key',
+      appApiKey: process.env.CUSTOMERIO_APP_API_KEY || 'demo-app-key',
+      region: 'us'
+    };
+    
+    const customerIo = new CustomerIoIntegrationService(customerIoConfig);
+    
+    const result = await customerIo.sendBroadcast({
+      subject: "Test Email from SharpSend",
+      content: emailContent,
+      segment: "all_users",
+      campaignName: `SharpSend_Test_${id}`,
+      sendNow: true
+    });
+    
+    console.log(`✅ Customer.io send result:`, result);
+    
+    res.json({
+      success: true,
+      message: "Test email sent via Customer.io",
+      result: result
+    });
+    
+  } catch (error) {
+    console.error("Simplified send error:", error);
+    res.status(500).json({ 
+      error: "Send failed", 
+      details: error.message 
+    });
+  }
+});
+```
+
+## Testing the Fix
+
+1. **Apply the schema fixes above**
+2. **Test with the simplified endpoint:** `POST /api/broadcast-queue/test-123/send-simple`
+3. **Check Customer.io dashboard** for the test campaign
+4. **Verify tracking pixel** by opening the email
+5. **Check server logs** for tracking events
+
+## Expected Results
+
+After fixing the schema import:
+- ✅ No more database schema errors
+- ✅ Customer.io sends complete successfully  
+- ✅ Tracking pixels work in sent emails
+- ✅ Engagement data flows back to SharpSend
+- ✅ Customer.io dashboard shows SharpSend campaigns
+
+## Verification Steps
+
+1. Check server logs for "✅ Customer.io send result"
+2. Visit Customer.io dashboard for delivery confirmation
+3. Open a test email and check for tracking pixel requests
+4. Verify no schema import errors in console
+
