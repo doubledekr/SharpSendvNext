@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image, ThumbsUp, ThumbsDown, MessageCircle, XCircle, Send } from "lucide-react";
+import { Plus, Calendar, User, AlertCircle, CheckCircle, Clock, FileText, TrendingUp, Users, Link, Copy, ExternalLink, ChevronDown, X, Sparkles, DollarSign, Target, Briefcase, Zap, Settings, Play, Image, ThumbsUp, ThumbsDown, MessageCircle, XCircle, Send, Eye } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -1635,15 +1635,13 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                                   variant="outline"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toast({
-                                      title: "Email Variations Generated",
-                                      description: "This assignment has been processed with segment-specific email variations including Growth Investors, Conservative Investors, Day Traders, and Crypto Enthusiasts.",
-                                    });
+                                    // Navigate to assignment detail to review variations
+                                    window.location.href = `/assignments/${assignment.id}`;
                                   }}
-                                  className="text-xs sm:text-sm text-green-600 border-green-200 hover:bg-green-50"
+                                  className="text-xs sm:text-sm text-blue-600 border-blue-200 hover:bg-blue-50"
                                 >
-                                  <Sparkles className="h-4 w-4 mr-1" />
-                                  View Variations
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Review Content
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1651,15 +1649,15 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                                     e.stopPropagation();
                                     approveAssignmentMutation.mutate({
                                       id: assignment.id,
-                                      comments: "Automatically approved after segment variations completed"
+                                      comments: "Content approved and ready for broadcast"
                                     });
                                   }}
                                   disabled={approveAssignmentMutation.isPending}
                                   className="text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white"
                                   data-testid={`button-approve-completed-${assignment.id}`}
                                 >
-                                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                  Approve & Queue
+                                  <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Send to Broadcast
                                 </Button>
                               </div>
                             )}
