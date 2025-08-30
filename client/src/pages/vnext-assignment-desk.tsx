@@ -1620,26 +1620,20 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                               </div>
                             )}
 
-                            {/* Phase 2: Add to Broadcast Queue Button for Approved Assignments */}
+                            {/* Phase 2: Broadcast Queue Button for Approved Assignments */}
                             {assignment.status === "approved" && (
                               <Button
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  addToBroadcastQueueMutation.mutate({
-                                    assignmentId: assignment.id,
-                                    assignmentTitle: assignment.title,
-                                    priority: assignment.priority as "high" | "medium" | "low",
-                                    emailSubject: assignment.title,
-                                    audienceCount: 1000
-                                  });
+                                  // Navigate to broadcast queue instead of trying to add again
+                                  window.location.href = '/broadcast-queue';
                                 }}
-                                disabled={addToBroadcastQueueMutation.isPending}
                                 className="text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white"
-                                data-testid={`button-add-to-broadcast-${assignment.id}`}
+                                data-testid={`button-view-in-broadcast-${assignment.id}`}
                               >
                                 <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                Add to Broadcast Queue
+                                View in Broadcast Queue
                               </Button>
                             )}
 

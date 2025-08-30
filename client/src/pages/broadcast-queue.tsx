@@ -59,7 +59,7 @@ export default function BroadcastQueue() {
   const [scheduleDateTime, setScheduleDateTime] = useState("");
 
   // Fetch broadcast queue items
-  const { data: queueData, isLoading: queueLoading } = useQuery<{ items: BroadcastQueueItem[] }>({
+  const { data: queueData, isLoading: queueLoading } = useQuery({
     queryKey: ["/api/broadcast-queue"],
   });
 
@@ -122,7 +122,7 @@ export default function BroadcastQueue() {
     }
   });
 
-  const items = queueData?.items || [];
+  const items = queueData || [];
 
   // Filter items based on selected tab
   const filteredItems = items.filter(item => {
@@ -311,8 +311,8 @@ export default function BroadcastQueue() {
                               <span className="capitalize">{item.status}</span>
                             </div>
                           </Badge>
-                          <Badge className={getPriorityColor(item.priority)}>
-                            {item.priority.toUpperCase()} PRIORITY
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                            Customer.io
                           </Badge>
                         </div>
 
