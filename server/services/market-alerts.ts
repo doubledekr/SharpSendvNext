@@ -36,17 +36,26 @@ export class MarketAlertService {
   /**
    * Get real-time market events for financial publishers
    */
-  async getMarketEvents(categories?: string[]): Promise<MarketEvent[]> {
+  async getMarketEvents(categories?: string[], offset?: number): Promise<MarketEvent[]> {
     try {
-      // Simplified API call - removing problematic published_after parameter
+      // Calculate time window for fresh news (last 48 hours)
+      const now = new Date();
+      const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+      const publishedAfter = twoDaysAgo.toISOString().split('.')[0] + 'Z'; // Format: 2024-01-01T00:00:00Z
+      
+      // Add randomized offset for different results on refresh
+      const randomOffset = offset !== undefined ? offset : Math.floor(Math.random() * 50);
+      
       const response = await axios.get('https://api.marketaux.com/v1/news/all', {
         params: {
           api_token: this.marketauxApiKey,
           limit: 20,
+          offset: randomOffset, // Skip some articles to get different results
           filter_entities: true,
           language: 'en',
-          // Removed published_after due to format issues
-          categories: categories?.join(',') || 'earnings,ipo,ma,finance,bonds,commodities'
+          published_after: publishedAfter, // Get news from last 48 hours
+          categories: categories?.join(',') || 'earnings,ipo,ma,finance,bonds,commodities',
+          sort: 'published_at:desc' // Sort by newest first
         }
       });
 
@@ -324,7 +333,7 @@ export class MarketAlertService {
   }
 
   private getMockMarketEvents(): MarketEvent[] {
-    return [
+    const allEvents = [
       {
         id: '1',
         type: 'earnings',
@@ -419,5 +428,12 @@ export class MarketAlertService {
         sentiment: 'negative'
       }
     ];
+    
+    // Shuffle the events to return different order each time
+    const shuffled = [...allEvents].sort(() => Math.random() - 0.5);
+    
+    // Return a random subset of 5-8 events
+    const count = Math.floor(Math.random() * 4) + 5;
+    return shuffled.slice(0, count);
   }
 }

@@ -1420,7 +1420,10 @@ Broadcast ID: ${testResult.broadcastId}`);
     try {
       const { MarketAlertService } = await import("./services/market-alerts");
       const marketService = new MarketAlertService();
-      const marketEvents = await marketService.getMarketEvents();
+      
+      // Use random offset to get different articles on refresh
+      const randomOffset = Math.floor(Math.random() * 100);
+      const marketEvents = await marketService.getMarketEvents(undefined, randomOffset);
       
       // Transform market events to news format expected by frontend
       const news = marketEvents.slice(0, 5).map(event => ({
