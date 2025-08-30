@@ -114,7 +114,7 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
     opportunityId: null as string | null,
     // New fields for enhanced workflow
     targetSegments: [] as { segmentId: string; segmentName: string; subscriberCount: number; platform: string }[],
-    emailPlatform: "auto-detect" as string,
+    emailPlatform: "customerio" as string,
     reviewers: [] as { userId: string; name: string; role: string; status: string }[],
     reviewDeadline: "",
     reviewNotes: "",
@@ -981,11 +981,7 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                       <p className="text-sm text-muted-foreground">Choose which audience segments will receive this content</p>
                       <div className="space-y-2">
                         {[
-                          { id: "growth_investors", name: "Growth Investors", count: 2450, description: "Focus on growth stocks and emerging markets" },
-                          { id: "conservative_investors", name: "Conservative Investors", count: 1890, description: "Focus on stable, dividend-paying stocks" },
-                          { id: "day_traders", name: "Day Traders", count: 890, description: "Active traders looking for short-term opportunities" },
-                          { id: "crypto_enthusiasts", name: "Crypto Enthusiasts", count: 1200, description: "Interested in cryptocurrency and digital assets" },
-                          { id: "income_focused", name: "Income Focused", count: 3200, description: "Focus on dividend yields and fixed income" }
+                          { id: "all_users", name: "All Subscribers", count: 42, description: "Send to all active Customer.io subscribers" }
                         ].map(segment => (
                           <label 
                             key={segment.id} 
@@ -1037,12 +1033,7 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="auto-detect">Auto-Detect</SelectItem>
-                          <SelectItem value="mailchimp">Mailchimp</SelectItem>
-                          <SelectItem value="constant-contact">Constant Contact</SelectItem>
-                          <SelectItem value="hubspot">HubSpot</SelectItem>
-                          <SelectItem value="convertkit">ConvertKit</SelectItem>
-                          <SelectItem value="custom">Custom</SelectItem>
+                          <SelectItem value="customerio">Customer.io (Connected)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1051,7 +1042,7 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
                     {newAssignment.targetSegments.length > 0 && (
                       <div className="p-3 bg-accent/50 rounded-lg">
                         <p className="text-sm font-medium">
-                          Total Audience: {newAssignment.targetSegments.reduce((sum, s) => sum + s.subscriberCount, 0).toLocaleString()} subscribers across {newAssignment.targetSegments.length} segments
+                          <strong>Real Customer.io Audience:</strong> {newAssignment.targetSegments.reduce((sum, s) => sum + s.subscriberCount, 0).toLocaleString()} active subscribers
                         </p>
                       </div>
                     )}
