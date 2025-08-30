@@ -630,6 +630,32 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
     }
   };
 
+  // Clear all test data
+  const handleClearTestData = async () => {
+    if (!confirm("Are you sure you want to clear all test assignments and broadcasts? This cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      const response = await apiRequest("POST", "/api/cleanup/test-data", {});
+      await response.json();
+      
+      toast({
+        title: "Test Data Cleared",
+        description: "All test assignments and broadcasts have been removed.",
+      });
+      
+      // Refresh assignments list
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+    } catch (error) {
+      toast({
+        title: "Cleanup Failed",
+        description: "Unable to clear test data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl">
       {/* Header with View Toggle */}
@@ -669,6 +695,15 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
               <span className="xs:hidden">Opps</span>
             </Button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearTestData}
+            className="text-red-600 hover:text-red-700 gap-1"
+          >
+            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Clear Test</span>
+          </Button>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

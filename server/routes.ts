@@ -27,6 +27,7 @@ import { registerVNextRoutes } from "./routes-vnext";
 import platformSendRoutes from "./routes-platform-send";
 import cohortsRoutes from "./routes-cohorts";
 import { sharpSendIntelligenceRoutes } from "./routes-sharpsend-intelligence";
+import cleanupRoutes from "./routes-cleanup";
 // Demo environment removed - no demo functionality
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
@@ -773,6 +774,7 @@ IP: ${ipAddress}`);
   app.use("/api/cohorts", cohortsRoutes);
   app.use("/api/sharpsend-intelligence", sharpSendIntelligenceRoutes);
   app.use("/api/images", imageTemplateRoutes);
+  app.use(cleanupRoutes);
   
   // Public object serving endpoint for CDN access  
   app.get("/public-objects/:filePath(*)", async (req, res) => {
