@@ -470,9 +470,27 @@ router.get('/insights/dashboard', async (req, res) => {
     // Generate AI segment recommendations
     const aiSegments = await aiSegmentGenerator.generateAISegments();
     
-    // Get subscribers for user insights - using real Customer.io data when available
-    const mockUserIds = ['john.smith@email.com', 'sarah.johnson@gmail.com', 'demo@test.com'];
-    const topUserIds = mockUserIds;
+    // Get real subscribers from Customer.io for user insights
+    let topUserIds: string[] = [];
+    
+    try {
+      const customerResponse = await customerIOService.makeApiRequest('GET', '/customers?limit=10');
+      const realCustomers = customerResponse.results || [];
+      topUserIds = realCustomers.map((customer: any) => customer.id || customer.email);
+      
+      if (topUserIds.length === 0) {
+        throw new Error('No real subscribers found in Customer.io');
+      }
+      
+      console.log(`Using ${topUserIds.length} real Customer.io subscribers for insights`);
+    } catch (error) {
+      console.error('Failed to fetch real subscribers, cannot generate insights:', error);
+      return res.status(500).json({ 
+        error: 'Cannot generate insights: No real Customer.io subscriber data available',
+        details: error.message 
+      });
+    }
+    
     const userInsights = await aiSegmentGenerator.generateUserInsights(topUserIds);
     
     res.json({

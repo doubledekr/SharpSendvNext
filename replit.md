@@ -28,6 +28,15 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform for f
 - Complete API suite available at `/api/customerio/*` endpoints
 - All capabilities ready for production with proper API credentials
 
+**CRITICAL: AI-Powered Segment Generation with Real Data**: Successfully implemented comprehensive AI segment intelligence using authentic Customer.io data:
+- Individual user insights analyzing real subscriber behavior (e.g. "mobile user", "Newsletter C subscriber")
+- Automatic segment generation based on real engagement patterns from Customer.io attributes
+- Easy-to-understand behavioral insights like "Low engagement - infrequent opener" and "Same-day responder"
+- Real device preference analysis (mobile vs desktop) from actual Customer.io tracking data
+- Content preference detection from Customer.io attributes (tech, finance, news categories)
+- Revenue-based segmentation using real Customer.io lifetime value data
+- NO MOCK DATA - All insights generated from authentic Customer.io subscriber attributes
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
