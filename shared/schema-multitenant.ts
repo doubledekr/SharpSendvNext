@@ -381,6 +381,32 @@ export const campaignEmailVersions = pgTable("campaign_email_versions", {
   estimatedClickRate: decimal("estimated_click_rate", { precision: 5, scale: 2 }),
 });
 
+// Email segments (detected + user-defined)
+export const emailSegments = pgTable("email_segments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publisherId: varchar("publisher_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isDetected: boolean("is_detected").default(false), // auto-detected from ESP
+  isDynamic: boolean("is_dynamic").default(false), // dynamically calculated from data
+  criteria: jsonb("criteria").$type<{
+    espListId?: string;
+    tags?: string[];
+    customFields?: Record<string, any>;
+    behavioralTriggers?: string[];
+    dynamicRules?: {
+      engagement?: { min?: number; max?: number };
+      revenue?: { min?: number; max?: number };
+      activity?: { daysSinceLastOpen?: number };
+      cohort?: string;
+    };
+  }>(),
+  subscriberCount: integer("subscriber_count").default(0),
+  growth: decimal("growth", { precision: 5, scale: 2 }).default("0"), // % growth
+  lastCalculatedAt: timestamp("last_calculated_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Types for assignments workflow
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = typeof assignments.$inferInsert;
@@ -392,6 +418,8 @@ export type PixelTracking = typeof pixelTracking.$inferSelect;
 export type InsertPixelTracking = typeof pixelTracking.$inferInsert;
 export type EmailMetric = typeof emailMetrics.$inferSelect;
 export type InsertEmailMetric = typeof emailMetrics.$inferInsert;
+export type EmailSegment = typeof emailSegments.$inferSelect;
+export type InsertEmailSegment = typeof emailSegments.$inferInsert;
 
 // Phase 2: Broadcast Queue Types
 export type BroadcastQueueItem = typeof broadcastQueue.$inferSelect;
@@ -527,6 +555,18 @@ export const insertBroadcastSendLogSchema = createInsertSchema(broadcastSendLogs
   status: true,
   message: true,
   details: true,
+});
+
+export const insertEmailSegmentSchema = createInsertSchema(emailSegments).pick({
+  publisherId: true,
+  name: true,
+  description: true,
+  isDetected: true,
+  isDynamic: true,
+  criteria: true,
+  subscriberCount: true,
+  growth: true,
+  lastCalculatedAt: true,
 });
 
 // Types
