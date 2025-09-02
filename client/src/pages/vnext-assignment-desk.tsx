@@ -321,6 +321,7 @@ export function VNextAssignmentDesk({ prefilledUrl, autoOpenDialog }: VNextAssig
         notes: data.notes,
         tags: data.tags,
         opportunityId: data.opportunityId,
+        referenceUrl: data.ctaUrl || undefined, // Add reference URL for article source
         brief: {
           objective: data.objective,
           angle: data.angle,
