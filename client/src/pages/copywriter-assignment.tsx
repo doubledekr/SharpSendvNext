@@ -383,6 +383,20 @@ export function CopywriterAssignment() {
                   {assignment.status.replace('_', ' ')}
                 </Badge>
               </div>
+              {/* Display source article URL prominently */}
+              {assignment.brief?.offer?.url && (
+                <div className="mb-2">
+                  <a 
+                    href={assignment.brief.offer.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 underline font-medium"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Source Article
+                  </a>
+                </div>
+              )}
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />

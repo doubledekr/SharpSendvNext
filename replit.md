@@ -4,13 +4,19 @@
 
 SharpSend is a multi-tenant AI-powered newsletter personalization platform for financial publishers. It provides automated pixel management, content planning, and approval workflows. Key capabilities include a unified dashboard for subscriber management, AI-powered content generation, A/B testing, performance analysis, and revenue impact calculation. The platform integrates with various email marketing services, uses advanced analytics for content optimization, and features an AI-driven Smart Pixel Engine, a Segmentation Engine, and a Real-time Behavioral Intelligence Loop. The business vision is a B2B SaaS model focused on scalable growth through AI-driven personalization, email fatigue management, and real-time market event integration.
 
-## Recent Changes (August 30, 2025)
+## Recent Changes (September 2, 2025)
+
+**Shareable Link Fix**: Fixed SQL syntax error in assignment shareable link generation by adding missing `shareableSlug` field to Drizzle schema. Copywriters can now successfully copy and share unique assignment links.
+
+**Article URL Display**: Added prominent display of source article links in copywriter assignment portal. When an assignment is created from an article, the article URL appears directly under the assignment title for easy copywriter access.
+
+**Market News Integration**: Removed ALL mock data from finance news feed. System now shows only real financial news from MarketAux API with working article links. Fixed date format issue (YYYY-MM-DD) for proper API integration.
+
+## Previous Changes (August 30, 2025)
 
 **Auto-Remove from Assignment List**: Assignments now automatically disappear from the active assignment list when sent to broadcast queue. Status changes to "queued" → "broadcasting" → "sent/published". Assignments can be restored to active list if removed from broadcast queue.
 
 **Test Data Cleanup**: Added "Clear Test" button to Assignment Desk header for one-click removal of all test assignments and broadcasts. Includes confirmation dialog to prevent accidental deletion.
-
-**News Refresh Fix**: Fixed news refresh to fetch different articles each time. Added time-based filtering (48-hour window), random offset pagination, and shuffled mock data fallback for varied content on each refresh.
 
 **CRITICAL: Schema Consolidation Complete**: Successfully consolidated dual-schema system to fix assignment→broadcast queue workflow. Updated all routes to use `schema-multitenant.ts` consistently, resolving foreign key relationship issues. Assignment approval now properly flows to broadcast queue with correct publisher isolation.
 

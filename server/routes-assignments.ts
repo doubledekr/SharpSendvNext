@@ -602,7 +602,10 @@ router.post("/api/assignments/:id/share", async (req, res) => {
       await db
         .update(assignments)
         .set({ shareableSlug })
-        .where(eq(assignments.id, id));
+        .where(and(
+          eq(assignments.id, id),
+          eq(assignments.publisherId, publisherId)
+        ));
     }
     
     const host = req.get('host') || 'sharpsend.io';

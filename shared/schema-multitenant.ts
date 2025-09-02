@@ -234,6 +234,7 @@ export const assignments = pgTable("assignments", {
   status: varchar("status", { length: 50 }).notNull(),
   dueDate: timestamp("due_date").notNull(),
   assignmentLink: varchar("assignment_link", { length: 500 }),
+  shareableSlug: varchar("shareable_slug", { length: 100 }),
   copywriterId: varchar("copywriter_id", { length: 255 }),
   marketContext: jsonb("market_context"),
   // Phase 1: Approval System Fields
