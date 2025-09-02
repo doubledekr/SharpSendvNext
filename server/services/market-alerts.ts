@@ -41,7 +41,8 @@ export class MarketAlertService {
       // Calculate time window for fresh news (last 48 hours)
       const now = new Date();
       const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-      const publishedAfter = twoDaysAgo.toISOString().split('.')[0] + 'Z'; // Format: 2024-01-01T00:00:00Z
+      // MarketAux expects format: YYYY-MM-DD
+      const publishedAfter = twoDaysAgo.toISOString().split('T')[0];
       
       // Add randomized offset for different results on refresh
       const randomOffset = offset !== undefined ? offset : Math.floor(Math.random() * 50);
@@ -80,7 +81,8 @@ export class MarketAlertService {
         console.error('MarketAux API Error Status:', error.response.status);
         console.error('MarketAux API Error Data:', JSON.stringify(error.response.data));
       }
-      return this.getMockMarketEvents(); // Fallback for demo
+      // NO MOCK DATA - return empty array when API fails
+      return [];
     }
   }
 
@@ -332,108 +334,10 @@ export class MarketAlertService {
     return Math.random() > 0.8; // 20% chance of triggering for demo
   }
 
+  // REMOVED: No mock data per user requirement
+  // All data must come from real API sources only
   private getMockMarketEvents(): MarketEvent[] {
-    const allEvents = [
-      {
-        id: '1',
-        type: 'earnings',
-        title: 'JPMorgan Chase Q4 Earnings Beat Estimates by 12%, NII Guidance Raised',
-        description: 'JPMorgan reports strong Q4 results with net interest income exceeding analyst expectations. CEO Dimon cites resilient consumer spending.',
-        symbol: 'JPM',
-        sector: 'Financial',
-        impact: 'high',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        source: 'Bloomberg',
-        sentiment: 'positive',
-        priceImpact: 0.8
-      },
-      {
-        id: '2',
-        type: 'fed_announcement',
-        title: 'Fed Minutes Reveal Growing Consensus for Rate Pause Through Q2 2025',
-        description: 'Federal Reserve meeting minutes show members favor maintaining current rates amid persistent inflation concerns and labor market strength.',
-        sector: 'Mixed',
-        impact: 'high',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-        source: 'Reuters',
-        sentiment: 'neutral'
-      },
-      {
-        id: '3',
-        type: 'merger',
-        title: 'KKR Announces $23B Take-Private Deal for Healthcare REIT',
-        description: 'Private equity giant KKR to acquire Medical Properties Trust in largest healthcare real estate transaction of 2025.',
-        symbol: 'MPW',
-        sector: 'RealEstate',
-        impact: 'high',
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
-        source: 'Wall Street Journal',
-        sentiment: 'positive',
-        priceImpact: 0.6
-      },
-      {
-        id: '4',
-        type: 'ipo',
-        title: 'Stripe Files for IPO at $95B Valuation, Roadshow Begins Next Week',
-        description: 'Fintech giant Stripe officially files S-1, targeting the largest tech IPO since 2021. Goldman Sachs and JPMorgan leading underwriters.',
-        sector: 'Technology',
-        impact: 'high',
-        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
-        source: 'Financial Times',
-        sentiment: 'positive'
-      },
-      {
-        id: '5',
-        type: 'general_news',
-        title: 'Bond Yields Surge to 5% as Treasury Auction Shows Weak Demand',
-        description: '10-year Treasury yields hit highest level since 2007 after disappointing 30-year bond auction. Flight from bonds accelerates.',
-        sector: 'Mixed',
-        impact: 'high',
-        timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000),
-        source: 'CNBC',
-        sentiment: 'negative'
-      },
-      {
-        id: '6',
-        type: 'general_news',
-        title: 'Hedge Fund Citadel Returns 15% in January, Outperforms S&P by 10%',
-        description: 'Ken Griffin\'s Citadel posts exceptional January returns driven by macro trades and equity volatility strategies.',
-        sector: 'Financial',
-        impact: 'medium',
-        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000),
-        source: 'Institutional Investor',
-        sentiment: 'positive'
-      },
-      {
-        id: '7',
-        type: 'dividend',
-        title: 'Berkshire Hathaway Initiates First-Ever Dividend at $0.50/Share',
-        description: 'Warren Buffett surprises markets with Berkshire\'s inaugural dividend announcement, signaling capital allocation shift.',
-        symbol: 'BRK.B',
-        sector: 'Financial',
-        impact: 'high',
-        timestamp: new Date(Date.now() - 14 * 60 * 60 * 1000),
-        source: 'MarketWatch',
-        sentiment: 'positive'
-      },
-      {
-        id: '8',
-        type: 'general_news',
-        title: 'Oil Futures Spike 8% on OPEC+ Production Cut Extension',
-        description: 'Crude oil surges past $95/barrel as Saudi Arabia and Russia extend voluntary production cuts through Q3 2025.',
-        sector: 'Energy',
-        impact: 'high',
-        timestamp: new Date(Date.now() - 16 * 60 * 60 * 1000),
-        source: 'Energy Intelligence',
-        sentiment: 'negative'
-      }
-    ];
-    
-    // Shuffle the events to return different order each time
-    const shuffled = [...allEvents].sort(() => Math.random() - 0.5);
-    
-    // Return a random subset of 5-8 events
-    const count = Math.floor(Math.random() * 4) + 5;
-    return shuffled.slice(0, count);
+    // Return empty array - no mock data allowed
+    return [];
   }
 }
