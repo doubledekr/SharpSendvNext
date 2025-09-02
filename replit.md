@@ -6,9 +6,14 @@ SharpSend is a multi-tenant AI-powered newsletter personalization platform for f
 
 ## Recent Changes (September 2, 2025)
 
-**Shareable Link Fix**: Fixed SQL syntax error in assignment shareable link generation by adding missing `shareableSlug` field to Drizzle schema. Copywriters can now successfully copy and share unique assignment links.
+**Article Reference URL Feature**: Complete implementation of article URL tracking and display in copywriter assignments:
+- Added `referenceUrl` field to assignments table and Drizzle schema to store source article URLs
+- Article links now display prominently in CardHeader of copywriter assignment portal
+- When creating assignments from news articles, the article URL is automatically saved as `referenceUrl`
+- Copywriters can instantly access the source article by clicking the link at the top of their assignment
+- Tested with real CNBC article: "Signet Jewelers CEO on natural and lab-grown diamonds"
 
-**Article URL Display**: Added prominent display of source article links in copywriter assignment portal. When an assignment is created from an article, the article URL appears directly under the assignment title for easy copywriter access.
+**Shareable Link Fix**: Fixed SQL syntax error in assignment shareable link generation by adding missing `shareableSlug` field to Drizzle schema. Copywriters can now successfully copy and share unique assignment links.
 
 **Market News Integration**: Removed ALL mock data from finance news feed. System now shows only real financial news from MarketAux API with working article links. Fixed date format issue (YYYY-MM-DD) for proper API integration.
 
